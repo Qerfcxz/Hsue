@@ -12,12 +12,12 @@ import qualified Foreign.Storable as FS
 get_event::FP.Ptr ()->IO Event
 get_event event=do
     value<-SF.sdl_waitevent event
-    if FMU.toBool value then error "get_event: error 1" else get_event_a event
+    if FMU.toBool value then get_event_a event else error "get_event: error 1"
 
 get_event_time::FP.Ptr ()->DI.Int32->IO Event
 get_event_time event time=do
     value<-SF.sdl_waiteventtimeout event time
-    if FMU.toBool value then return Time else get_event_a event
+    if FMU.toBool value then get_event_a event else return Time
 
 get_event_a::FP.Ptr ()->IO Event
 get_event_a event=do
