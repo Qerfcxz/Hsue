@@ -6,6 +6,9 @@ module SDL.Constant where
 
 import qualified Data.Word as DT
 
+sdl_init_video::DT.Word32
+sdl_init_video=(#const SDL_INIT_VIDEO)
+
 sdl_init_audio::DT.Word32
 sdl_init_audio=(#const SDL_INIT_AUDIO)
 
