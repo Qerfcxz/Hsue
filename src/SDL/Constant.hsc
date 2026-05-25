@@ -15,5 +15,8 @@ sdl_init_audio=(#const SDL_INIT_AUDIO)
 sdl_window_resizable::DT.Word64
 sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
 
+sdl_event_size::Int
+sdl_event_size=(#size SDL_Event)
+
 pattern SDL_EVENT_QUIT::DT.Word32
 pattern SDL_EVENT_QUIT=(#const SDL_EVENT_QUIT)
