@@ -22,7 +22,7 @@ data Node a=Node {ancestry::DSeq.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.
 
 data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}
 
-data Request a=Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Io (Engine a->IO (Engine a))
+data Request a=Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Io {io::Engine a->IO (Engine a)}
 
 data Timer=Keep_off|Keep_on {time::DW.Word64}|Turn_off|Turn_on {time::DW.Word64}
 
@@ -36,4 +36,4 @@ data Press=Press_up|Press_down
 
 data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z deriving (Eq,Ord)
 
-data Window_flag=Window_resizable
+data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable

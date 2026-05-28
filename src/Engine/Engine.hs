@@ -62,7 +62,7 @@ loop_engine_time time next_time ptr engine=do
                 Quit->return ()
                 Time->loop_engine_time_a (next_time+time) ptr (run_event Time (new_engine {key=key}))
                 _->loop_engine_time_a next_time ptr (run_event event (new_engine {key=key}))
-        else loop_engine_time_a (max (next_time+time) (now+time)) ptr (run_event Time new_engine)
+        else loop_engine_time_a (max (next_time+time) now) ptr (run_event Time new_engine)
 
 loop_engine_time_a::DW.Word64->FP.Ptr ()->Engine a->IO ()
 loop_engine_time_a next_time ptr engine=case engine.timer of

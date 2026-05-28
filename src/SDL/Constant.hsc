@@ -11,6 +11,15 @@ import qualified Foreign.Ptr as FP
 sdl_init_video::DT.Word32
 sdl_init_video=(#const SDL_INIT_VIDEO)
 
+sdl_window_fullscreen::DT.Word64
+sdl_window_fullscreen=(#const SDL_WINDOW_FULLSCREEN)
+
+sdl_window_hidden::DT.Word64
+sdl_window_hidden=(#const SDL_WINDOW_HIDDEN)
+
+sdl_window_borderless::DT.Word64
+sdl_window_borderless=(#const SDL_WINDOW_BORDERLESS)
+
 sdl_window_resizable::DT.Word64
 sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
 
