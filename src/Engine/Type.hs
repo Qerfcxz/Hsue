@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NoFieldSelectors #-}
+{-# LANGUAGE StrictData #-}
 
 module Engine.Type where
 
@@ -14,11 +15,15 @@ import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 
-data Engine a=Engine {state::a,leaf::DIM.IntMap (Leaf a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,request::DSeq.Seq (Request a),key::DSet.Set Key,main_id::Engine a->Event->Maybe Int,timer::Timer}
+data Engine a=Engine {state::a,active::DIM.IntMap (Active a),free::DIM.IntMap (Free a),bound::DIM.IntMap (Bound a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,request::DSeq.Seq (Request a),key::DSet.Set Key,main_id::Engine a->Event->Maybe Int,timer::Timer}
 
-data Leaf a=Leaf {father::Maybe Int,next::Engine a->Event->Maybe Int,widget::Widget a}
+data Active a=Active {next::Engine a->Event->Maybe Int,ancestry::DSeq.Seq Int,widget::Widget a}
 
-data Node a=Node {ancestry::DSeq.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event->Event,widget_transform::Engine a->Request a->Widget a->Widget a}
+data Free a=Free {ancestry::DSeq.Seq Int,widget::Widget a}
+
+data Bound a=Bound {window_id::Int,ancestry::DSeq.Seq Int,widget::Widget a}
+
+data Node a=Node {active_child::DIS.IntSet,free_child::DIS.IntSet,bound_child::DIS.IntSet,node_child::DIS.IntSet,ancestry::DSeq.Seq Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Request a->Widget a->Widget a}
 
 data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}
 

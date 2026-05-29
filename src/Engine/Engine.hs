@@ -10,6 +10,7 @@ import Engine.Request
 import Engine.Type
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
+import qualified Data.Foldable as DF
 import qualified Data.Int as DI
 import qualified Data.IntMap as DIM
 import qualified Data.Map as DM
@@ -27,8 +28,8 @@ quit_engine=F.sdl_quit
 
 create_engine::Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->Engine a
 create_engine timer main_id state=case timer of
-    Nothing->Engine {state=state,leaf=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_off}
-    Just time->Engine {state=state,leaf=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_on {time=fromIntegral time}}
+    Nothing->Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_off}
+    Just time->Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_on {time=fromIntegral time}}
 
 run_engine::Engine a->IO ()
 run_engine engine=FMA.allocaBytes C.sdl_event_size $ \ptr->case engine.timer of
@@ -83,35 +84,19 @@ run_request engine=case engine.request of
 run_event::Event->Engine a->Engine a
 run_event event engine=case engine.main_id engine event of
     Nothing->engine
-    Just main_id->run_event_a main_id DIM.empty event engine
+    Just main_id->run_event_a main_id event engine
 
-run_event_a::Int->DIM.IntMap Event->Event->Engine a->Engine a
-run_event_a leaf_id cache event engine=case DIM.lookup leaf_id engine.leaf of
+run_event_a::Int->Event->Engine a->Engine a
+run_event_a active_id event engine=case DIM.lookup active_id engine.active of
     Nothing->error "run_event_a: error 1"
-    Just leaf->case leaf.father of
-        Nothing->run_event_b leaf cache event event engine
-        Just node_id->case DIM.lookup node_id cache of
-            Nothing->let engine_node=engine.node in case DIM.lookup node_id engine_node of
-                Nothing->error "run_event_a: error 2"
-                Just node->let (seq_node_id,new_event)=run_event_c cache node.ancestry (DSeq.singleton node_id) event in let (new_cache,new_new_event)=run_event_d engine engine_node seq_node_id cache new_event in run_event_b leaf new_cache new_new_event event engine
-            Just new_event->run_event_b leaf cache new_event event engine
+    Just active->let new_event=DF.foldl' (\this_event node_id->run_event_b node_id engine.node engine this_event) event active.ancestry in let new_engine=run_widget new_event active.widget engine in case active.next new_engine new_event of
+        Nothing->new_engine
+        Just new_active_id->run_event_a new_active_id event new_engine
 
-run_event_b::Leaf a->DIM.IntMap Event->Event->Event->Engine a->Engine a
-run_event_b leaf cache new_event event engine=let new_engine=run_widget new_event leaf.widget engine in case leaf.next new_engine new_event of
-    Nothing->new_engine
-    Just new_leaf_id->run_event_a new_leaf_id cache event new_engine
-
-run_event_c::DIM.IntMap Event->DSeq.Seq Int->DSeq.Seq Int->Event->(DSeq.Seq Int,Event)
-run_event_c _ DSeq.Empty seq_node_id event=(seq_node_id,event)
-run_event_c cache (other_node_id DSeq.:|> node_id) seq_node_id event=let maybe_event=DIM.lookup node_id cache in case maybe_event of
-    Nothing->run_event_c cache other_node_id (node_id DSeq.<| seq_node_id) event
-    Just new_event->(seq_node_id,new_event)
-
-run_event_d::Engine a->DIM.IntMap (Node a)->DSeq.Seq Int->DIM.IntMap Event->Event->(DIM.IntMap Event,Event)
-run_event_d _ _ DSeq.Empty cache event=(cache,event)
-run_event_d engine engine_node (node_id DSeq.:<| other_node_id) cache event=case DIM.lookup node_id engine_node of
-    Nothing->error "run_event_d: error 1"
-    Just node->let new_event=node.event_transform engine event in run_event_d engine engine_node other_node_id (DIM.insert node_id new_event cache) new_event
+run_event_b::Int->DIM.IntMap (Node a)->Engine a->Event->Event
+run_event_b node_id engine_node engine event=case DIM.lookup node_id engine_node of
+    Nothing->error "run_event_b: error 1"
+    Just node->node.event_transform engine event
 
 run_widget::Event->Widget a->Engine a->Engine a
 run_widget event (Trigger {trigger}) engine=trigger event engine
