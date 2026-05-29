@@ -27,11 +27,11 @@ data Node a=Node {active_child::DIS.IntSet,free_child::DIS.IntSet,bound_child::D
 
 data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}
 
-data Request a=Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Io {io::Engine a->IO (Engine a)}
+data Request a=Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Io {io::Engine a->IO (Engine a)}
 
 data Timer=Keep_off|Keep_on {time::DW.Word64}|Turn_off|Turn_on {time::DW.Word64}
 
-data Window=Window {window_id::Int,sdl_window::FP.Ptr T.SDL_window,sdl_renderer::FP.Ptr T.SDL_renderer,window_widget::DIS.IntSet}
+data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_window,sdl_renderer::FP.Ptr T.SDL_renderer,window_bound::DIS.IntSet}
 
 data Event=Unknown|Quit|Time|At {window_id::Int,action::Action}
 

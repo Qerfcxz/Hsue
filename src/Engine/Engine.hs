@@ -8,6 +8,7 @@ import Engine.Event
 import Engine.Error
 import Engine.Request
 import Engine.Type
+import Engine.Window
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified Data.Foldable as DF
@@ -45,12 +46,18 @@ loop_engine ptr engine=do
     (event,key)<-get_event ptr engine.window_map engine.key
     case event of
         Quit->return ()
-        _->let new_new_engine=run_event event (new_engine {key=key}) in case new_new_engine.timer of
-            Keep_off->loop_engine ptr new_new_engine
-            Turn_on {time}->do
-                now<-F.sdl_getticks
-                loop_engine_time time (now+time) ptr (new_new_engine {timer=Keep_on {time=time}})
-            _->error "loop_engine: error 1"
+        At window_id Close->do
+            new_new_engine<-remove_window window_id (run_event event (new_engine {key=key}))
+            loop_engine_a ptr new_new_engine
+        _->loop_engine_a ptr (run_event event (new_engine {key=key}))
+
+loop_engine_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_a ptr engine=case engine.timer of
+    Keep_off->loop_engine ptr engine
+    Turn_on {time}->do
+        now<-F.sdl_getticks
+        loop_engine_time time (now+time) ptr (engine {timer=Keep_on {time=time}})
+    _->error "loop_engine: error 1"
 
 loop_engine_time::DW.Word64->DW.Word64->FP.Ptr ()->Engine a->IO ()
 loop_engine_time time next_time ptr engine=do
@@ -62,6 +69,9 @@ loop_engine_time time next_time ptr engine=do
             case event of
                 Quit->return ()
                 Time->loop_engine_time_a (next_time+time) ptr (run_event Time (new_engine {key=key}))
+                At window_id Close->do
+                    new_new_engine<-remove_window window_id (run_event event (new_engine {key=key}))
+                    loop_engine_time_a next_time ptr new_new_engine
                 _->loop_engine_time_a next_time ptr (run_event event (new_engine {key=key}))
         else loop_engine_time_a (max (next_time+time) now) ptr (run_event Time new_engine)
 

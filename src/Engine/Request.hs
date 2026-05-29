@@ -5,6 +5,7 @@
 module Engine.Request where
 
 import Engine.Type
+import Engine.Window
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified Data.Bits as DB
@@ -29,9 +30,10 @@ do_request request engine=case request of
             sdl_renderer<-F.sdl_createrenderer sdl_window FP.nullPtr
             if sdl_renderer==FP.nullPtr then error "do_request: error 2" else do
                 sdl_window_id<-F.sdl_getwindowid sdl_window
-                let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window=sdl_window,sdl_renderer=sdl_renderer,window_widget=DIS.empty}) engine.window in case maybe_window of
+                let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,sdl_renderer=sdl_renderer,window_bound=DIS.empty}) engine.window in case maybe_window of
                     Nothing->return (engine {window=new_window,window_map=DM.insert sdl_window_id window_id engine.window_map})
                     _->error "do_request: error 3"
+    Remove_window {window_id}->remove_window window_id engine
     Io {io}->io engine
 
 from_window_flag::Window_flag->DW.Word64
