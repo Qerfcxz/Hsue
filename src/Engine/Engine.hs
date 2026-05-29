@@ -43,7 +43,7 @@ run_engine engine=FMA.allocaBytes C.sdl_event_size $ \ptr->case engine.timer of
 loop_engine::FP.Ptr ()->Engine a->IO ()
 loop_engine ptr engine=do
     new_engine<-run_request engine
-    (event,key)<-get_event ptr engine.window_map engine.key
+    (event,key)<-get_event ptr new_engine.window_map new_engine.key
     case event of
         Quit->return ()
         At window_id Close->do
@@ -65,7 +65,7 @@ loop_engine_time time next_time ptr engine=do
     now<-F.sdl_getticks
     if now<next_time
         then do
-            (event,key)<-get_event_time (fromIntegral (next_time-now)) ptr engine.window_map engine.key
+            (event,key)<-get_event_time (fromIntegral (next_time-now)) ptr new_engine.window_map new_engine.key
             case event of
                 Quit->return ()
                 Time->loop_engine_time_a (next_time+time) ptr (run_event Time (new_engine {key=key}))
