@@ -5,7 +5,7 @@
 module Engine.Engine where
 
 import Engine.Event
-import Engine.Error
+import Engine.Other
 import Engine.Request
 import Engine.Type
 import Engine.Window
@@ -22,7 +22,7 @@ import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Ptr as FP
 
 init_engine::IO ()
-init_engine=catch_error "init_engine: error 1" (F.sdl_init C.sdl_init_video)
+init_engine=catch_error (F.sdl_init C.sdl_init_video)
 
 quit_engine::IO ()
 quit_engine=F.sdl_quit
