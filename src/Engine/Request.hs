@@ -4,6 +4,7 @@
 
 module Engine.Request where
 
+import Engine.Node
 import Engine.Other
 import Engine.Type
 import Engine.Widget
@@ -32,6 +33,8 @@ do_request request engine=case request of
         Active_widget->remove_active widget_id engine
         Free_widget->remove_free widget_id engine
         Bound_widget->remove_bound widget_id engine
+    Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine)
+    Remove_node {node_id}->remove_node node_id engine
     Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \cstring->do
         sdl_window<-F.sdl_createwindow cstring width height (DF.foldl' (\word flag->word DB..|. from_window_flag flag) 0 window_flag)
         if sdl_window==FP.nullPtr then error "do_request: error 3" else do
