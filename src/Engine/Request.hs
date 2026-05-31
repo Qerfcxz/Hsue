@@ -53,7 +53,7 @@ do_request request engine=case request of
             _->error "do_request: error 6"
 
 do_widget_transform::DS.Seq Int->Engine a->Request a->Widget a->Widget a
-do_widget_transform ancestry engine request widget=DF.foldl' (\this_widget node_id->do_widget_transform_a node_id engine.node engine request this_widget) widget ancestry
+do_widget_transform ancestry engine request widget=DF.foldr (\node_id->do_widget_transform_a node_id engine.node engine request) widget ancestry
 
 do_widget_transform_a::Int->DIM.IntMap (Node a)->Engine a->Request a->Widget a->Widget a
 do_widget_transform_a node_id engine_node engine request widget=case DIM.lookup node_id engine_node of

@@ -28,6 +28,9 @@ foreign import ccall safe "SDL_ClaimWindowForGPUDevice"
 foreign import ccall safe "SDL_CreateGPUGraphicsPipeline"
     sdl_creategpugraphicspipeline::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_GPUGraphicsPipelineCreateInfo->IO (FP.Ptr SDL_GPUGraphicsPipeline)
 
+foreign import ccall safe "SDL_AcquireGPUSwapchainTexture"
+    sdl_acquiregpuswapchaintexture::FP.Ptr SDL_GPUCommandBuffer->FP.Ptr SDL_Window->FP.Ptr (FP.Ptr SDL_GPUTexture)->FP.Ptr DW.Word32->FP.Ptr DW.Word32->IO FCT.CBool
+
 foreign import ccall safe "SDL_CreateGPUShader"
     sdl_creategpushader::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_GPUShaderCreateInfo->IO (FP.Ptr SDL_GPUShader)
 
@@ -60,9 +63,6 @@ foreign import ccall unsafe "SDL_AcquireGPUCommandBuffer"
 
 foreign import ccall unsafe "SDL_SubmitGPUCommandBuffer"
     sdl_submitgpucommandbuffer::FP.Ptr SDL_GPUCommandBuffer->IO FCT.CBool
-
-foreign import ccall unsafe "SDL_AcquireGPUSwapchainTexture"
-    sdl_acquiregpuswapchaintexture::FP.Ptr SDL_GPUCommandBuffer->FP.Ptr SDL_Window->FP.Ptr (FP.Ptr SDL_GPUTexture)->FP.Ptr DW.Word32->FP.Ptr DW.Word32->IO FCT.CBool
 
 foreign import ccall unsafe "SDL_BeginGPURenderPass"
     sdl_begingpurenderpass::FP.Ptr SDL_GPUCommandBuffer->FP.Ptr SDL_GPUColorTargetInfo->DW.Word32->FP.Ptr SDL_GPUDepthStencilTargetInfo->IO (FP.Ptr SDL_GPURenderPass)

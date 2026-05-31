@@ -30,10 +30,13 @@ quit_engine=F.sdl_quit
 
 create_engine::Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->IO (Engine a)
 create_engine timer main_id state=do
-    device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
+    device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr--暂时先只管Windows平台
     if device==FP.nullPtr then error "create_engine: error 1" else case timer of
         Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_off,device=device,graphics_pipeline=DIM.empty})
         Just time->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_on {time=fromIntegral time},device=device,graphics_pipeline=DIM.empty})
+
+clean_engine::Engine a->IO ()
+clean_engine engine=F.sdl_destroygpudevice engine.device--未完待续
 
 run_engine::Engine a->IO ()
 run_engine engine=FMA.allocaBytes C.sdl_event_size $ \ptr->case engine.timer of
