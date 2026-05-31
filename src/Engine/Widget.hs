@@ -23,6 +23,23 @@ make_active::Widget_request a->IO (Widget a,Engine a->Event->Maybe Int)
 make_active widget_request=case widget_request of
     Trigger_request {next,trigger}->return (Trigger {trigger=trigger},next)
     Io_trigger_request {next,io_trigger}->return (Io_trigger {io_trigger=io_trigger},next)
+    _->error "make_active: error 1"
+
+create_bound::Maybe Int->Widget_request a->Int->Engine a->IO (Engine a)
+create_bound father widget_request bound_id engine=do
+    (widget,window_id)<-make_bound widget_request
+    let (maybe_window,new_window)=DIM.updateLookupWithKey (\_->just_update (\window->window {window_bound=intset_insert bound_id window.window_bound})) window_id engine.window in case maybe_window of
+        Nothing->error "create_bound: error 1"
+        Just _->case father of
+            Nothing->return (engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,widget=widget}) engine.bound,window=new_window})
+            Just node_id->let (maybe_node,new_node)=DIM.updateLookupWithKey (\_->just_update (\node->node {bound_child=intset_insert bound_id node.bound_child})) node_id engine.node in case maybe_node of
+                Nothing->error "create_bound: error 2"
+                Just node->return (engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,widget=widget}) engine.bound,node=new_node,window=new_window})
+
+make_bound::Widget_request a->IO (Widget a,Int)
+make_bound widget_request=case widget_request of
+    Geometry_request {window_id,red,green,blue,alpha,geometry}->return (Geometry {red,green,blue,alpha,geometry},window_id)
+    _->error "make_bound: error 1"
 
 remove_active::Int->Engine a->IO (Engine a)
 remove_active active_id engine=let (maybe_active,new_active)=DIM.updateLookupWithKey (\_ _->Nothing) active_id engine.active in case maybe_active of
@@ -55,3 +72,4 @@ clean_widget::Widget a->IO ()
 clean_widget widget=case widget of
     Trigger {}->return ()
     Io_trigger {}->return ()
+    Geometry {}->return ()

@@ -15,8 +15,7 @@ import qualified Data.Sequence as DS
 remove_window::Int->Engine a->IO (Engine a)
 remove_window window_id engine=let (maybe_window,new_window)=DIM.updateLookupWithKey (\_ _->Nothing) window_id engine.window in case maybe_window of
     Nothing->return engine
-    Just (Window {sdl_window_id,sdl_window,sdl_renderer,window_bound})->do
-        F.sdl_destroyrenderer sdl_renderer
+    Just (Window {sdl_window_id,sdl_window,window_bound})->do
         F.sdl_destroywindow sdl_window
         let target_bound=DIM.restrictKeys engine.bound window_bound
         DF.mapM_ (\bound->clean_widget bound.widget) target_bound
