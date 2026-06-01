@@ -4,74 +4,107 @@ module SDL.Function where
 
 import SDL.Constant
 import SDL.Type
-import qualified Data.Int as DI
-import qualified Data.Word as DW
-import qualified Foreign.Ptr as FP
-import qualified Foreign.C.String as FCS
-import qualified Foreign.C.Types as FCT
+import Data.Int
+import Data.Word
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign.Ptr
 
 foreign import ccall safe "SDL_Init"
-    sdl_init::DW.Word32->IO FCT.CBool
+    sdl_init::Word32->IO CBool
 
 foreign import ccall safe "SDL_Quit"
     sdl_quit::IO ()
 
 foreign import ccall safe "SDL_CreateGPUDevice"
-    sdl_creategpudevice::DW.Word32->FCT.CBool->FCS.CString->IO (FP.Ptr SDL_GPUDevice)
+    sdl_creategpudevice::Word32->CBool->CString->IO (Ptr SDL_GPUDevice)
 
 foreign import ccall safe "SDL_DestroyGPUDevice"
-    sdl_destroygpudevice::FP.Ptr SDL_GPUDevice->IO ()
+    sdl_destroygpudevice::Ptr SDL_GPUDevice->IO ()
 
 foreign import ccall safe "SDL_ClaimWindowForGPUDevice"
-    sdl_claimwindowforgpudevice::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_Window->IO FCT.CBool
+    sdl_claimwindowforgpudevice::Ptr SDL_GPUDevice->Ptr SDL_Window->IO CBool
+
+foreign import ccall safe "SDL_GetGPUSwapchainTextureFormat"
+    sdl_getgpuswapchaintextureformat::Ptr SDL_GPUDevice->Ptr SDL_Window->IO Word32
 
 foreign import ccall safe "SDL_CreateGPUGraphicsPipeline"
-    sdl_creategpugraphicspipeline::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_GPUGraphicsPipelineCreateInfo->IO (FP.Ptr SDL_GPUGraphicsPipeline)
+    sdl_creategpugraphicspipeline::Ptr SDL_GPUDevice->Ptr SDL_GPUGraphicsPipelineCreateInfo->IO (Ptr SDL_GPUGraphicsPipeline)
 
 foreign import ccall safe "SDL_AcquireGPUSwapchainTexture"
-    sdl_acquiregpuswapchaintexture::FP.Ptr SDL_GPUCommandBuffer->FP.Ptr SDL_Window->FP.Ptr (FP.Ptr SDL_GPUTexture)->FP.Ptr DW.Word32->FP.Ptr DW.Word32->IO FCT.CBool
+    sdl_acquiregpuswapchaintexture::Ptr SDL_GPUCommandBuffer->Ptr SDL_Window->Ptr (Ptr SDL_GPUTexture)->Ptr Word32->Ptr Word32->IO CBool
 
 foreign import ccall safe "SDL_CreateGPUShader"
-    sdl_creategpushader::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_GPUShaderCreateInfo->IO (FP.Ptr SDL_GPUShader)
+    sdl_creategpushader::Ptr SDL_GPUDevice->Ptr SDL_GPUShaderCreateInfo->IO (Ptr SDL_GPUShader)
 
 foreign import ccall safe "SDL_ReleaseGPUShader"
-    sdl_releasegpushader::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_GPUShader->IO ()
+    sdl_releasegpushader::Ptr SDL_GPUDevice->Ptr SDL_GPUShader->IO ()
 
 foreign import ccall safe "SDL_ReleaseGPUGraphicsPipeline"
-    sdl_releasegpugraphicspipeline::FP.Ptr SDL_GPUDevice->FP.Ptr SDL_GPUGraphicsPipeline->IO ()
+    sdl_releasegpugraphicspipeline::Ptr SDL_GPUDevice->Ptr SDL_GPUGraphicsPipeline->IO ()
+
+foreign import ccall safe "SDL_CreateGPUBuffer"
+    sdl_creategpubuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUBufferCreateInfo->IO (Ptr SDL_GPUBuffer)
+
+foreign import ccall safe "SDL_ReleaseGPUBuffer"
+    sdl_releasegpubuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUBuffer->IO ()
+
+foreign import ccall safe "SDL_CreateGPUTransferBuffer"
+    sdl_creategputransferbuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUTransferBufferCreateInfo->IO (Ptr SDL_GPUTransferBuffer)
+
+foreign import ccall safe "SDL_ReleaseGPUTransferBuffer"
+    sdl_releasegputransferbuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUTransferBuffer->IO ()
+
+foreign import ccall safe "SDL_MapGPUTransferBuffer"
+    sdl_mapgputransferbuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUTransferBuffer->CBool->IO (Ptr ())
+
+foreign import ccall safe "SDL_UnmapGPUTransferBuffer"
+    sdl_unmapgputransferbuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUTransferBuffer->IO ()
 
 foreign import ccall safe "SDL_CreateWindow"
-    sdl_createwindow::FCS.CString->FCT.CInt->FCT.CInt->DW.Word64->IO (FP.Ptr SDL_Window)
+    sdl_createwindow::CString->CInt->CInt->Word64->IO (Ptr SDL_Window)
 
 foreign import ccall safe "SDL_DestroyWindow"
-    sdl_destroywindow::FP.Ptr SDL_Window->IO ()
+    sdl_destroywindow::Ptr SDL_Window->IO ()
 
 foreign import ccall safe "SDL_WaitEvent"
-    sdl_waitevent::FP.Ptr ()->IO FCT.CBool
+    sdl_waitevent::Ptr ()->IO CBool
 
 foreign import ccall safe "SDL_WaitEventTimeout"
-    sdl_waiteventtimeout::FP.Ptr ()->DI.Int32->IO FCT.CBool
+    sdl_waiteventtimeout::Ptr ()->Int32->IO CBool
 
 foreign import ccall unsafe "SDL_BindGPUGraphicsPipeline"
-    sdl_bindgpugraphicspipeline::FP.Ptr SDL_GPURenderPass->FP.Ptr SDL_GPUGraphicsPipeline->IO ()
+    sdl_bindgpugraphicspipeline::Ptr SDL_GPURenderPass->Ptr SDL_GPUGraphicsPipeline->IO ()
 
 foreign import ccall unsafe "SDL_DrawGPUPrimitives"
-    sdl_drawgpuprimitives::FP.Ptr SDL_GPURenderPass->DW.Word32->DW.Word32->DW.Word32->DW.Word32->IO ()
+    sdl_drawgpuprimitives::Ptr SDL_GPURenderPass->Word32->Word32->Word32->Word32->IO ()
 
 foreign import ccall unsafe "SDL_AcquireGPUCommandBuffer"
-    sdl_acquiregpucommandbuffer::FP.Ptr SDL_GPUDevice->IO (FP.Ptr SDL_GPUCommandBuffer)
+    sdl_acquiregpucommandbuffer::Ptr SDL_GPUDevice->IO (Ptr SDL_GPUCommandBuffer)
 
 foreign import ccall unsafe "SDL_SubmitGPUCommandBuffer"
-    sdl_submitgpucommandbuffer::FP.Ptr SDL_GPUCommandBuffer->IO FCT.CBool
+    sdl_submitgpucommandbuffer::Ptr SDL_GPUCommandBuffer->IO CBool
+
+foreign import ccall unsafe "SDL_BeginGPUCopyPass"
+    sdl_begingpucopypass::Ptr SDL_GPUCommandBuffer->IO (Ptr SDL_GPUCopyPass)
+
+foreign import ccall unsafe "SDL_EndGPUCopyPass"
+    sdl_endgpucopypass::Ptr SDL_GPUCopyPass->IO ()
+
+foreign import ccall unsafe "SDL_UploadToGPUBuffer"
+    sdl_uploadtogpubuffer::Ptr SDL_GPUCopyPass->Ptr SDL_GPUTransferBufferLocation->Ptr SDL_GPUBufferRegion->CBool->IO ()
+
+foreign import ccall unsafe "SDL_BindGPUVertexBuffers"
+    sdl_bindgpuvertexbuffers::Ptr SDL_GPURenderPass->Word32->Ptr SDL_GPUBufferBinding->Word32->IO ()
 
 foreign import ccall unsafe "SDL_BeginGPURenderPass"
-    sdl_begingpurenderpass::FP.Ptr SDL_GPUCommandBuffer->FP.Ptr SDL_GPUColorTargetInfo->DW.Word32->FP.Ptr SDL_GPUDepthStencilTargetInfo->IO (FP.Ptr SDL_GPURenderPass)
+    sdl_begingpurenderpass::Ptr SDL_GPUCommandBuffer->Ptr SDL_GPUColorTargetInfo->Word32->Ptr SDL_GPUDepthStencilTargetInfo->IO (Ptr SDL_GPURenderPass)
 
 foreign import ccall unsafe "SDL_EndGPURenderPass"
-    sdl_endgpurenderpass::FP.Ptr SDL_GPURenderPass->IO ()
+    sdl_endgpurenderpass::Ptr SDL_GPURenderPass->IO ()
 
 foreign import ccall unsafe "SDL_GetTicks"
-    sdl_getticks::IO DW.Word64
+    sdl_getticks::IO Word64
 
 foreign import ccall unsafe "SDL_GetWindowID"
-    sdl_getwindowid::FP.Ptr SDL_Window->IO DW.Word32
+    sdl_getwindowid::Ptr SDL_Window->IO Word32

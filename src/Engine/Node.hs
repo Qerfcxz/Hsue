@@ -26,30 +26,20 @@ remove_node node_id engine=let (maybe_node,new_node)=DIM.updateLookupWithKey (\_
 
 remove_node_a::DIS.IntSet->DIS.IntSet->DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
 remove_node_a active_child free_child bound_child node_child engine=do
-    new_engine<-intset_foldm remove_node_active active_child engine
-    new_new_engine<-intset_foldm remove_node_free free_child new_engine
-    new_new_new_engine<-intset_foldm remove_node_bound bound_child new_new_engine
-    intset_foldm remove_node_node node_child new_new_new_engine
+    new_engine<-intset_foldm remove_node_bound bound_child (DIS.foldl' (flip remove_node_free) (DIS.foldl' (flip remove_node_active) engine active_child) free_child)
+    intset_foldm remove_node_node node_child new_engine
 
-remove_node_active::Int->Engine a->IO (Engine a)
-remove_node_active active_id engine=let (maybe_active,new_active)=DIM.updateLookupWithKey (\_ _->Nothing) active_id engine.active in case maybe_active of
-    Nothing->error "remove_node_active: error 1"
-    Just active->do
-        clean_widget active.widget
-        return (engine {active=new_active})
+remove_node_active::Int->Engine a->Engine a
+remove_node_active active_id engine=engine {active=intmap_delete active_id engine.active}
 
-remove_node_free::Int->Engine a->IO (Engine a)
-remove_node_free free_id engine=let (maybe_free,new_free)=DIM.updateLookupWithKey (\_ _->Nothing) free_id engine.free in case maybe_free of
-    Nothing->error "remove_node_free: error 1"
-    Just free->do
-        clean_widget free.widget
-        return (engine {free=new_free})
+remove_node_free::Int->Engine a->Engine a
+remove_node_free free_id engine=engine {free=intmap_delete free_id engine.free}
 
 remove_node_bound::Int->Engine a->IO (Engine a)
 remove_node_bound bound_id engine=let (maybe_bound,new_bound)=DIM.updateLookupWithKey (\_ _->Nothing) bound_id engine.bound in case maybe_bound of
     Nothing->error "remove_node_bound: error 1"
     Just bound->do
-        clean_widget bound.widget
+        clean_resource bound.resource
         return (engine {bound=new_bound,window=DIM.alter (maybe_update (\window->window {window_bound=intset_delete bound_id window.window_bound})) bound.window_id engine.window})
 
 remove_node_node::Int->Engine a->IO (Engine a)

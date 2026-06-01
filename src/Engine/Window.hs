@@ -18,7 +18,7 @@ remove_window window_id engine=let (maybe_window,new_window)=DIM.updateLookupWit
     Just (Window {sdl_window_id,sdl_window,window_bound})->do
         F.sdl_destroywindow sdl_window
         let target_bound=DIM.restrictKeys engine.bound window_bound
-        DF.mapM_ (\bound->clean_widget bound.widget) target_bound
+        DF.mapM_ (\bound->clean_resource bound.resource) target_bound
         return (engine {bound=DIM.withoutKeys engine.bound window_bound,node=DIM.foldlWithKey' (\node bound_id bound->remove_window_a bound_id bound.ancestry node) engine.node target_bound,window=new_window,window_map=map_delete sdl_window_id engine.window_map})
 
 remove_window_a::Int->DS.Seq Int->DIM.IntMap (Node a)->DIM.IntMap (Node a)
