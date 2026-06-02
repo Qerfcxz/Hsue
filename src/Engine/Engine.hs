@@ -107,16 +107,9 @@ run_event event engine=case engine.main_id engine event of
     Just main_id->run_event_a main_id event engine
 
 run_event_a::Int->Event->Engine a->Engine a
-run_event_a active_id event engine=case DIM.lookup active_id engine.active of
-    Nothing->error "run_event_a: error 1"
-    Just active->let new_event=DF.foldl' (\this_event node_id->run_event_b node_id engine.node engine this_event) event active.ancestry in let new_engine=run_widget new_event active.widget engine in case active.next new_engine new_event of
-        Nothing->new_engine
-        Just new_active_id->run_event_a new_active_id event new_engine
-
-run_event_b::Int->DIM.IntMap (Node a)->Engine a->Event->Event
-run_event_b node_id engine_node engine event=case DIM.lookup node_id engine_node of
-    Nothing->error "run_event_b: error 1"
-    Just node->node.event_transform engine event
+run_event_a active_id event engine=let active=intmap_lookup active_id engine.active in let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event active.ancestry in let new_engine=run_widget new_event active.widget engine in case active.next new_engine new_event of
+    Nothing->new_engine
+    Just new_active_id->run_event_a new_active_id event new_engine
 
 run_widget::Event->Widget a->Engine a->Engine a
 run_widget event (Trigger {trigger}) engine=trigger event engine
