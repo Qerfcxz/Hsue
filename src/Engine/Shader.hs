@@ -10,6 +10,7 @@ import qualified SDL.Function as F
 import qualified SDL.Type as T
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
+import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.Marshal.Array as FMA
@@ -31,11 +32,12 @@ create_triangle_graphics_pipeline window device vertex_shader fragment_shader=FM
         format<-F.sdl_getgpuswapchaintextureformat device window
         FMU.with C.SDL_GPUColorTargetDescription {format=format,blend_state=standard_blend_state} $ \color_target_description->FMU.with C.SDL_GPUGraphicsPipelineCreateInfo {vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_input_state=C.SDL_GPUVertexInputState {vertex_buffer_descriptions=vertex_buffer_description,num_vertex_buffers=1,vertex_attributes=vertex_attribute,num_vertex_attributes=2},primitive_type=C.sdl_gpu_primitivetype_trianglelist,target_info=C.SDL_GPUGraphicsPipelineTargetInfo {color_target_descriptions=color_target_description,num_color_targets=1,has_depth_stencil_target=FMU.fromBool False}} $ \graphics_pipeline_create_info->F.sdl_creategpugraphicspipeline device graphics_pipeline_create_info
 
-create_vertex_buffer::FP.Ptr T.SDL_GPUDevice->[Vertex]->IO (FP.Ptr T.SDL_GPUBuffer)
-create_vertex_buffer device vertex=let size=fromIntegral (length vertex*FS.sizeOf (undefined::Vertex)) in FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_vertex,size=size}) $ \buffer_create_info->FMU.with (C.SDL_GPUTransferBufferCreateInfo {usage=0,size=size}) $ \transfer_buffer_create_info->do
+create_buffer::FP.Ptr T.SDL_GPUDevice->DS.Seq Vertex->DS.Seq DW.Word32->IO (FP.Ptr T.SDL_GPUBuffer,DW.Word32,DW.Word32)
+create_buffer device vertex index=let vertex_size=length vertex*FS.sizeOf (undefined::Vertex) in let index_length=length index in let index_size=index_length*FS.sizeOf (undefined::DW.Word32) in let new_vertex_size=fromIntegral vertex_size in let size=new_vertex_size+fromIntegral index_size in FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_vertex DB..|. C.sdl_gpu_bufferusage_index,size=size}) $ \buffer_create_info->FMU.with C.SDL_GPUTransferBufferCreateInfo {usage=0,size=size} $ \transfer_buffer_create_info->do
     transfer_buffer<-F.sdl_creategputransferbuffer device transfer_buffer_create_info
     map_transfer_buffer<-F.sdl_mapgputransferbuffer device transfer_buffer (FMU.fromBool False)
-    FMA.pokeArray (FP.castPtr map_transfer_buffer) vertex
+    seq_poke_array (FP.castPtr map_transfer_buffer) vertex
+    seq_poke_array (FP.plusPtr map_transfer_buffer vertex_size) index
     F.sdl_unmapgputransferbuffer device transfer_buffer
     command_buffer<-F.sdl_acquiregpucommandbuffer device
     copy_pass<-F.sdl_begingpucopypass command_buffer
@@ -44,7 +46,7 @@ create_vertex_buffer device vertex=let size=fromIntegral (length vertex*FS.sizeO
     F.sdl_endgpucopypass copy_pass
     catch_error (F.sdl_submitgpucommandbuffer command_buffer)
     F.sdl_releasegputransferbuffer device transfer_buffer
-    return buffer
+    return (buffer,new_vertex_size,fromIntegral index_length)
 
 load_shader::FP.Ptr T.SDL_GPUDevice->DW.Word32->DW.Word32->String->IO (FP.Ptr T.SDL_GPUShader)
 load_shader device format stage path=do

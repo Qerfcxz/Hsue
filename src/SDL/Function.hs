@@ -79,6 +79,9 @@ foreign import ccall unsafe "SDL_BindGPUGraphicsPipeline"
 foreign import ccall unsafe "SDL_DrawGPUPrimitives"
     sdl_drawgpuprimitives::Ptr SDL_GPURenderPass->Word32->Word32->Word32->Word32->IO ()
 
+foreign import ccall unsafe "SDL_DrawGPUIndexedPrimitives"
+    sdl_drawgpuindexedprimitives::Ptr SDL_GPURenderPass->Word32->Word32->Word32->Int32->Word32->IO ()
+
 foreign import ccall unsafe "SDL_AcquireGPUCommandBuffer"
     sdl_acquiregpucommandbuffer::Ptr SDL_GPUDevice->IO (Ptr SDL_GPUCommandBuffer)
 
@@ -96,6 +99,9 @@ foreign import ccall unsafe "SDL_UploadToGPUBuffer"
 
 foreign import ccall unsafe "SDL_BindGPUVertexBuffers"
     sdl_bindgpuvertexbuffers::Ptr SDL_GPURenderPass->Word32->Ptr SDL_GPUBufferBinding->Word32->IO ()
+
+foreign import ccall unsafe "SDL_BindGPUIndexBuffer"
+    sdl_bindgpuindexbuffer::Ptr SDL_GPURenderPass->Ptr SDL_GPUBufferBinding->Word32->IO ()
 
 foreign import ccall unsafe "SDL_BeginGPURenderPass"
     sdl_begingpurenderpass::Ptr SDL_GPUCommandBuffer->Ptr SDL_GPUColorTargetInfo->Word32->Ptr SDL_GPUDepthStencilTargetInfo->IO (Ptr SDL_GPURenderPass)

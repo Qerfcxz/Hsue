@@ -4,8 +4,11 @@ import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
+import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
+import qualified Foreign.Ptr as FP
+import qualified Foreign.Storable as FS
 
 catch_error::IO FCT.CBool->IO ()
 catch_error io_value=do
@@ -60,3 +63,9 @@ intset_delete key intset=if DIS.member key intset then DIS.delete key intset els
 
 intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
 intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) return
+
+seq_poke_array::FS.Storable a=>FP.Ptr a->DS.Seq a->IO ()
+seq_poke_array _ DS.Empty=return ()
+seq_poke_array ptr (value DS.:<| other_value)=let size=FS.sizeOf value in do
+    FS.poke ptr value
+    CM.foldM_ (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) (FP.plusPtr ptr size) other_value

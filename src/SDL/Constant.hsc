@@ -240,6 +240,9 @@ sdl_gpu_textureformat_b8g8r8a8_unorm=(#const SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNOR
 sdl_gpu_bufferusage_vertex::Word32
 sdl_gpu_bufferusage_vertex=(#const SDL_GPU_BUFFERUSAGE_VERTEX)
 
+sdl_gpu_bufferusage_index::Word32
+sdl_gpu_bufferusage_index=(#const SDL_GPU_BUFFERUSAGE_INDEX)
+
 sdl_gpu_vertexelementformat_float2::Word32
 sdl_gpu_vertexelementformat_float2=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2)
 
@@ -272,6 +275,9 @@ sdl_gpu_colorcomponent_b=(#const SDL_GPU_COLORCOMPONENT_B)
 
 sdl_gpu_colorcomponent_a::Word8
 sdl_gpu_colorcomponent_a=(#const SDL_GPU_COLORCOMPONENT_A)
+
+sdl_gpu_indexelementsize_32bit::Word32
+sdl_gpu_indexelementsize_32bit=(#const SDL_GPU_INDEXELEMENTSIZE_32BIT)
 
 sdl_window_fullscreen::Word64
 sdl_window_fullscreen=(#const SDL_WINDOW_FULLSCREEN)

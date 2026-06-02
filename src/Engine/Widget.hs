@@ -27,7 +27,7 @@ create_free father widget_request free_id engine=let widget=make_free widget_req
 
 make_free::Widget_request a->Widget a
 make_free widget_request=case widget_request of
-    Collector_request->Collector {graph=DIM.empty}
+    Collector_request {base_index}->Collector {base_index=base_index,min_index=base_index,max_index=base_index,graph=DIM.empty}
     _->error "make_free: error 1"
 
 create_bound::Maybe Int->Widget_request a->Int->Engine a->Engine a

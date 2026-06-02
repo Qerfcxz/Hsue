@@ -4,6 +4,7 @@
 
 module Engine.Request where
 
+import Engine.Collector
 import Engine.Node
 import Engine.Other
 import Engine.Shader
@@ -33,7 +34,7 @@ do_request request engine=case request of
     Create_widget {father,widget_request,widget_id}->case widget_request of
         Trigger_request {}->return (create_active father widget_request widget_id engine)
         Io_trigger_request {}->return (create_active father widget_request widget_id engine)
-        Collector_request->return (create_free father widget_request widget_id engine)
+        Collector_request {}->return (create_free father widget_request widget_id engine)
         Geometry_request {}->return (create_bound father widget_request widget_id engine)
     Remove_widget {widget_type,widget_id}->case widget_type of
         Active_widget->return (remove_active widget_id engine)
@@ -51,36 +52,32 @@ do_request request engine=case request of
                 Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map})
                 _->error "do_request: error 2"
     Remove_window {window_id}->remove_window window_id engine
-    Clear_window {window_id,red,green,blue,alpha}->do
-        command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
-        FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-            catch_error (F.sdl_acquiregpuswapchaintexture command_buffer (intmap_lookup window_id engine.window).sdl_window ptr_texture width height)
-            texture<-FS.peek ptr_texture
-            CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {texture=texture,clear_color=C.SDL_FColor {r=red,g=green,b=blue,a=alpha},load_op=C.sdl_gpu_loadop_clear,store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
-                render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
-                F.sdl_endgpurenderpass render_pass
-        catch_error (F.sdl_submitgpucommandbuffer command_buffer)
-        return engine
-    Io {io}->io engine
-    Render {bound_id}->case intmap_lookup bound_id engine.bound of
-        Bound {window_id,ancestry,widget}->let window=intmap_lookup window_id engine.window in case do_widget_transform ancestry engine request widget of
-            Geometry {red,green,blue,alpha,geometry}->case geometry of
-                Triangle {first_x,first_y,second_x,second_y,third_x,third_y}->let device=engine.device in do
-                    buffer<-create_vertex_buffer device [Vertex {red=red,green=green,blue=blue,alpha=alpha,x=first_x,y=first_y},Vertex {red=red,green=green,blue=blue,alpha=alpha,x=second_x,y=second_y},Vertex {red=red,green=green,blue=blue,alpha=alpha,x=third_x,y=third_y}]
-                    command_buffer<-F.sdl_acquiregpucommandbuffer device
+    Render {collector_id,window_id,strategy}->case strategy of
+        Submit {consume}->let (new_free,free)=if consume then intmap_update_lookup collector_id consume_collector engine.free else (engine.free,intmap_lookup collector_id engine.free) in case free.widget of
+            Collector {graph}->case for_submit graph of
+                Graph {vertex,index}->let new_engine=engine {free=new_free} in if DS.null vertex||DS.null index then return new_engine else let window=intmap_lookup window_id engine.window in do
+                    (buffer,vertex_size,index_length)<-create_buffer engine.device vertex index
+                    command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
+                    CM.when (command_buffer==FP.nullPtr) (error "do_request: error 3")
                     FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-                        catch_error (F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height)
-                        texture<-FS.peek ptr_texture
-                        CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {texture=texture,clear_color=C.SDL_FColor {r=0,g=0,b=0,a=0},load_op=C.sdl_gpu_loadop_load,store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
-                            render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
-                            F.sdl_bindgpugraphicspipeline render_pass window.triangle_graphics_pipeline
-                            FMU.with (C.SDL_GPUBufferBinding {buffer=buffer,offset=0}) $ \buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1
-                            F.sdl_drawgpuprimitives render_pass 3 1 0 0
-                            F.sdl_endgpurenderpass render_pass
+                        value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
+                        CM.when (FMU.toBool value) $ do
+                            texture<-FS.peek ptr_texture
+                            CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {texture=texture,clear_color=C.SDL_FColor {r=0,g=0,b=0,a=1},load_op=C.sdl_gpu_loadop_clear,store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
+                                render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
+                                F.sdl_bindgpugraphicspipeline render_pass window.triangle_graphics_pipeline
+                                FMU.with (C.SDL_GPUBufferBinding {buffer=buffer,offset=0}) $ \buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1
+                                FMU.with (C.SDL_GPUBufferBinding {buffer=buffer,offset=vertex_size}) $ \buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit
+                                F.sdl_drawgpuindexedprimitives render_pass index_length 1 0 0 0
+                                F.sdl_endgpurenderpass render_pass
                     catch_error (F.sdl_submitgpucommandbuffer command_buffer)
-                    F.sdl_releasegpubuffer device buffer
-                    return engine
-            _->error "do_request: error 3"
+                    F.sdl_releasegpubuffer engine.device buffer
+                    return new_engine
+            _->error "do_request: error 4"
+    Io {io}->io engine
+
+
+
 
 do_widget_transform::DS.Seq Int->Engine a->Request a->Widget a->Widget a
 do_widget_transform ancestry engine request widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine request) widget ancestry

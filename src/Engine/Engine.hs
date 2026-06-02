@@ -12,6 +12,7 @@ import Engine.Type
 import Engine.Window
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
+import qualified SDL.Type as T
 import qualified Data.Foldable as DF
 import qualified Data.Int as DI
 import qualified Data.IntMap as DIM
@@ -31,7 +32,7 @@ quit_engine=F.sdl_quit
 
 create_engine::Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->IO (Engine a)
 create_engine timer main_id state=do
-    device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr--暂时先只管Windows平台
+    device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     if device==FP.nullPtr then error "create_engine: error 1" else do
         vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex "Vertex.cso"
         fragment_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_fragment "Fragment.cso"
@@ -40,7 +41,16 @@ create_engine timer main_id state=do
             Just time->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_on {time=fromIntegral time},device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
 
 clean_engine::Engine a->IO ()
-clean_engine engine=F.sdl_destroygpudevice engine.device--未完待续
+clean_engine engine=do
+    DF.mapM_ (clean_window engine.device) (DIM.elems engine.window)
+    F.sdl_releasegpushader engine.device engine.vertex_shader
+    F.sdl_releasegpushader engine.device engine.fragment_shader
+    F.sdl_destroygpudevice engine.device
+
+clean_window::FP.Ptr T.SDL_GPUDevice->Window->IO ()
+clean_window device window=do
+    F.sdl_releasegpugraphicspipeline device window.triangle_graphics_pipeline
+    F.sdl_destroywindow window.sdl_window
 
 run_engine::Engine a->IO ()
 run_engine engine=FMA.allocaBytes C.sdl_event_size $ \ptr->case engine.timer of

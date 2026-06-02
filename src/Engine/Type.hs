@@ -26,11 +26,10 @@ data Bound a=Bound {window_id::Int,ancestry::DSeq.Seq Int,widget::Widget a}
 
 data Node a=Node {active_child::DIS.IntSet,free_child::DIS.IntSet,bound_child::DIS.IntSet,node_child::DIS.IntSet,ancestry::DSeq.Seq Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Request a->Widget a->Widget a}
 
-data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {graph::DIM.IntMap Graph}|Geometry {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
+data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {base_index::Int,min_index::Int,max_index::Int,graph::DIM.IntMap (DSeq.Seq Graph)}|Geometry {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
 
-data Request a=Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Widget_type,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Request a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::String,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clear_window {window_id::Int,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}|Io {io::Engine a->IO (Engine a)}|Render {bound_id::Int}
-
-data Widget_request a=Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Collector_request|Geometry_request {window_id::Int,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
+data Request a=Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Widget_type,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Request a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::String,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Render {collector_id::Int,window_id::Int,strategy::Submit_strategy}|Io {io::Engine a->IO (Engine a)}
+data Widget_request a=Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Collector_request {base_index::Int}|Geometry_request {window_id::Int,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
 
 data Timer=Keep_off|Keep_on {time::DW.Word64}|Turn_off|Turn_on {time::DW.Word64}
 
@@ -42,6 +41,12 @@ data Geometry=Triangle {first_x::FCT.CFloat,first_y::FCT.CFloat,second_x::FCT.CF
 
 data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable
 
+data Collect_strategy=Min_collect|Max_collect|Index_collect {seat::Int}
+
+data Move_strategy=Min_move {consume::Bool}|Max_move {consume::Bool}|Index_move {consume::Bool,seat::Int}
+
+data Submit_strategy=Submit {consume::Bool}
+
 data Event=Unknown|Quit|Time|At {window_id::Int,action::Action}
 
 data Action=Close|Press {press::Press,keycode::Key,set_keycode::DSet.Set Key}
@@ -50,7 +55,7 @@ data Press=Press_up|Press_down
 
 data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z deriving (Eq,Ord)
 
-data Graph=Pack (DSeq.Seq Graph)|Single_Triangle {first_vertex::Vertex,second_vertex::Vertex,third_vertex::Vertex}|Multiple_Triangle {vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32}
+data Graph=Graph {vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32}
 
 data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat}
 
@@ -58,8 +63,7 @@ instance FS.Storable Vertex where
     sizeOf _=24
     alignment _=4
     peek _=error "peek: error 1"
-    poke ptr (Vertex {red,green,blue,alpha,x,y})=do
-        let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat
+    poke ptr (Vertex {red,green,blue,alpha,x,y})=let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
         FS.pokeElemOff new_ptr 0 red
         FS.pokeElemOff new_ptr 1 green
         FS.pokeElemOff new_ptr 2 blue
