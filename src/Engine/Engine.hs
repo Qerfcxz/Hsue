@@ -4,6 +4,7 @@
 
 module Engine.Engine where
 
+import Engine.Backup
 import Engine.Event
 import Engine.Other
 import Engine.Request
@@ -30,15 +31,15 @@ init_engine=catch_error (F.sdl_init C.sdl_init_video)
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->IO (Engine a)
-create_engine timer main_id state=do
+create_engine::Backup_strategy->Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->IO (Engine a)
+create_engine backup timer main_id state=do
     device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     if device==FP.nullPtr then error "create_engine: error 1" else do
         vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex "Vertex.cso"
         fragment_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_fragment "Fragment.cso"
         case timer of
-            Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_off,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
-            Just time->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,timer=Keep_on {time=fromIntegral time},device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
+            Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup,timer=Keep_off,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
+            Just time->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup,timer=Keep_on {time=fromIntegral time},device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
 
 clean_engine::Engine a->IO ()
 clean_engine engine=do
@@ -117,7 +118,7 @@ run_event event engine=case engine.main_id engine event of
     Just main_id->run_event_a main_id event engine
 
 run_event_a::Int->Event->Engine a->Engine a
-run_event_a active_id event engine=let active=intmap_lookup active_id engine.active in let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event active.ancestry in let new_engine=run_widget new_event active.widget engine in case active.next new_engine new_event of
+run_event_a active_id event engine=let active=intmap_lookup active_id engine.active in let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event active.ancestry in let new_engine=run_widget new_event (backup_lookup engine.backup_strategy active.backup) engine in case active.next new_engine new_event of
     Nothing->new_engine
     Just new_active_id->run_event_a new_active_id event new_engine
 

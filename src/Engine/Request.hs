@@ -4,6 +4,7 @@
 
 module Engine.Request where
 
+import Engine.Backup
 import Engine.Collector
 import Engine.Node
 import Engine.Other
@@ -52,8 +53,8 @@ do_request request engine=case request of
                 Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map})
                 _->error "do_request: error 2"
     Remove_window {window_id}->remove_window window_id engine
-    Render {collector_id,window_id,strategy}->case strategy of
-        Submit {consume}->let (new_free,free)=if consume then intmap_update_lookup collector_id consume_collector engine.free else (engine.free,intmap_lookup collector_id engine.free) in case free.widget of
+    Render {collector_id,window_id,backup_strategy,submit_strategy}->case submit_strategy of
+        Submit {consume}->let (new_free,widget)=intmap_calculate collector_id (\Free {ancestry,backup}->let (new_backup,new_widget)=backup_update_lookup_whether consume backup_strategy consume_widget backup in (Free {ancestry=ancestry,backup=new_backup},new_widget)) engine.free in case widget of
             Collector {graph}->case for_submit graph of
                 Graph {vertex,index}->let new_engine=engine {free=new_free} in if DS.null vertex||DS.null index then return new_engine else let window=intmap_lookup window_id engine.window in do
                     (buffer,vertex_size,index_length)<-create_buffer engine.device vertex index
@@ -75,12 +76,6 @@ do_request request engine=case request of
                     return new_engine
             _->error "do_request: error 4"
     Io {io}->io engine
-
-
-
-
-do_widget_transform::DS.Seq Int->Engine a->Request a->Widget a->Widget a
-do_widget_transform ancestry engine request widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine request) widget ancestry
 
 from_window_flag::Window_flag->DW.Word64
 from_window_flag window_flag=case window_flag of

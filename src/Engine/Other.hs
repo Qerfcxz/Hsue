@@ -1,3 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields #-}
+
 module Engine.Other where
 
 import qualified Control.Monad as CM
@@ -5,6 +7,7 @@ import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
 import qualified Data.Sequence as DS
+import qualified Data.Tuple as DT
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -54,6 +57,14 @@ intmap_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
 intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
     Nothing->error "intmap_update_lookup: error 1"
     Just value->(new_intmap,value)
+
+intmap_calculate::Int->(a->(a,b))->DIM.IntMap a->(DIM.IntMap a,b)
+intmap_calculate key calculate intmap=DT.swap (DIM.alterF (intmap_calculate_a calculate) key intmap)
+
+intmap_calculate_a::(a->(a,b))->Maybe a->(b,Maybe a)
+intmap_calculate_a calculate maybe_value=case maybe_value of
+    Nothing->error "intmap_calculate_a: error 1"
+    Just value->let (new_value,calculate_value)=calculate value in (calculate_value,Just new_value)
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then error "intset_insert: error 1" else DIS.insert key intset

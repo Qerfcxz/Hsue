@@ -11,8 +11,8 @@ import qualified Data.Sequence as DS
 
 create_active::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_active father widget_request active_id engine=let (widget,next)=make_active widget_request in case father of
-    Nothing->engine {active=intmap_insert active_id (Active {next=next,ancestry=DS.empty,widget=widget}) engine.active}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {active_child=intset_insert active_id this_node.active_child}) engine.node in engine {active=intmap_insert active_id (Active {next=next,ancestry=node.ancestry DS.|> node_id,widget=widget}) engine.active,node=new_node}
+    Nothing->engine {active=intmap_insert active_id (Active {next=next,ancestry=DS.empty,backup=Single widget}) engine.active}
+    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {active_child=intset_insert active_id this_node.active_child}) engine.node in engine {active=intmap_insert active_id (Active {next=next,ancestry=node.ancestry DS.|> node_id,backup=Single widget}) engine.active,node=new_node}
 
 make_active::Widget_request a->(Widget a,Engine a->Event->Maybe Int)
 make_active widget_request=case widget_request of
@@ -22,18 +22,18 @@ make_active widget_request=case widget_request of
 
 create_free::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_free father widget_request free_id engine=let widget=make_free widget_request in case father of
-    Nothing->engine {free=intmap_insert free_id (Free {ancestry=DS.empty,widget=widget}) engine.free}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {free_child=intset_insert free_id this_node.free_child}) engine.node in engine {free=intmap_insert free_id (Free {ancestry=node.ancestry DS.|> node_id,widget=widget}) engine.free,node=new_node}
+    Nothing->engine {free=intmap_insert free_id (Free {ancestry=DS.empty,backup=Single widget}) engine.free}
+    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {free_child=intset_insert free_id this_node.free_child}) engine.node in engine {free=intmap_insert free_id (Free {ancestry=node.ancestry DS.|> node_id,backup=Single widget}) engine.free,node=new_node}
 
 make_free::Widget_request a->Widget a
 make_free widget_request=case widget_request of
-    Collector_request {base_index}->Collector {base_index=base_index,min_index=base_index,max_index=base_index,graph=DIM.empty}
+    Collector_request {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,graph=DIM.empty}
     _->error "make_free: error 1"
 
 create_bound::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_bound father widget_request bound_id engine=let (widget,window_id)=make_bound widget_request in let new_window=intmap_update window_id (\window->window {window_bound=intset_insert bound_id window.window_bound}) engine.window in case father of
-    Nothing->engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,widget=widget}) engine.bound,window=new_window}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) engine.node in engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,widget=widget}) engine.bound,node=new_node,window=new_window}
+    Nothing->engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,backup=Single widget}) engine.bound,window=new_window}
+    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) engine.node in engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,backup=Single widget}) engine.bound,node=new_node,window=new_window}
 
 make_bound::Widget_request a->(Widget a,Int)
 make_bound widget_request=case widget_request of
