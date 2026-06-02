@@ -28,6 +28,14 @@ to_graph widget=case widget of
         Triangle {first_x,first_y,second_x,second_y,third_x,third_y}->Graph {vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=first_x,y=first_y}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=second_x,y=second_y} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=third_x,y=third_y},index=DS.singleton 0 DS.|> 1 DS.|> 2}
     _->error "to_graph: error 1"
 
+move::Int->Int->Backup_strategy->Backup_strategy->Move_strategy->Engine a->Engine a
+move collector_id new_collector_id collector_strategy new_collector_strategy strategy engine=let (new_strategy,consume)=to_collect_strategy strategy in let (new_free,new_widget)=intmap_calculate collector_id (\Free {ancestry,backup}->let (new_backup,widget)=backup_update_lookup_whether consume collector_strategy consume_widget backup in (Free {ancestry=ancestry,backup=new_backup},widget)) engine.free in engine {free=intmap_update new_collector_id (\Free {ancestry,backup}->Free {ancestry=ancestry,backup=backup_update new_collector_strategy (collect_a (move_a new_widget) new_strategy) backup}) new_free}
+
+move_a::Widget a->DS.Seq Graph
+move_a widget=case widget of
+    Collector {graph}->DF.foldl' (DS.><) DS.empty graph
+    _->error "move_a: error 1"
+
 to_collect_strategy::Move_strategy->(Collect_strategy,Bool)
 to_collect_strategy strategy=case strategy of
     Min_move {consume}->(Min_collect,consume)

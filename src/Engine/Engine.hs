@@ -50,11 +50,13 @@ clean_engine engine=do
 
 clean_window::FP.Ptr T.SDL_GPUDevice->Window->IO ()
 clean_window device window=do
+    catch_error (F.sdl_waitforgpuidle device)
+    F.sdl_releasewindowfromgpudevice device window.sdl_window
     F.sdl_releasegpugraphicspipeline device window.triangle_graphics_pipeline
     F.sdl_destroywindow window.sdl_window
 
 run_engine::Engine a->IO ()
-run_engine engine=FMA.allocaBytes C.sdl_event_size $ \ptr->case engine.timer of
+run_engine engine=FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment $ \ptr->case engine.timer of
     Keep_off->loop_engine ptr engine
     Keep_on {time}->do
         now<-F.sdl_getticks

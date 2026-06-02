@@ -61,6 +61,12 @@ foreign import ccall safe "SDL_MapGPUTransferBuffer"
 foreign import ccall safe "SDL_UnmapGPUTransferBuffer"
     sdl_unmapgputransferbuffer::Ptr SDL_GPUDevice->Ptr SDL_GPUTransferBuffer->IO ()
 
+foreign import ccall safe "SDL_ReleaseWindowFromGPUDevice"
+    sdl_releasewindowfromgpudevice::Ptr SDL_GPUDevice->Ptr SDL_Window->IO ()
+
+foreign import ccall safe "SDL_WaitForGPUIdle"
+    sdl_waitforgpuidle::Ptr SDL_GPUDevice->IO CBool
+
 foreign import ccall safe "SDL_CreateWindow"
     sdl_createwindow::CString->CInt->CInt->Word64->IO (Ptr SDL_Window)
 

@@ -294,6 +294,9 @@ sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
 sdl_event_size::Int
 sdl_event_size=(#size SDL_Event)
 
+sdl_event_alignment::Int
+sdl_event_alignment=(#alignment SDL_Event)
+
 sdl_event_type::Ptr ()->IO Word32
 sdl_event_type ptr=(#peek SDL_Event,type) ptr
 
