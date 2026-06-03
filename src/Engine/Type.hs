@@ -29,7 +29,7 @@ data Node a=Node {active_child::DIS.IntSet,free_child::DIS.IntSet,bound_child::D
 
 data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,graph::DIM.IntMap (DSeq.Seq Graph)}|Geometry {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
 
-data Request a=Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Widget_type,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Render {collector_id::Int,window_id::Int,backup_strategy::Backup_strategy,submit_strategy::Submit_strategy}|Io {io::Engine a->IO (Engine a)}
+data Request a=Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Widget_type,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Render {backup_path::Backup_path,window_id::Int,submit_strategy::Submit_strategy}|Io {io::Engine a->IO (Engine a)}
 
 data Widget_request a=Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Geometry_request {window_id::Int,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
 
@@ -46,6 +46,8 @@ data Geometry=Triangle {first_x::FCT.CFloat,first_y::FCT.CFloat,second_x::FCT.CF
 data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable
 
 data Backup_strategy=One|Two|Safe_two
+
+data Backup_path=One_path {backup_id::Int}|Two_path {backup_id::Int}|Safe_two_path {backup_id::Int}
 
 data Collect_strategy=Min_collect|Max_collect|Index_collect {seat::Int}
 

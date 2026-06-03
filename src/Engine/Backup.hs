@@ -58,37 +58,83 @@ safe_backup_remove backup=case backup of
     _->backup
 
 backup_lookup::Backup_strategy->Backup a->a
-backup_lookup strategy backup=case strategy of
-    One->case backup of
-        Single {one}->one
-        Double {one}->one
-    Two->case backup of
-        Double {two}->two
-        _->error "backup_lookup: error 1"
-    Safe_two->case backup of
-        Single {one}->one
-        Double {two}->two
+backup_lookup strategy=case strategy of
+    One->backup_lookup_one
+    Two->backup_lookup_two
+    Safe_two->backup_lookup_safe_two
+
+backup_lookup_one::Backup a->a
+backup_lookup_one backup=case backup of
+    Single {one}->one
+    Double {one}->one
+
+backup_lookup_two::Backup a->a
+backup_lookup_two backup=case backup of
+    Double {two}->two
+    _->error "backup_lookup_two: error 1"
+
+backup_lookup_safe_two::Backup a->a
+backup_lookup_safe_two backup=case backup of
+    Single {one}->one
+    Double {two}->two
 
 backup_update::Backup_strategy->(a->a)->Backup a->Backup a
-backup_update strategy update backup=case strategy of
-    One->case backup of
-        Single {one}->Single {one=update one}
-        Double {one,two}->Double {one=update one,two=two}
-    Two->case backup of
-        Double {one,two}->Double {one=one,two=update two}
-        _->error "backup_update: error 1"
-    Safe_two->case backup of
-        Single {one}->Single {one=update one}
-        Double {one,two}->Double {one=one,two=update two}
+backup_update strategy=case strategy of
+    One->backup_update_one
+    Two->backup_update_two
+    Safe_two->backup_update_safe_two
 
-backup_update_lookup_whether::Bool->Backup_strategy->(a->a)->Backup a->(Backup a,a)
-backup_update_lookup_whether consume strategy update backup=case strategy of
-    One->case backup of
-        Single {one}->(if consume then Single {one=update one} else backup,one)
-        Double {one,two}->(if consume then Double {one=update one,two=two} else backup,one)
-    Two->case backup of
-        Double {one,two}->(if consume then Double {one=one,two=update two} else backup,two)
-        _->error "backup_update_lookup_whether: error 1"
-    Safe_two->case backup of
-        Single {one}->(if consume then Single {one=update one} else backup,one)
-        Double {one,two}->(if consume then Double {one=one,two=update two} else backup,two)
+backup_update_one::(a->a)->Backup a->Backup a
+backup_update_one update backup=case backup of
+    Single {one}->Single {one=update one}
+    Double {one,two}->Double {one=update one,two=two}
+
+backup_update_two::(a->a)->Backup a->Backup a
+backup_update_two update backup=case backup of
+    Double {one,two}->Double {one=one,two=update two}
+    _->error "backup_update: error 1"
+
+backup_update_safe_two::(a->a)->Backup a->Backup a
+backup_update_safe_two update backup=case backup of
+    Single {one}->Single {one=update one}
+    Double {one,two}->Double {one=one,two=update two}
+
+lookup_bound_backup::Backup_path->DIM.IntMap (Bound a)->Widget a
+lookup_bound_backup backup_path bound=case backup_path of
+    One_path {backup_id}->backup_lookup_one (intmap_lookup backup_id bound).backup
+    Two_path {backup_id}->backup_lookup_two (intmap_lookup backup_id bound).backup
+    Safe_two_path {backup_id}->backup_lookup_safe_two (intmap_lookup backup_id bound).backup
+
+update_free_backup::Backup_path->(Widget a->Widget a)->DIM.IntMap (Free a)->DIM.IntMap (Free a)
+update_free_backup backup_path update free=case backup_path of
+    One_path {backup_id}->intmap_update backup_id (update_free_backup_a (backup_update_one update)) free
+    Two_path {backup_id}->intmap_update backup_id (update_free_backup_a (backup_update_two update)) free
+    Safe_two_path {backup_id}->intmap_update backup_id (update_free_backup_a (backup_update_safe_two update)) free
+
+update_free_backup_a::(Backup (Widget a)->Backup (Widget a))->Free a->Free a
+update_free_backup_a update free=case free of
+    Free {ancestry,backup}->Free {ancestry=ancestry,backup=update backup}
+
+whether_update_lookup_free_backup::Bool->Backup_path->(Widget a->Widget a)->DIM.IntMap (Free a)->(DIM.IntMap (Free a),Widget a)
+whether_update_lookup_free_backup whether backup_path update free=case backup_path of
+    One_path {backup_id}->intmap_calculate backup_id (whether_update_lookup_free_backup_one whether update) free
+    Two_path {backup_id}->intmap_calculate backup_id (whether_update_lookup_free_backup_two whether update) free
+    Safe_two_path {backup_id}->intmap_calculate backup_id (whether_update_lookup_free_backup_safe_two whether update) free
+
+whether_update_lookup_free_backup_one::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
+whether_update_lookup_free_backup_one whether update free=case free of
+    Free {ancestry,backup}->case backup of
+        Single {one}->(if whether then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
+        Double {one}->(if whether then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
+
+whether_update_lookup_free_backup_two::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
+whether_update_lookup_free_backup_two whether update free=case free of
+    Free {ancestry,backup}->case backup of
+        Double {two}->(if whether then Free {ancestry=ancestry,backup=backup {two=update two}} else free,two)
+        _->error "whether_update_lookup_backup_free_two: error 1"
+
+whether_update_lookup_free_backup_safe_two::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
+whether_update_lookup_free_backup_safe_two whether update free=case free of
+    Free {ancestry,backup}->case backup of
+        Single {one}->(if whether then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
+        Double {two}->(if whether then Free {ancestry=ancestry,backup=backup {two=update two}} else free,two)

@@ -54,8 +54,8 @@ do_request request engine=case request of
                 Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map})
                 _->error "do_request: error 2"
     Remove_window {window_id}->remove_window window_id engine
-    Render {collector_id,window_id,backup_strategy,submit_strategy}->case submit_strategy of
-        Submit {consume}->let (new_free,widget)=intmap_calculate collector_id (\Free {ancestry,backup}->let (new_backup,new_widget)=backup_update_lookup_whether consume backup_strategy consume_widget backup in (Free {ancestry=ancestry,backup=new_backup},new_widget)) engine.free in case widget of
+    Render {backup_path,window_id,submit_strategy}->case submit_strategy of
+        Submit {consume}->let (new_free,new_widget)=whether_update_lookup_free_backup consume backup_path consume_widget engine.free in case new_widget of
             Collector {graph}->case for_submit graph of
                 Graph {vertex,index}->let new_engine=engine {free=new_free} in if DS.null vertex||DS.null index then return new_engine else let window=intmap_lookup window_id engine.window in do
                     (buffer,vertex_size,index_length)<-create_buffer engine.device vertex index
