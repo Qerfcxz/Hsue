@@ -16,12 +16,13 @@ import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified Control.Monad as CM
 import qualified Data.Bits as DB
+import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
+import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
-import qualified Foreign.C.String as FCS
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -43,7 +44,7 @@ do_request request engine=case request of
         Bound_widget->return (remove_bound widget_id engine)
     Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine)
     Remove_node {node_id}->return (remove_node node_id engine)
-    Create_window {window_id,title,width,height,window_flag}->FCS.withCString title $ \cstring->do
+    Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \cstring->do
         sdl_window<-F.sdl_createwindow cstring width height (DF.foldl' (\word flag->word DB..|. from_window_flag flag) 0 window_flag)
         if sdl_window==FP.nullPtr then error "do_request: error 1" else do
             catch_error (F.sdl_claimwindowforgpudevice engine.device sdl_window)

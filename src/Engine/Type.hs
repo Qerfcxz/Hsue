@@ -11,12 +11,13 @@ import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
 import qualified Data.Set as DSet
 import qualified Data.Sequence as DSeq
+import qualified Data.Text as DT
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-data Engine a=Engine {state::a,active::DIM.IntMap (Active a),free::DIM.IntMap (Free a),bound::DIM.IntMap (Bound a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,request::DSeq.Seq (Request a),key::DSet.Set Key,main_id::Engine a->Event->Maybe Int,backup_strategy::Backup_strategy,timer::Timer,device::FP.Ptr T.SDL_GPUDevice,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader}
+data Engine a=Engine {state::a,active::DIM.IntMap (Active a),free::DIM.IntMap (Free a),bound::DIM.IntMap (Bound a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,request::DSeq.Seq (Request a),key::DSet.Set Key,main_id::Engine a->Event->Maybe Int,backup_strategy::Backup_strategy,count::Int,timer::Timer,device::FP.Ptr T.SDL_GPUDevice,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader}
 
 data Active a=Active {next::Engine a->Event->Maybe Int,ancestry::DSeq.Seq Int,backup::Backup (Widget a)}
 
@@ -28,7 +29,7 @@ data Node a=Node {active_child::DIS.IntSet,free_child::DIS.IntSet,bound_child::D
 
 data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,graph::DIM.IntMap (DSeq.Seq Graph)}|Geometry {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
 
-data Request a=Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Widget_type,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::String,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Render {collector_id::Int,window_id::Int,backup_strategy::Backup_strategy,submit_strategy::Submit_strategy}|Io {io::Engine a->IO (Engine a)}
+data Request a=Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Widget_type,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Render {collector_id::Int,window_id::Int,backup_strategy::Backup_strategy,submit_strategy::Submit_strategy}|Io {io::Engine a->IO (Engine a)}
 
 data Widget_request a=Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Geometry_request {window_id::Int,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,geometry::Geometry}
 
@@ -52,7 +53,7 @@ data Move_strategy=Min_move {consume::Bool}|Max_move {consume::Bool}|Index_move 
 
 data Submit_strategy=Submit {consume::Bool}
 
-data Event=Unknown|Quit|Time|At {window_id::Int,action::Action}
+data Event=Unknown|Quit|Time {time_count::Int}|At {window_id::Int,action::Action}
 
 data Action=Close|Press {press::Press,keycode::Key,set_keycode::DSet.Set Key}
 

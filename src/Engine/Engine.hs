@@ -10,7 +10,6 @@ import Engine.Other
 import Engine.Request
 import Engine.Shader
 import Engine.Type
-import Engine.Window
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified SDL.Type as T
@@ -31,15 +30,15 @@ init_engine=catch_error (F.sdl_init C.sdl_init_video)
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::Backup_strategy->Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->IO (Engine a)
-create_engine backup timer main_id state=do
+create_engine::Backup_strategy->Int->Maybe DI.Int32->(Engine a->Event->Maybe Int)->a->IO (Engine a)
+create_engine backup count timer main_id state=do
     device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     if device==FP.nullPtr then error "create_engine: error 1" else do
         vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex "Vertex.cso"
         fragment_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_fragment "Fragment.cso"
         case timer of
-            Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup,timer=Keep_off,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
-            Just time->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup,timer=Keep_on {time=fromIntegral time},device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
+            Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup,count=count,timer=Keep_off,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
+            Just time->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup,count=count,timer=Keep_on {time=fromIntegral time},device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader})
 
 clean_engine::Engine a->IO ()
 clean_engine engine=do
@@ -66,12 +65,9 @@ run_engine engine=FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment 
 loop_engine::FP.Ptr ()->Engine a->IO ()
 loop_engine ptr engine=do
     new_engine<-run_request engine
-    (event,key)<-get_event ptr new_engine.window_map new_engine.key
+    (key,event)<-get_event ptr new_engine.window_map new_engine.key
     case event of
         Quit->return ()
-        At window_id Close->do
-            new_new_engine<-remove_window window_id (run_event event (new_engine {key=key}))
-            loop_engine_a ptr new_new_engine
         _->loop_engine_a ptr (run_event event (new_engine {key=key}))
 
 loop_engine_a::FP.Ptr ()->Engine a->IO ()
@@ -88,15 +84,13 @@ loop_engine_time time next_time ptr engine=do
     now<-F.sdl_getticks
     if now<next_time
         then do
-            (event,key)<-get_event_time (fromIntegral (next_time-now)) ptr new_engine.window_map new_engine.key
-            case event of
-                Quit->return ()
-                Time->loop_engine_time_a (next_time+time) ptr (run_event Time (new_engine {key=key}))
-                At window_id Close->do
-                    new_new_engine<-remove_window window_id (run_event event (new_engine {key=key}))
-                    loop_engine_time_a next_time ptr new_new_engine
-                _->loop_engine_time_a next_time ptr (run_event event (new_engine {key=key}))
-        else loop_engine_time_a (max (next_time+time) now) ptr (run_event Time new_engine)
+            new<-get_event_time (fromIntegral (next_time-now)) ptr new_engine.window_map new_engine.key
+            case new of
+                Nothing->loop_engine_time_a (next_time+time) ptr (run_event_time new_engine)
+                Just (key,event)->case event of
+                    Quit->return ()
+                    _->loop_engine_time_a next_time ptr (run_event event (new_engine {key=key}))
+        else loop_engine_time_a (now+time) ptr (run_event_time new_engine)
 
 loop_engine_time_a::DW.Word64->FP.Ptr ()->Engine a->IO ()
 loop_engine_time_a next_time ptr engine=case engine.timer of
@@ -113,6 +107,12 @@ run_request engine=case engine.request of
     (request DSeq.:<| other_request)->do
         new_engine<-do_request request (engine {request=other_request})
         run_request new_engine
+
+run_event_time::Engine a->Engine a
+run_event_time engine=case engine of
+    Engine {main_id,count}->let event=Time {time_count=count} in case main_id engine event of
+        Nothing->engine {count=count+1}
+        Just new_main_id->run_event_a new_main_id event (engine {count=count+1})
 
 run_event::Event->Engine a->Engine a
 run_event event engine=case engine.main_id engine event of

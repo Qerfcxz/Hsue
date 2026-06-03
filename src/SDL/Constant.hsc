@@ -222,6 +222,12 @@ sdl_gpu_loadop_load=(#const SDL_GPU_LOADOP_LOAD)
 sdl_gpu_storeop_store::Word32
 sdl_gpu_storeop_store=(#const SDL_GPU_STOREOP_STORE)
 
+sdl_gpu_transferbufferusage_upload::Word32
+sdl_gpu_transferbufferusage_upload=(#const SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
+
+sdl_gpu_vertexinputrate_vertex::Word32
+sdl_gpu_vertexinputrate_vertex=(#const SDL_GPU_VERTEXINPUTRATE_VERTEX)
+
 sdl_gpu_primitivetype_trianglelist::Word32
 sdl_gpu_primitivetype_trianglelist=(#const SDL_GPU_PRIMITIVETYPE_TRIANGLELIST)
 

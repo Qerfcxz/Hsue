@@ -8,6 +8,7 @@ import Engine.Type
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified SDL.Type as T
+import qualified Control.Monad as CM
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Sequence as DS
@@ -28,14 +29,15 @@ create_triangle_graphics_pipeline::FP.Ptr T.SDL_Window->FP.Ptr T.SDL_GPUDevice->
 create_triangle_graphics_pipeline window device vertex_shader fragment_shader=FMA.allocaArray 2 $ \vertex_attribute->do
     FS.pokeElemOff vertex_attribute 0 C.SDL_GPUVertexAttribute {location=0,buffer_slot=0,format=C.sdl_gpu_vertexelementformat_float4,offset=0}
     FS.pokeElemOff vertex_attribute 1 C.SDL_GPUVertexAttribute {location=1,buffer_slot=0,format=C.sdl_gpu_vertexelementformat_float2,offset=16}
-    FMU.with C.SDL_GPUVertexBufferDescription {slot=0,pitch=24,input_rate=0,instance_step_rate=0} $ \vertex_buffer_description->do
+    FMU.with C.SDL_GPUVertexBufferDescription {slot=0,pitch=24,input_rate=C.sdl_gpu_vertexinputrate_vertex,instance_step_rate=0} $ \vertex_buffer_description->do
         format<-F.sdl_getgpuswapchaintextureformat device window
         FMU.with C.SDL_GPUColorTargetDescription {format=format,blend_state=standard_blend_state} $ \color_target_description->FMU.with C.SDL_GPUGraphicsPipelineCreateInfo {vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_input_state=C.SDL_GPUVertexInputState {vertex_buffer_descriptions=vertex_buffer_description,num_vertex_buffers=1,vertex_attributes=vertex_attribute,num_vertex_attributes=2},primitive_type=C.sdl_gpu_primitivetype_trianglelist,target_info=C.SDL_GPUGraphicsPipelineTargetInfo {color_target_descriptions=color_target_description,num_color_targets=1,has_depth_stencil_target=FMU.fromBool False}} $ \graphics_pipeline_create_info->F.sdl_creategpugraphicspipeline device graphics_pipeline_create_info
 
 create_buffer::FP.Ptr T.SDL_GPUDevice->DS.Seq Vertex->DS.Seq DW.Word32->IO (FP.Ptr T.SDL_GPUBuffer,DW.Word32,DW.Word32)
-create_buffer device vertex index=let vertex_size=length vertex*FS.sizeOf (undefined::Vertex) in let index_length=length index in let index_size=index_length*FS.sizeOf (undefined::DW.Word32) in let new_vertex_size=fromIntegral vertex_size in let size=new_vertex_size+fromIntegral index_size in FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_vertex DB..|. C.sdl_gpu_bufferusage_index,size=size}) $ \buffer_create_info->FMU.with C.SDL_GPUTransferBufferCreateInfo {usage=0,size=size} $ \transfer_buffer_create_info->do
+create_buffer device vertex index=let vertex_size=length vertex*FS.sizeOf (undefined::Vertex) in let index_length=length index in let index_size=index_length*FS.sizeOf (undefined::DW.Word32) in let new_vertex_size=fromIntegral vertex_size in let size=new_vertex_size+fromIntegral index_size in FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_vertex DB..|. C.sdl_gpu_bufferusage_index,size=size}) $ \buffer_create_info->FMU.with C.SDL_GPUTransferBufferCreateInfo {usage=C.sdl_gpu_transferbufferusage_upload,size=size} $ \transfer_buffer_create_info->do
     transfer_buffer<-F.sdl_creategputransferbuffer device transfer_buffer_create_info
     map_transfer_buffer<-F.sdl_mapgputransferbuffer device transfer_buffer (FMU.fromBool False)
+    CM.when (map_transfer_buffer==FP.nullPtr) (error "create_buffer: error 1")
     seq_poke_array (FP.castPtr map_transfer_buffer) vertex
     seq_poke_array (FP.plusPtr map_transfer_buffer vertex_size) index
     F.sdl_unmapgputransferbuffer device transfer_buffer

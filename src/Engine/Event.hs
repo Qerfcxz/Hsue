@@ -12,41 +12,43 @@ import qualified Data.Word as DW
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 
-get_event::FP.Ptr ()->DM.Map DW.Word32 Int->DS.Set Key->IO (Event,DS.Set Key)
+get_event::FP.Ptr ()->DM.Map DW.Word32 Int->DS.Set Key->IO (DS.Set Key,Event)
 get_event event window_map key=do
     value<-F.sdl_waitevent event
     if FMU.toBool value then get_event_a event window_map key else error "get_event: error 1"
 
-get_event_time::DI.Int32->FP.Ptr ()->DM.Map DW.Word32 Int->DS.Set Key->IO (Event,DS.Set Key)
+get_event_time::DI.Int32->FP.Ptr ()->DM.Map DW.Word32 Int->DS.Set Key->IO (Maybe (DS.Set Key,Event))
 get_event_time time event window_map key=do
     value<-F.sdl_waiteventtimeout event time
-    if FMU.toBool value then get_event_a event window_map key else return (Time,key)
+    if FMU.toBool value
+        then do
+            new<-get_event_a event window_map key
+            return (Just new)
+        else return Nothing
 
-get_event_a::FP.Ptr ()->DM.Map DW.Word32 Int->DS.Set Key->IO (Event,DS.Set Key)
+get_event_a::FP.Ptr ()->DM.Map DW.Word32 Int->DS.Set Key->IO (DS.Set Key,Event)
 get_event_a event window_map key=do
     event_type<-C.sdl_event_type event
     case event_type of
-        C.SDL_EVENT_QUIT->return (Quit,key)
+        C.SDL_EVENT_QUIT->return (key,Quit)
         C.SDL_EVENT_WINDOW_CLOSE_REQUESTED->do
             sdl_window_id<-C.sdl_windowevent_windowid event
             case DM.lookup sdl_window_id window_map of
-                Nothing->return (Unknown,key)
-                Just window_id->return (At {window_id=window_id,action=Close},key)
+                Nothing->return (key,Unknown)
+                Just window_id->return (key,At {window_id=window_id,action=Close})
         C.SDL_EVENT_KEY_UP->do
             sdl_window_id<-C.sdl_keyboardevent_windowid event
-            case DM.lookup sdl_window_id window_map of
-                Nothing->return (Unknown,key)
-                Just window_id->do
-                    sdl_keycode<-C.sdl_keyboardevent_key event
-                    let keycode=to_key sdl_keycode in let new_key=DS.delete keycode key in return (At {window_id=window_id,action=Press {press=Press_up,keycode=keycode,set_keycode=new_key}},new_key)
+            sdl_keycode<-C.sdl_keyboardevent_key event
+            let keycode=to_key sdl_keycode in let new_key=DS.delete keycode key in case DM.lookup sdl_window_id window_map of
+                Nothing->return (new_key,Unknown)
+                Just window_id->return (new_key,At {window_id=window_id,action=Press {press=Press_up,keycode=keycode,set_keycode=new_key}})
         C.SDL_EVENT_KEY_DOWN->do
             sdl_window_id<-C.sdl_keyboardevent_windowid event
-            case DM.lookup sdl_window_id window_map of
-                Nothing->return (Unknown,key)
-                Just window_id->do
-                    sdl_keycode<-C.sdl_keyboardevent_key event
-                    let keycode=to_key sdl_keycode in let new_key=DS.insert keycode key in return (At {window_id=window_id,action=Press {press=Press_down,keycode=keycode,set_keycode=new_key}},new_key)
-        _->return (Unknown,key)
+            sdl_keycode<-C.sdl_keyboardevent_key event
+            let keycode=to_key sdl_keycode in let new_key=DS.insert keycode key in case DM.lookup sdl_window_id window_map of
+                Nothing->return (new_key,Unknown)
+                Just window_id->return (new_key,At {window_id=window_id,action=Press {press=Press_down,keycode=keycode,set_keycode=new_key}})
+        _->return (key,Unknown)
 
 to_key::DW.Word32->Key
 to_key key=case key of
