@@ -41,7 +41,9 @@ data Widget_type=Active_widget|Free_widget|Bound_widget
 
 data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,triangle_graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,window_bound::DIS.IntSet}
 
-data Geometry=Triangle {first_x::FCT.CFloat,first_y::FCT.CFloat,second_x::FCT.CFloat,second_y::FCT.CFloat,third_x::FCT.CFloat,third_y::FCT.CFloat}
+data Geometry=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}
+
+data Point=Point {x::FCT.CFloat,y::FCT.CFloat}
 
 data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable
 
