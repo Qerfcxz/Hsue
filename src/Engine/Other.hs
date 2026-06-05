@@ -1,22 +1,38 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Other where
 
+import Engine.Type
 import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
 import qualified Data.Sequence as DS
 import qualified Data.Tuple as DT
+import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-catch_error::IO FCT.CBool->IO ()
-catch_error io_value=do
-    value<-io_value
-    CM.unless (FMU.toBool value) (error "catch_error: error 1")
+catch_false::IO FCT.CBool->IO ()
+catch_false io=do
+    value<-io
+    CM.unless (FMU.toBool value) (error "catch_false: error 1")
+
+catch_zero::(Eq a,Num a)=>a->IO ()
+catch_zero number=case number of
+    0->error "catch_zero: error 1"
+    _->return ()
+
+catch_null::FP.Ptr a->IO ()
+catch_null pointer=CM.when (pointer==FP.nullPtr) (error "catch_null: error 1")
+
+return_catch_null::IO (FP.Ptr a)->IO (FP.Ptr a)
+return_catch_null io=do
+    pointer<-io
+    if pointer==FP.nullPtr then error "return_catch_null: error 1" else return pointer
 
 map_insert::Ord a=>a->b->DM.Map a b->DM.Map a b
 map_insert key value this_map=let (maybe_value,new_map)=DM.insertLookupWithKey (\_ _ this_value->this_value) key value this_map in case maybe_value of
@@ -76,7 +92,17 @@ intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
 intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) return
 
 seq_poke_array::FS.Storable a=>FP.Ptr a->DS.Seq a->IO ()
-seq_poke_array _ DS.Empty=return ()
-seq_poke_array ptr (value DS.:<| other_value)=let size=FS.sizeOf value in do
-    FS.poke ptr value
-    CM.foldM_ (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) (FP.plusPtr ptr size) other_value
+seq_poke_array pointer seq_value=case seq_value of
+    DS.Empty->return ()
+    value DS.:<| other_value->let size=FS.sizeOf value in do
+        FS.poke pointer value
+        CM.foldM_ (\this_pointer this_value->FS.poke this_pointer this_value>>return (FP.plusPtr this_pointer size)) (FP.plusPtr pointer size) other_value
+
+apply_matrix::Matrix->Point->Point
+apply_matrix matrix point=Point {x=matrix.x_x*point.x+matrix.x_y*point.y,y=matrix.y_x*point.x+matrix.y_y*point.y}
+
+identity_matrix::Matrix
+identity_matrix=Matrix {x_x=1,x_y=0,y_x=0,y_y=1}
+
+mebibyte::DW.Word32
+mebibyte=1048576

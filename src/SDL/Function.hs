@@ -118,6 +118,9 @@ foreign import ccall unsafe "SDL_BeginGPURenderPass"
 foreign import ccall unsafe "SDL_EndGPURenderPass"
     sdl_endgpurenderpass::Ptr SDL_GPURenderPass->IO ()
 
+foreign import ccall unsafe "SDL_PushGPUVertexUniformData"
+    sdl_pushgpuvertexuniformdata::Ptr SDL_GPUCommandBuffer->Word32->Ptr ()->Word32->IO ()
+
 foreign import ccall unsafe "SDL_RegisterEvents"
     sdl_registerevents::CInt->IO Word32
 

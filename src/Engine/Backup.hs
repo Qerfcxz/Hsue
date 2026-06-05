@@ -58,7 +58,7 @@ safe_backup_remove backup=case backup of
     _->backup
 
 backup_lookup::Backup_strategy->Backup a->a
-backup_lookup strategy=case strategy of
+backup_lookup backup_strategy=case backup_strategy of
     One->backup_lookup_one
     Two->backup_lookup_two
     Safe_two->backup_lookup_safe_two
@@ -79,7 +79,7 @@ backup_lookup_safe_two backup=case backup of
     Double {two}->two
 
 backup_update::Backup_strategy->(a->a)->Backup a->Backup a
-backup_update strategy=case strategy of
+backup_update backup_strategy=case backup_strategy of
     One->backup_update_one
     Two->backup_update_two
     Safe_two->backup_update_safe_two
@@ -115,26 +115,26 @@ update_free_backup_a::(Backup (Widget a)->Backup (Widget a))->Free a->Free a
 update_free_backup_a update free=case free of
     Free {ancestry,backup}->Free {ancestry=ancestry,backup=update backup}
 
-whether_update_lookup_free_backup::Bool->Backup_path->(Widget a->Widget a)->DIM.IntMap (Free a)->(DIM.IntMap (Free a),Widget a)
-whether_update_lookup_free_backup whether backup_path update free=case backup_path of
-    One_path {backup_id}->intmap_calculate backup_id (whether_update_lookup_free_backup_one whether update) free
-    Two_path {backup_id}->intmap_calculate backup_id (whether_update_lookup_free_backup_two whether update) free
-    Safe_two_path {backup_id}->intmap_calculate backup_id (whether_update_lookup_free_backup_safe_two whether update) free
+consume_update_lookup_free_backup::Bool->Backup_path->(Widget a->Widget a)->DIM.IntMap (Free a)->(DIM.IntMap (Free a),Widget a)
+consume_update_lookup_free_backup consume backup_path update free=case backup_path of
+    One_path {backup_id}->intmap_calculate backup_id (consume_update_lookup_free_backup_one consume update) free
+    Two_path {backup_id}->intmap_calculate backup_id (consume_update_lookup_free_backup_two consume update) free
+    Safe_two_path {backup_id}->intmap_calculate backup_id (consume_update_lookup_free_backup_safe_two consume update) free
 
-whether_update_lookup_free_backup_one::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
-whether_update_lookup_free_backup_one whether update free=case free of
+consume_update_lookup_free_backup_one::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
+consume_update_lookup_free_backup_one consume update free=case free of
     Free {ancestry,backup}->case backup of
-        Single {one}->(if whether then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
-        Double {one}->(if whether then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
+        Single {one}->(if consume then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
+        Double {one}->(if consume then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
 
-whether_update_lookup_free_backup_two::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
-whether_update_lookup_free_backup_two whether update free=case free of
+consume_update_lookup_free_backup_two::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
+consume_update_lookup_free_backup_two consume update free=case free of
     Free {ancestry,backup}->case backup of
-        Double {two}->(if whether then Free {ancestry=ancestry,backup=backup {two=update two}} else free,two)
-        _->error "whether_update_lookup_free_backup_two: error 1"
+        Double {two}->(if consume then Free {ancestry=ancestry,backup=backup {two=update two}} else free,two)
+        _->error "consume_update_lookup_free_backup_two: error 1"
 
-whether_update_lookup_free_backup_safe_two::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
-whether_update_lookup_free_backup_safe_two whether update free=case free of
+consume_update_lookup_free_backup_safe_two::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
+consume_update_lookup_free_backup_safe_two consume update free=case free of
     Free {ancestry,backup}->case backup of
-        Single {one}->(if whether then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
-        Double {two}->(if whether then Free {ancestry=ancestry,backup=backup {two=update two}} else free,two)
+        Single {one}->(if consume then Free {ancestry=ancestry,backup=backup {one=update one}} else free,one)
+        Double {two}->(if consume then Free {ancestry=ancestry,backup=backup {two=update two}} else free,two)

@@ -23,6 +23,7 @@ import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -37,16 +38,18 @@ do_request request engine=case request of
         then case engine.timer of
             Nothing->do
                 timer<-F.sdl_addtimer time engine.callback FP.nullPtr
+                catch_zero timer
                 return (engine {timer=Just timer})
             Just timer->do
-                catch_error (F.sdl_removetimer timer)
+                catch_false (F.sdl_removetimer timer)
                 new_timer<-F.sdl_addtimer time engine.callback FP.nullPtr
+                catch_zero new_timer
                 return (engine {timer=Just new_timer})
         else error "do_request: error 1"
     Stop_timer->case engine.timer of
         Nothing->error "do_request: error 2"
         Just timer->do
-            catch_error (F.sdl_removetimer timer)
+            catch_false (F.sdl_removetimer timer)
             return (engine {timer=Nothing})
     Create_widget {father,widget_request,widget_id}->case widget_request of
         Trigger_request {}->return (create_active father widget_request widget_id engine)
@@ -59,38 +62,49 @@ do_request request engine=case request of
         Bound_widget->return (remove_bound widget_id engine)
     Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine)
     Remove_node {node_id}->return (remove_node node_id engine)
-    Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \cstring->do
-        sdl_window<-F.sdl_createwindow cstring width height (DF.foldl' (\word flag->word DB..|. from_window_flag flag) 0 window_flag)
-        if sdl_window==FP.nullPtr then error "do_request: error 3" else do
-            catch_error (F.sdl_claimwindowforgpudevice engine.device sdl_window)
-            sdl_window_id<-F.sdl_getwindowid sdl_window
-            triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
-            let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,window_bound=DIS.empty}) engine.window in case maybe_window of
-                Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map})
-                _->error "do_request: error 4"
+    Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \c_string->do
+        sdl_window<-F.sdl_createwindow c_string width height (DF.foldl' (\word flag->word DB..|. from_window_flag flag) 0 window_flag)
+        catch_null sdl_window
+        catch_false (F.sdl_claimwindowforgpudevice engine.device sdl_window)
+        sdl_window_id<-F.sdl_getwindowid sdl_window
+        catch_zero sdl_window_id
+        triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
+        let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,window_bound=DIS.empty}) engine.window in case maybe_window of
+            Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map})
+            _->error "do_request: error 3"
     Remove_window {window_id}->remove_window window_id engine
     Render {backup_path,window_id,submit_strategy}->case submit_strategy of
-        Submit {consume}->let (new_free,new_widget)=whether_update_lookup_free_backup consume backup_path consume_widget engine.free in case new_widget of
+        Submit {consume}->let (free,widget)=consume_update_lookup_free_backup consume backup_path consume_widget engine.free in case widget of
             Collector {graph}->case for_submit graph of
-                Graph {vertex,index}->let new_engine=engine {free=new_free} in if DS.null vertex||DS.null index then return new_engine else let window=intmap_lookup window_id engine.window in do
-                    (buffer,vertex_size,index_length)<-create_buffer engine.device vertex index
+                Graph {vertex,index}->let window=intmap_lookup window_id engine.window in do
                     command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
-                    CM.when (command_buffer==FP.nullPtr) (error "do_request: error 5")
-                    FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-                        value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
+                    catch_null command_buffer
+                    maybe_index_length<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.vertex_size engine.index_size vertex index
+                    FMA.alloca $ \pointer_texture->FMA.alloca $ \pointer_width->FMA.alloca $ \pointer_height->do
+                        value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window pointer_texture pointer_width pointer_height
                         CM.when (FMU.toBool value) $ do
-                            texture<-FS.peek ptr_texture
+                            texture<-FS.peek pointer_texture
                             CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {texture=texture,clear_color=C.SDL_FColor {r=0,g=0,b=0,a=1},load_op=C.sdl_gpu_loadop_clear,store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
                                 render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
-                                F.sdl_bindgpugraphicspipeline render_pass window.triangle_graphics_pipeline
-                                FMU.with (C.SDL_GPUBufferBinding {buffer=buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
-                                FMU.with (C.SDL_GPUBufferBinding {buffer=buffer,offset=vertex_size}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
-                                F.sdl_drawgpuindexedprimitives render_pass index_length 1 0 0 0
+                                catch_null render_pass
+                                case maybe_index_length of
+                                    Nothing->return ()
+                                    Just index_length->do
+                                        F.sdl_bindgpugraphicspipeline render_pass window.triangle_graphics_pipeline
+                                        let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \pointer->do
+                                            width<-FS.peek pointer_width
+                                            height<-FS.peek pointer_height
+                                            FMU.fillBytes pointer 0 size
+                                            FS.pokeElemOff pointer 0 (fromIntegral width::FCT.CFloat)
+                                            FS.pokeElemOff pointer 1 (fromIntegral height::FCT.CFloat)
+                                            F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr pointer) (fromIntegral size)
+                                        FMU.with (C.SDL_GPUBufferBinding {buffer=engine.vertex_buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
+                                        FMU.with (C.SDL_GPUBufferBinding {buffer=engine.index_buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
+                                        F.sdl_drawgpuindexedprimitives render_pass index_length 1 0 0 0
                                 F.sdl_endgpurenderpass render_pass
-                    catch_error (F.sdl_submitgpucommandbuffer command_buffer)
-                    F.sdl_releasegpubuffer engine.device buffer
-                    return new_engine
-            _->error "do_request: error 6"
+                    catch_false (F.sdl_submitgpucommandbuffer command_buffer)
+                    return (engine {free=free})
+            _->error "do_request: error 4"
     Io {io}->io engine
 
 from_window_flag::Window_flag->DW.Word64

@@ -37,7 +37,7 @@ create_bound father widget_request bound_id engine=let (widget,window_id)=make_b
 
 make_bound::Widget_request a->(Widget a,Int)
 make_bound widget_request=case widget_request of
-    Geometry_request {window_id,red,green,blue,alpha,geometry}->(Geometry {red,green,blue,alpha,geometry},window_id)
+    Geometry_request {window_id,red,green,blue,alpha,matrix,geometry}->(Geometry {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,geometry=geometry},window_id)
     _->error "make_bound: error 1"
 
 remove_active::Int->Engine a->Engine a
