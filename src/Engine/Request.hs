@@ -32,36 +32,36 @@ import qualified Foreign.Storable as FS
 create_request::Request a->Engine a->Engine a
 create_request request engine=engine {request=engine.request DS.|> request}
 
-do_request::Request a->Engine a->IO (Engine a)
+do_request::Request a->Engine a->IO (Engine a,Bool)
 do_request request engine=case request of
     Reset_timer {time}->if 0<time
         then case engine.timer of
             Nothing->do
                 timer<-F.sdl_addtimer time engine.callback FP.nullPtr
                 catch_zero timer
-                return (engine {timer=Just timer})
+                return (engine {timer=Just timer},True)
             Just timer->do
                 catch_false (F.sdl_removetimer timer)
                 new_timer<-F.sdl_addtimer time engine.callback FP.nullPtr
                 catch_zero new_timer
-                return (engine {timer=Just new_timer})
+                return (engine {timer=Just new_timer},False)
         else error "do_request: error 1"
     Stop_timer->case engine.timer of
         Nothing->error "do_request: error 2"
         Just timer->do
             catch_false (F.sdl_removetimer timer)
-            return (engine {timer=Nothing})
+            return (engine {timer=Nothing},True)
     Create_widget {father,widget_request,widget_id}->case widget_request of
-        Trigger_request {}->return (create_active father widget_request widget_id engine)
-        Io_trigger_request {}->return (create_active father widget_request widget_id engine)
-        Collector_request {}->return (create_free father widget_request widget_id engine)
-        Geometry_request {}->return (create_bound father widget_request widget_id engine)
+        Trigger_request {}->return (create_active father widget_request widget_id engine,False)
+        Io_trigger_request {}->return (create_active father widget_request widget_id engine,False)
+        Collector_request {}->return (create_free father widget_request widget_id engine,False)
+        Geometry_request {}->return (create_bound father widget_request widget_id engine,False)
     Remove_widget {widget_type,widget_id}->case widget_type of
-        Active_widget->return (remove_active widget_id engine)
-        Free_widget->return (remove_free widget_id engine)
-        Bound_widget->return (remove_bound widget_id engine)
-    Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine)
-    Remove_node {node_id}->return (remove_node node_id engine)
+        Active_widget->return (remove_active widget_id engine,False)
+        Free_widget->return (remove_free widget_id engine,False)
+        Bound_widget->return (remove_bound widget_id engine,False)
+    Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine,False)
+    Remove_node {node_id}->return (remove_node node_id engine,False)
     Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \c_string->do
         sdl_window<-F.sdl_createwindow c_string width height (DF.foldl' (\word flag->word DB..|. from_window_flag flag) 0 window_flag)
         catch_null sdl_window
@@ -70,9 +70,11 @@ do_request request engine=case request of
         catch_zero sdl_window_id
         triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
         let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,window_bound=DIS.empty}) engine.window in case maybe_window of
-            Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map})
+            Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
             _->error "do_request: error 3"
-    Remove_window {window_id}->remove_window window_id engine
+    Remove_window {window_id}->do
+        new_engine<-remove_window window_id engine
+        return (new_engine,False)
     Render {backup_path,window_id,submit_strategy}->case submit_strategy of
         Submit {consume}->let (free,widget)=consume_update_lookup_free_backup consume backup_path consume_widget engine.free in case widget of
             Collector {graph}->case for_submit graph of
@@ -103,9 +105,11 @@ do_request request engine=case request of
                                         F.sdl_drawgpuindexedprimitives render_pass index_length 1 0 0 0
                                 F.sdl_endgpurenderpass render_pass
                     catch_false (F.sdl_submitgpucommandbuffer command_buffer)
-                    return (engine {free=free})
+                    return (engine {free=free},False)
             _->error "do_request: error 4"
-    Io {io}->io engine
+    Io {io}->do
+        new_engine<-io engine
+        return (new_engine,False)
 
 from_window_flag::Window_flag->DW.Word64
 from_window_flag window_flag=case window_flag of

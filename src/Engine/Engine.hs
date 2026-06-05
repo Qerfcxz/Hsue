@@ -81,50 +81,69 @@ run_engine engine=FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment 
 
 loop_engine::FP.Ptr ()->Engine a->IO ()
 loop_engine sdl_event engine=do
-    new_engine<-run_request engine
+    (switch,new_engine)<-run_request False engine
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
-            loop_event event_type sdl_event new_engine
+            loop_event switch event_type sdl_event new_engine
         else error "loop_engine: error 1"
+
+loop_engine_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_a sdl_event engine=do
+    value<-F.sdl_waitevent sdl_event
+    if FMU.toBool value
+        then do
+            event_type<-C.sdl_event_type sdl_event
+            loop_event False event_type sdl_event engine
+        else error "loop_engine_a: error 1"
 
 loop_engine_time::FP.Ptr ()->Engine a->IO ()
 loop_engine_time sdl_event engine=do
-    new_engine<-run_request engine
+    (switch,new_engine)<-run_request False engine
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
-            if event_type==engine.event_number then loop_event_a (Time {tick=new_engine.count}) sdl_event (new_engine {count=new_engine.count+1}) else loop_event event_type sdl_event new_engine
+            if event_type==engine.event_number then loop_event_b (not switch) (Time {tick=new_engine.count}) sdl_event (new_engine {count=new_engine.count+1}) else loop_event (not switch) event_type sdl_event new_engine
         else error "loop_engine_time: error 1"
 
-loop_event::DW.Word32->FP.Ptr ()->Engine a->IO ()
-loop_event event_type sdl_event engine=case event_type of
+loop_engine_time_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_time_a sdl_event engine=do
+    value<-F.sdl_waitevent sdl_event
+    if FMU.toBool value
+        then do
+            event_type<-C.sdl_event_type sdl_event
+            if event_type==engine.event_number then loop_event_b True (Time {tick=engine.count}) sdl_event (engine {count=engine.count+1}) else loop_event True event_type sdl_event engine
+        else error "loop_engine_time_a: error 1"
+
+loop_event::Bool->DW.Word32->FP.Ptr ()->Engine a->IO ()
+loop_event on event_type sdl_event engine=case event_type of
     C.SDL_EVENT_QUIT->return ()
     C.SDL_EVENT_WINDOW_CLOSE_REQUESTED->do
         sdl_window_id<-C.sdl_windowevent_windowid sdl_event
         case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a Unknown sdl_event engine
-            Just window_id->loop_event_a (At {window_id=window_id,action=Close}) sdl_event engine
+            Nothing->loop_event_a on sdl_event engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Close}) sdl_event engine
     C.SDL_EVENT_KEY_UP->do
         sdl_window_id<-C.sdl_keyboardevent_windowid sdl_event
         sdl_keycode<-C.sdl_keyboardevent_key sdl_event
         let change=to_key sdl_keycode in let maintain=DSet.delete change engine.key in let new_engine=engine {key=maintain} in case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a Unknown sdl_event engine
-            Just window_id->loop_event_a (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event new_engine
+            Nothing->loop_event_a on sdl_event engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event new_engine
     C.SDL_EVENT_KEY_DOWN->do
         sdl_window_id<-C.sdl_keyboardevent_windowid sdl_event
         sdl_keycode<-C.sdl_keyboardevent_key sdl_event
         let change=to_key sdl_keycode in let maintain=DSet.insert change engine.key in let new_engine=engine {key=maintain} in case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a Unknown sdl_event engine
-            Just window_id->loop_event_a (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event new_engine
-    _->loop_event_a Unknown sdl_event engine
+            Nothing->loop_event_a on sdl_event engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event new_engine
+    _->loop_event_a on sdl_event engine
 
-loop_event_a::Event->FP.Ptr ()->Engine a->IO ()
-loop_event_a event sdl_event engine=let new_engine=run_event event engine in case new_engine.timer of
-    Nothing->loop_engine sdl_event new_engine
-    Just _->loop_engine_time sdl_event new_engine
+loop_event_a::Bool->FP.Ptr ()->Engine a->IO ()
+loop_event_a on sdl_event engine=if on then loop_engine_time_a sdl_event engine else loop_engine_a sdl_event engine
+
+loop_event_b::Bool->Event->FP.Ptr ()->Engine a->IO ()
+loop_event_b on event sdl_event engine=let new_engine=run_event event engine in if on then loop_engine_time sdl_event new_engine else loop_engine sdl_event new_engine
 
 to_key::DW.Word32->Key
 to_key key=case key of
@@ -156,12 +175,12 @@ to_key key=case key of
     C.SDLK_Z->Key_z
     _->Key_unknown
 
-run_request::Engine a->IO (Engine a)
-run_request engine=case engine.request of
-    DSeq.Empty->return engine
+run_request::Bool->Engine a->IO (Bool,Engine a)
+run_request switch engine=case engine.request of
+    DSeq.Empty->return (switch,engine)
     (request DSeq.:<| other_request)->do
-        new_engine<-do_request request (engine {request=other_request})
-        run_request new_engine
+        (new_engine,new_switch)<-do_request request (engine {request=other_request})
+        run_request (switch/=new_switch) new_engine
 
 run_event::Event->Engine a->Engine a
 run_event event engine=case engine.main_id engine event of

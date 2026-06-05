@@ -57,7 +57,7 @@ data Move_strategy=Min_move {consume::Bool}|Max_move {consume::Bool}|Index_move 
 
 data Submit_strategy=Submit {consume::Bool}
 
-data Event=Unknown|Quit|Time {tick::Int}|At {window_id::Int,action::Action}
+data Event=Quit|Time {tick::Int}|At {window_id::Int,action::Action}
 
 data Action=Close|Press {press::Press,change::Key,maintain::DSet.Set Key}
 
