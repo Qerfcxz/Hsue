@@ -17,7 +17,7 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-data Engine a=Engine {state::a,active::DIM.IntMap (Active a),free::DIM.IntMap (Free a),bound::DIM.IntMap (Bound a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,request::DSeq.Seq (Request a),key::DSet.Set Key,main_id::Engine a->Event->Maybe Int,backup_strategy::Backup_strategy,count::Int,timer::Maybe DW.Word32,event_number::DW.Word32,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word32->IO DW.Word32),device::FP.Ptr T.SDL_GPUDevice,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,index_buffer::FP.Ptr T.SDL_GPUBuffer,vertex_size::Int,index_size::Int}
+data Engine a=Engine {state::a,active::DIM.IntMap (Active a),free::DIM.IntMap (Free a),bound::DIM.IntMap (Bound a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,request::DSeq.Seq (Request a),key::DSet.Set Key,main_id::Engine a->Event->Maybe Int,backup_strategy::Backup_strategy,count::Int,timer::Maybe DW.Word32,event_number::DW.Word32,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word32->IO DW.Word32),device::FP.Ptr T.SDL_GPUDevice,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,index_buffer::FP.Ptr T.SDL_GPUBuffer,transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,vertex_size::Int,index_size::Int}
 
 data Active a=Active {next::Engine a->Event->Maybe Int,ancestry::DSeq.Seq Int,backup::Backup (Widget a)}
 

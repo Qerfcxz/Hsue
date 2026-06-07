@@ -41,6 +41,7 @@ create_engine state main_id backup_strategy count maybe_time vertex_size index_s
     let create_buffer=return_catch_null . F.sdl_creategpubuffer device
     vertex_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_vertex,size=vertex_size}) create_buffer
     index_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_index,size=index_size}) create_buffer
+    transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {usage=C.sdl_gpu_transferbufferusage_upload,size=vertex_size+index_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
     event_number<-F.sdl_registerevents 1
     callback<-F.wrapper $ \_ _ time->do
         FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment $ \pointer->do
@@ -49,12 +50,12 @@ create_engine state main_id backup_strategy count maybe_time vertex_size index_s
             catch_false (F.sdl_pushevent pointer)
         return time
     case maybe_time of
-        Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Nothing,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
+        Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Nothing,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
         Just time->if 0<time
             then do
                 new_timer<-F.sdl_addtimer time callback FP.nullPtr
                 catch_zero new_timer
-                return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Just new_timer,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
+                return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Just new_timer,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
             else error "create_engine: error 1"
 
 clean_engine::Engine a->IO ()
@@ -66,6 +67,7 @@ clean_engine engine=do
     FP.freeHaskellFunPtr engine.callback
     F.sdl_releasegpubuffer engine.device engine.vertex_buffer
     F.sdl_releasegpubuffer engine.device engine.index_buffer
+    F.sdl_releasegputransferbuffer engine.device engine.transfer_buffer
     F.sdl_releasegpushader engine.device engine.vertex_shader
     F.sdl_releasegpushader engine.device engine.fragment_shader
     F.sdl_destroygpudevice engine.device

@@ -77,12 +77,12 @@ do_request request engine=case request of
         new_engine<-remove_window window_id engine
         return (new_engine,False)
     Render {backup_path,window_id,submit_strategy}->case submit_strategy of
-        Submit {consume}->let (free,widget)=consume_update_lookup_free_backup consume backup_path consume_widget engine.free in case widget of
+        Submit {consume}->let (free,widget)=consume_update_lookup_backup_free consume backup_path consume_widget engine.free in case widget of
             Collector {graph}->case for_submit graph of
                 Graph {vertex,index}->let window=intmap_lookup window_id engine.window in do
                     command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
                     catch_null command_buffer
-                    maybe_index_length<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.vertex_size engine.index_size vertex index
+                    maybe_index_length<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.transfer_buffer engine.vertex_size engine.index_size vertex index
                     FMA.alloca $ \pointer_texture->FMA.alloca $ \pointer_width->FMA.alloca $ \pointer_height->do
                         value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window pointer_texture pointer_width pointer_height
                         CM.when (FMU.toBool value) $ do

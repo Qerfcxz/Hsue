@@ -13,7 +13,7 @@ import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 
 collect::Backup_path->Backup_path->Collect_strategy->Engine a->Engine a
-collect from_backup_path to_backup_path collect_strategy engine=engine {free=update_free_backup to_backup_path (collect_a (DS.singleton (to_graph (lookup_bound_backup from_backup_path engine.bound))) collect_strategy) engine.free}
+collect from_backup_path to_backup_path collect_strategy engine=engine {free=path_update_backup_free to_backup_path (collect_a (DS.singleton (to_graph (path_lookup_backup_bound from_backup_path engine.bound))) collect_strategy) engine.free}
 
 collect_a::DS.Seq Graph->Collect_strategy->Widget a->Widget a
 collect_a new_graph collect_strategy widget=case widget of
@@ -39,7 +39,7 @@ for_convex_polygon index=let (quotient,remainder)=divMod index 3 in let new_quot
     _->error "for_convex_polygon: error 1"
 
 move::Backup_path->Backup_path->Move_strategy->Engine a->Engine a
-move from_backup_path to_backup_path move_strategy engine=let (collect_strategy,consume)=to_collect_strategy move_strategy in let (free,widget)=consume_update_lookup_free_backup consume from_backup_path consume_widget engine.free in engine {free=update_free_backup to_backup_path (collect_a (move_a widget) collect_strategy) free}
+move from_backup_path to_backup_path move_strategy engine=let (collect_strategy,consume)=to_collect_strategy move_strategy in let (free,widget)=consume_update_lookup_backup_free consume from_backup_path consume_widget engine.free in engine {free=path_update_backup_free to_backup_path (collect_a (move_a widget) collect_strategy) free}
 
 move_a::Widget a->DS.Seq Graph
 move_a widget=case widget of
