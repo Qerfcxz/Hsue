@@ -28,7 +28,7 @@ to_graph widget=case widget of
     Geometry {red,green,blue,alpha,matrix,geometry}->case geometry of
         Triangle {first_point,second_point,third_point}->let new_first_point=apply_matrix matrix first_point in let new_second_point=apply_matrix matrix second_point in let new_third_point=apply_matrix matrix third_point in Graph {vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_first_point.x,y=new_first_point.y}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_second_point.x,y=new_second_point.y} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_third_point.x,y=new_third_point.y},index=DS.singleton 0 DS.|> 1 DS.|> 2}
         Convex_polygon {point}->let vertex=fmap ((\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=this_point.x,y=this_point.y}) . apply_matrix matrix) point in let number=DS.length point in if number<3 then error "to_graph: error 1" else Graph {vertex=vertex,index=DS.fromFunction (3*(number-2)) for_convex_polygon}
-        Regular_polygon {number,center,radius,angle}->if number<3 then error "to_graph: error 2" else let new_angle=2*pi/fromIntegral number in Graph {vertex=fmap ((\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=this_point.x,y=this_point.y}) . apply_matrix matrix) (DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Point {x=center.x+radius*cos direction,y=center.y+radius*sin direction})),index=DS.fromFunction (3*(number-2)) for_convex_polygon}
+        Regular_polygon {number,center,radius,angle}->if number<3 then error "to_graph: error 2" else let new_angle=2*pi/fromIntegral number in Graph {vertex=fmap ((\point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=point.x,y=point.y}) . apply_matrix matrix) (DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Point {x=center.x+radius*cos direction,y=center.y+radius*sin direction})),index=DS.fromFunction (3*(number-2)) for_convex_polygon}
     _->error "to_graph: error 3"
 
 for_convex_polygon::Int->DW.Word32
@@ -58,4 +58,8 @@ consume_widget widget=case widget of
     _->error "consume_widget: error 1"
 
 for_submit::DIM.IntMap (DS.Seq Graph)->Graph
-for_submit graph=let (_,new_vertex,new_index)=DIM.foldl' (DF.foldl' (\(offset,this_vertex,this_index) (Graph {vertex,index})->(offset+fromIntegral (DS.length vertex),this_vertex DS.>< vertex,this_index DS.>< fmap (+offset) index))) (0,DS.empty,DS.empty) graph in Graph {vertex=new_vertex,index=new_index}
+for_submit graph=let (vertex,index,_)=DIM.foldl' (DF.foldl' (flip for_submit_a)) (DS.empty,DS.empty,0) graph in Graph {vertex=vertex,index=index}
+
+for_submit_a::Graph->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)
+for_submit_a graph (this_vertex,this_index,offset)=case graph of
+    Graph {vertex,index}->(this_vertex DS.>< vertex,this_index DS.>< fmap (+offset) index,offset+fromIntegral (DS.length vertex))

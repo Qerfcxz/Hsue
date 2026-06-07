@@ -16,6 +16,9 @@ foreign import ccall safe "SDL_Init"
 foreign import ccall safe "SDL_Quit"
     sdl_quit::IO ()
 
+foreign import ccall safe "SDL_SetHint"
+    sdl_sethint::CString->CString->IO CBool
+
 foreign import ccall safe "SDL_CreateGPUDevice"
     sdl_creategpudevice::Word32->CBool->CString->IO (Ptr SDL_GPUDevice)
 
@@ -33,6 +36,9 @@ foreign import ccall safe "SDL_CreateGPUGraphicsPipeline"
 
 foreign import ccall safe "SDL_AcquireGPUSwapchainTexture"
     sdl_acquiregpuswapchaintexture::Ptr SDL_GPUCommandBuffer->Ptr SDL_Window->Ptr (Ptr SDL_GPUTexture)->Ptr Word32->Ptr Word32->IO CBool
+
+foreign import ccall safe "SDL_SetGPUSwapchainParameters"
+    sdl_setgpuswapchainparameters::Ptr SDL_GPUDevice->Ptr SDL_Window->Word32->Word32->IO CBool
 
 foreign import ccall safe "SDL_CreateGPUShader"
     sdl_creategpushader::Ptr SDL_GPUDevice->Ptr SDL_GPUShaderCreateInfo->IO (Ptr SDL_GPUShader)

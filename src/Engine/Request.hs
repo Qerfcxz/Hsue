@@ -62,10 +62,11 @@ do_request request engine=case request of
         Bound_widget->return (remove_bound widget_id engine,False)
     Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine,False)
     Remove_node {node_id}->return (remove_node node_id engine,False)
-    Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \c_string->do
-        sdl_window<-F.sdl_createwindow c_string width height (DF.foldl' (\word flag->word DB..|. from_window_flag flag) 0 window_flag)
+    Create_window {window_id,title,width,height,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
+        sdl_window<-F.sdl_createwindow this_title width height (DF.foldl' (\sdl_window_flag this_window_flag->sdl_window_flag DB..|. from_window_flag this_window_flag) 0 window_flag)
         catch_null sdl_window
         catch_false (F.sdl_claimwindowforgpudevice engine.device sdl_window)
+        catch_false (F.sdl_setgpuswapchainparameters engine.device sdl_window C.sdl_gpu_swapchaincomposition_sdr C.sdl_gpu_presentmode_mailbox)
         sdl_window_id<-F.sdl_getwindowid sdl_window
         catch_zero sdl_window_id
         triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader

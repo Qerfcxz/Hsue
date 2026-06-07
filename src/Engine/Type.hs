@@ -73,10 +73,11 @@ instance FS.Storable Vertex where
     sizeOf _=24
     alignment _=4
     peek _=error "peek: error 1"
-    poke pointer (Vertex {red,green,blue,alpha,x,y})=let new_pointer=FP.castPtr pointer::FP.Ptr FCT.CFloat in do
-        FS.pokeElemOff new_pointer 0 red
-        FS.pokeElemOff new_pointer 1 green
-        FS.pokeElemOff new_pointer 2 blue
-        FS.pokeElemOff new_pointer 3 alpha
-        FS.pokeElemOff new_pointer 4 x
-        FS.pokeElemOff new_pointer 5 y
+    poke pointer vertex=case vertex of
+        (Vertex {red,green,blue,alpha,x,y})->let new_pointer=FP.castPtr pointer::FP.Ptr FCT.CFloat in do
+            FS.pokeElemOff new_pointer 0 red
+            FS.pokeElemOff new_pointer 1 green
+            FS.pokeElemOff new_pointer 2 blue
+            FS.pokeElemOff new_pointer 3 alpha
+            FS.pokeElemOff new_pointer 4 x
+            FS.pokeElemOff new_pointer 5 y

@@ -43,13 +43,13 @@ update_buffer device command_buffer vertex_buffer index_buffer max_vertex_size m
     F.sdl_unmapgputransferbuffer device transfer_buffer
     copy_pass<-F.sdl_begingpucopypass command_buffer
     catch_null copy_pass
-    FMU.with (C.SDL_GPUTransferBufferLocation {transfer_buffer=transfer_buffer,offset=0}) (\transfer_buffer_location->FMU.with (C.SDL_GPUBufferRegion {buffer=vertex_buffer,offset=0,size=new_vertex_size}) (\buffer_region->F.sdl_uploadtogpubuffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool False)))
-    FMU.with (C.SDL_GPUTransferBufferLocation {transfer_buffer=transfer_buffer,offset=new_vertex_size}) (\transfer_buffer_location->FMU.with (C.SDL_GPUBufferRegion {buffer=index_buffer,offset=0,size=new_index_size}) (\buffer_region->F.sdl_uploadtogpubuffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool False)))
+    FMU.with (C.SDL_GPUTransferBufferLocation {transfer_buffer=transfer_buffer,offset=0}) (\transfer_buffer_location->FMU.with (C.SDL_GPUBufferRegion {buffer=vertex_buffer,offset=0,size=new_vertex_size}) (\buffer_region->F.sdl_uploadtogpubuffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
+    FMU.with (C.SDL_GPUTransferBufferLocation {transfer_buffer=transfer_buffer,offset=new_vertex_size}) (\transfer_buffer_location->FMU.with (C.SDL_GPUBufferRegion {buffer=index_buffer,offset=0,size=new_index_size}) (\buffer_region->F.sdl_uploadtogpubuffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
     F.sdl_endgpucopypass copy_pass
     F.sdl_releasegputransferbuffer device transfer_buffer
     return (Just (fromIntegral index_length))
 
 load_shader::FP.Ptr T.SDL_GPUDevice->DW.Word32->DW.Word32->DW.Word32->String->IO (FP.Ptr T.SDL_GPUShader)
-load_shader device format stage num_uniform_buffers path=do
+load_shader device format stage num_uniform_buffer path=do
     shader<-DBS.readFile path
-    DBS.useAsCStringLen shader (\(pointer,size)->FCS.withCString "main" (\c_string->FMU.with (C.SDL_GPUShaderCreateInfo {code_size=fromIntegral size,code=FP.castPtr pointer,entrypoint=c_string,format=format,stage=stage,num_samplers=0,num_storage_textures=0,num_storage_buffers=0,num_uniform_buffers=num_uniform_buffers}) (return_catch_null . F.sdl_creategpushader device)))
+    DBS.useAsCStringLen shader (\(code,code_size)->FCS.withCString "main" (\entrypoint->FMU.with (C.SDL_GPUShaderCreateInfo {code_size=fromIntegral code_size,code=FP.castPtr code,entrypoint=entrypoint,format=format,stage=stage,num_samplers=0,num_storage_textures=0,num_storage_buffers=0,num_uniform_buffers=num_uniform_buffer}) (return_catch_null . F.sdl_creategpushader device)))
