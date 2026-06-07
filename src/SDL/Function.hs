@@ -85,8 +85,8 @@ foreign import ccall safe "SDL_PushEvent"
 foreign import ccall safe "SDL_WaitEvent"
     sdl_waitevent::Ptr ()->IO CBool
 
-foreign import ccall safe "SDL_AddTimer"
-    sdl_addtimer::Word32->FunPtr (Ptr ()->Word32->Word32->IO Word32)->Ptr ()->IO Word32
+foreign import ccall safe "SDL_AddTimerNS"
+    sdl_addtimerns::Word64->FunPtr (Ptr ()->Word32->Word64->IO Word64)->Ptr ()->IO Word32
 
 foreign import ccall safe "SDL_RemoveTimer"
     sdl_removetimer::Word32->IO CBool
@@ -134,4 +134,4 @@ foreign import ccall unsafe "SDL_GetWindowID"
     sdl_getwindowid::Ptr SDL_Window->IO Word32
 
 foreign import ccall "wrapper"
-    wrapper::(Ptr ()->Word32->Word32->IO Word32)->IO (FunPtr (Ptr ()->Word32->Word32->IO Word32))
+    wrapper::(Ptr ()->Word32->Word64->IO Word64)->IO (FunPtr (Ptr ()->Word32->Word64->IO Word64))

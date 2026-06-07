@@ -106,3 +106,6 @@ identity_matrix=Matrix {x_x=1,x_y=0,y_x=0,y_y=1}
 
 mebibyte::DW.Word32
 mebibyte=1048576
+
+nanosecond::DW.Word64
+nanosecond=1000000000

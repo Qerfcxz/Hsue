@@ -37,12 +37,12 @@ do_request request engine=case request of
     Reset_timer {time}->if 0<time
         then case engine.timer of
             Nothing->do
-                timer<-F.sdl_addtimer time engine.callback FP.nullPtr
+                timer<-F.sdl_addtimerns time engine.callback FP.nullPtr
                 catch_zero timer
                 return (engine {timer=Just timer},True)
             Just timer->do
                 catch_false (F.sdl_removetimer timer)
-                new_timer<-F.sdl_addtimer time engine.callback FP.nullPtr
+                new_timer<-F.sdl_addtimerns time engine.callback FP.nullPtr
                 catch_zero new_timer
                 return (engine {timer=Just new_timer},False)
         else error "do_request: error 1"

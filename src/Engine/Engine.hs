@@ -32,7 +32,7 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::a->(Engine a->Event->Maybe Int)->Backup_strategy->Int->Maybe DW.Word32->DW.Word32->DW.Word32->IO (Engine a)
+create_engine::a->(Engine a->Event->Maybe Int)->Backup_strategy->Int->Maybe DW.Word64->DW.Word32->DW.Word32->IO (Engine a)
 create_engine state main_id backup_strategy count maybe_time vertex_size index_size=do
     device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
@@ -53,7 +53,7 @@ create_engine state main_id backup_strategy count maybe_time vertex_size index_s
         Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Nothing,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
         Just time->if 0<time
             then do
-                new_timer<-F.sdl_addtimer time callback FP.nullPtr
+                new_timer<-F.sdl_addtimerns time callback FP.nullPtr
                 catch_zero new_timer
                 return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Just new_timer,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
             else error "create_engine: error 1"
