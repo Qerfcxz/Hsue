@@ -34,23 +34,28 @@ create_request request engine=engine {request=engine.request DS.|> request}
 
 do_request::Request a->Engine a->IO (Engine a,Bool)
 do_request request engine=case request of
-    Reset_timer {time}->if 0<time
+    Reset_timer {interval}->if 0<interval
         then case engine.timer of
-            Nothing->do
-                timer<-F.sdl_addtimerns time engine.callback FP.nullPtr
-                catch_zero timer
-                return (engine {timer=Just timer},True)
-            Just timer->do
-                catch_false (F.sdl_removetimer timer)
-                new_timer<-F.sdl_addtimerns time engine.callback FP.nullPtr
-                catch_zero new_timer
-                return (engine {timer=Just new_timer},False)
+            Off->do
+                timer_id<-F.sdl_addtimerns interval engine.callback FP.nullPtr
+                catch_zero timer_id
+                return (engine {timer=On {timer_id=timer_id,interval=interval}},True)
+            On {timer_id}->do
+                catch_false (F.sdl_removetimer timer_id)
+                new_timer_id<-F.sdl_addtimerns interval engine.callback FP.nullPtr
+                catch_zero new_timer_id
+                return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
         else error "do_request: error 1"
     Stop_timer->case engine.timer of
-        Nothing->error "do_request: error 2"
-        Just timer->do
-            catch_false (F.sdl_removetimer timer)
-            return (engine {timer=Nothing},True)
+        Off->error "do_request: error 2"
+        On {timer_id}->do
+            catch_false (F.sdl_removetimer timer_id)
+            return (engine {timer=Off},True)
+    Stop_timer_safe->case engine.timer of
+        Off->return (engine,False)
+        On {timer_id}->do
+            catch_false (F.sdl_removetimer timer_id)
+            return (engine {timer=Off},True)
     Create_widget {father,widget_request,widget_id}->case widget_request of
         Trigger_request {}->return (create_active father widget_request widget_id engine,False)
         Io_trigger_request {}->return (create_active father widget_request widget_id engine,False)

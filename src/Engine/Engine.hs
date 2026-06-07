@@ -32,8 +32,8 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::a->(Engine a->Event->Maybe Int)->Backup_strategy->Int->Maybe DW.Word64->DW.Word32->DW.Word32->IO (Engine a)
-create_engine state main_id backup_strategy count maybe_time vertex_size index_size=do
+create_engine::a->(Engine a->Event->Maybe Int)->Backup_strategy->Int->DW.Word64->Maybe DW.Word64->DW.Word32->DW.Word32->IO (Engine a)
+create_engine state main_id backup_strategy count time maybe_interval vertex_size index_size=do
     device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
     vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex 1 "Vertex.cso"
@@ -43,27 +43,27 @@ create_engine state main_id backup_strategy count maybe_time vertex_size index_s
     index_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_index,size=index_size}) create_buffer
     transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {usage=C.sdl_gpu_transferbufferusage_upload,size=vertex_size+index_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
     event_number<-F.sdl_registerevents 1
-    callback<-F.wrapper $ \_ _ time->do
+    callback<-F.wrapper $ \_ _ interval->do
         FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment $ \pointer->do
             FMU.fillBytes pointer 0 C.sdl_event_size
             FS.poke (FP.castPtr pointer) event_number
             catch_false (F.sdl_pushevent pointer)
-        return time
-    case maybe_time of
-        Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Nothing,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
-        Just time->if 0<time
+        return interval
+    case maybe_interval of
+        Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,time=time,timer=Off,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
+        Just interval->if 0<interval
             then do
-                new_timer<-F.sdl_addtimerns time callback FP.nullPtr
-                catch_zero new_timer
-                return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,timer=Just new_timer,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
+                timer_id<-F.sdl_addtimerns interval callback FP.nullPtr
+                catch_zero timer_id
+                return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,time=time,timer=On {timer_id=timer_id,interval=interval},event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
             else error "create_engine: error 1"
 
 clean_engine::Engine a->IO ()
 clean_engine engine=do
     DF.mapM_ (clean_window engine.device) (DIM.elems engine.window)
     case engine.timer of
-        Nothing->return ()
-        Just timer->catch_false (F.sdl_removetimer timer)
+        Off->return ()
+        On {timer_id}->catch_false (F.sdl_removetimer timer_id)
     FP.freeHaskellFunPtr engine.callback
     F.sdl_releasegpubuffer engine.device engine.vertex_buffer
     F.sdl_releasegpubuffer engine.device engine.index_buffer
@@ -81,46 +81,46 @@ clean_window device window=do
 
 run_engine::Engine a->IO ()
 run_engine engine=FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment $ \sdl_event->case engine.timer of
-    Nothing->loop_engine sdl_event engine
-    Just _->loop_engine_time sdl_event engine
+    Off->loop_engine_off sdl_event engine
+    On {}->loop_engine_on sdl_event engine
 
-loop_engine::FP.Ptr ()->Engine a->IO ()
-loop_engine sdl_event engine=do
+loop_engine_off::FP.Ptr ()->Engine a->IO ()
+loop_engine_off sdl_event engine=do
     (switch,new_engine)<-run_request False engine
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
             loop_event switch event_type sdl_event new_engine
-        else error "loop_engine: error 1"
+        else error "loop_engine_off: error 1"
 
-loop_engine_a::FP.Ptr ()->Engine a->IO ()
-loop_engine_a sdl_event engine=do
+loop_engine_off_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_off_a sdl_event engine=do
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
             loop_event False event_type sdl_event engine
-        else error "loop_engine_a: error 1"
+        else error "loop_engine_off_a: error 1"
 
-loop_engine_time::FP.Ptr ()->Engine a->IO ()
-loop_engine_time sdl_event engine=do
+loop_engine_on::FP.Ptr ()->Engine a->IO ()
+loop_engine_on sdl_event engine=do
     (switch,new_engine)<-run_request False engine
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
-            if event_type==engine.event_number then loop_event_b (not switch) (Time {tick=new_engine.count}) sdl_event (new_engine {count=new_engine.count+1}) else loop_event (not switch) event_type sdl_event new_engine
-        else error "loop_engine_time: error 1"
+            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+engine.timer.interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=engine.timer.interval}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
+        else error "loop_engine_on: error 1"
 
-loop_engine_time_a::FP.Ptr ()->Engine a->IO ()
-loop_engine_time_a sdl_event engine=do
+loop_engine_on_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_on_a sdl_event engine=do
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
-            if event_type==engine.event_number then loop_event_b True (Time {tick=engine.count}) sdl_event (engine {count=engine.count+1}) else loop_event True event_type sdl_event engine
-        else error "loop_engine_time_a: error 1"
+            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+engine.timer.interval in loop_event_b True (Time {tick=count,time=time,interval=engine.timer.interval}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
+        else error "loop_engine_on_a: error 1"
 
 loop_event::Bool->DW.Word32->FP.Ptr ()->Engine a->IO ()
 loop_event on event_type sdl_event engine=case event_type of
@@ -145,10 +145,10 @@ loop_event on event_type sdl_event engine=case event_type of
     _->loop_event_a on sdl_event engine
 
 loop_event_a::Bool->FP.Ptr ()->Engine a->IO ()
-loop_event_a on sdl_event engine=if on then loop_engine_time_a sdl_event engine else loop_engine_a sdl_event engine
+loop_event_a on sdl_event engine=if on then loop_engine_on_a sdl_event engine else loop_engine_off_a sdl_event engine
 
 loop_event_b::Bool->Event->FP.Ptr ()->Engine a->IO ()
-loop_event_b on event sdl_event engine=let new_engine=run_event event engine in if on then loop_engine_time sdl_event new_engine else loop_engine sdl_event new_engine
+loop_event_b on event sdl_event engine=let new_engine=run_event event engine in if on then loop_engine_on sdl_event new_engine else loop_engine_off sdl_event new_engine
 
 to_key::DW.Word32->Key
 to_key key=case key of
