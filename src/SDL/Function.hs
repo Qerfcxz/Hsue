@@ -70,6 +70,27 @@ foreign import ccall safe "SDL_UnmapGPUTransferBuffer"
 foreign import ccall safe "SDL_ReleaseWindowFromGPUDevice"
     sdl_releasewindowfromgpudevice::Ptr SDL_GPUDevice->Ptr SDL_Window->IO ()
 
+foreign import ccall safe "SDL_CreateGPUTexture"
+    sdl_creategputexture::Ptr SDL_GPUDevice->Ptr SDL_GPUTextureCreateInfo->IO (Ptr SDL_GPUTexture)
+
+foreign import ccall safe "SDL_ReleaseGPUTexture"
+    sdl_releasegputexture::Ptr SDL_GPUDevice->Ptr SDL_GPUTexture->IO ()
+
+foreign import ccall safe "SDL_UploadToGPUTexture"
+    sdl_uploadtogputexture::Ptr SDL_GPUCopyPass->Ptr SDL_GPUTextureTransferInfo->Ptr SDL_GPUTextureRegion->CBool->IO ()
+
+foreign import ccall safe "SDL_DestroySurface"
+    sdl_destroysurface::Ptr SDL_Surface->IO ()
+
+foreign import ccall safe "SDL_ConvertSurface"
+    sdl_convertsurface::Ptr SDL_Surface->Word32->IO (Ptr SDL_Surface)
+
+foreign import ccall safe "SDL_CreateGPUSampler"
+    sdl_creategpusampler::Ptr SDL_GPUDevice->Ptr SDL_GPUSamplerCreateInfo->IO (Ptr SDL_GPUSampler)
+
+foreign import ccall safe "SDL_ReleaseGPUSampler"
+    sdl_releasegpusampler::Ptr SDL_GPUDevice->Ptr SDL_GPUSampler->IO ()
+
 foreign import ccall safe "SDL_WaitForGPUIdle"
     sdl_waitforgpuidle::Ptr SDL_GPUDevice->IO CBool
 
@@ -90,6 +111,9 @@ foreign import ccall safe "SDL_AddTimerNS"
 
 foreign import ccall safe "SDL_RemoveTimer"
     sdl_removetimer::Word32->IO CBool
+
+foreign import ccall safe "IMG_Load"
+    img_load::CString->IO (Ptr SDL_Surface)
 
 foreign import ccall unsafe "SDL_BindGPUGraphicsPipeline"
     sdl_bindgpugraphicspipeline::Ptr SDL_GPURenderPass->Ptr SDL_GPUGraphicsPipeline->IO ()
@@ -126,6 +150,9 @@ foreign import ccall unsafe "SDL_EndGPURenderPass"
 
 foreign import ccall unsafe "SDL_PushGPUVertexUniformData"
     sdl_pushgpuvertexuniformdata::Ptr SDL_GPUCommandBuffer->Word32->Ptr ()->Word32->IO ()
+
+foreign import ccall unsafe "SDL_BindGPUFragmentSamplers"
+    sdl_bindgpufragmentsamplers::Ptr SDL_GPURenderPass->Word32->Ptr SDL_GPUTextureSamplerBinding->Word32->IO ()
 
 foreign import ccall unsafe "SDL_RegisterEvents"
     sdl_registerevents::CInt->IO Word32

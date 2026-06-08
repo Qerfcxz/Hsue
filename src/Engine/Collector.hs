@@ -11,9 +11,10 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
 
 collect::Backup_path->Backup_path->Collect_strategy->Engine a->Engine a
-collect from_backup_path to_backup_path collect_strategy engine=engine {free=path_update_backup_free to_backup_path (collect_a (DS.singleton (to_graph (path_lookup_backup_bound from_backup_path engine.bound))) collect_strategy) engine.free}
+collect from_backup_path to_backup_path collect_strategy engine=engine {free=path_update_backup_free to_backup_path (collect_a (DS.singleton (to_graph engine.u engine.v engine.atlas (path_lookup_backup_bound from_backup_path engine.bound))) collect_strategy) engine.free}
 
 collect_a::DS.Seq Graph->Collect_strategy->Widget a->Widget a
 collect_a new_graph collect_strategy widget=case widget of
@@ -23,12 +24,14 @@ collect_a new_graph collect_strategy widget=case widget of
         Index_collect {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=seat-1,max_index=max_index,graph=intmap_insert seat new_graph graph} else if max_index<=seat then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=seat+1,graph=intmap_insert seat new_graph graph} else Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index,graph=intmap_insert seat new_graph graph}
     _->error "collect_a: error 1"
 
-to_graph::Widget a->Graph
-to_graph widget=case widget of
+to_graph::FCT.CFloat->FCT.CFloat->Atlas->Widget a->Graph
+to_graph u v atlas widget=case widget of
     Geometry {red,green,blue,alpha,matrix,geometry}->case geometry of
-        Triangle {first_point,second_point,third_point}->let new_first_point=apply_matrix matrix first_point in let new_second_point=apply_matrix matrix second_point in let new_third_point=apply_matrix matrix third_point in Graph {vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_first_point.x,y=new_first_point.y}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_second_point.x,y=new_second_point.y} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_third_point.x,y=new_third_point.y},index=DS.singleton 0 DS.|> 1 DS.|> 2}
-        Convex_polygon {point}->let vertex=fmap ((\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=this_point.x,y=this_point.y}) . apply_matrix matrix) point in let number=DS.length point in if number<3 then error "to_graph: error 1" else Graph {vertex=vertex,index=DS.fromFunction (3*(number-2)) for_convex_polygon}
-        Regular_polygon {number,center,radius,angle}->if number<3 then error "to_graph: error 2" else let new_angle=2*pi/fromIntegral number in Graph {vertex=fmap ((\point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=point.x,y=point.y}) . apply_matrix matrix) (DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Point {x=center.x+radius*cos direction,y=center.y+radius*sin direction})),index=DS.fromFunction (3*(number-2)) for_convex_polygon}
+        Triangle {first_point,second_point,third_point}->let new_first_point=apply_matrix matrix first_point in let new_second_point=apply_matrix matrix second_point in let new_third_point=apply_matrix matrix third_point in Graph {vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_first_point.x,y=new_first_point.y,u=u,v=v}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_second_point.x,y=new_second_point.y,u=u,v=v} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_third_point.x,y=new_third_point.y,u=u,v=v},index=DS.singleton 0 DS.|> 1 DS.|> 2}
+        Convex_polygon {point}->let vertex=fmap ((\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=this_point.x,y=this_point.y,u=u,v=v}) . apply_matrix matrix) point in let number=DS.length point in if number<3 then error "to_graph: error 1" else Graph {vertex=vertex,index=DS.fromFunction (3*(number-2)) for_convex_polygon}
+        Regular_polygon {number,center,radius,angle}->if number<3 then error "to_graph: error 2" else let new_angle=2*pi/fromIntegral number in Graph {vertex=fmap ((\point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=point.x,y=point.y,u=u,v=v}) . apply_matrix matrix) (DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Point {x=center.x+radius*cos direction,y=center.y+radius*sin direction})),index=DS.fromFunction (3*(number-2)) for_convex_polygon}
+        Picture {left,down,right,up,index}->case intmap_lookup index atlas.region of
+            Region {min_u,min_v,max_u,max_v}->let first_point=apply_matrix matrix (Point {x=left,y=down}) in let second_point=apply_matrix matrix (Point {x=right,y=down}) in let third_point=apply_matrix matrix (Point {x=right,y=up}) in let fourth_point=apply_matrix matrix (Point {x=left,y=up}) in Graph {vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=first_point.x,y=first_point.y,u=min_u,v=max_v}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=second_point.x,y=second_point.y,u=max_u,v=max_v} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=third_point.x,y=third_point.y,u=max_u,v=min_v} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=fourth_point.x,y=fourth_point.y,u=min_u,v=min_v},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3}
     _->error "to_graph: error 3"
 
 for_convex_polygon::Int->DW.Word32

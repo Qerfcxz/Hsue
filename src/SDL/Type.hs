@@ -10,7 +10,11 @@ data SDL_GPUTransferBuffer
 
 data SDL_GPUCommandBuffer
 
+data SDL_Surface
+
 data SDL_GPUTexture
+
+data SDL_GPUSampler
 
 data SDL_GPUCopyPass
 

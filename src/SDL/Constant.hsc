@@ -223,6 +223,85 @@ instance Storable SDL_GPUGraphicsPipelineCreateInfo where
             (#poke SDL_GPUGraphicsPipelineCreateInfo,primitive_type) pointer primitive_type
             (#poke SDL_GPUGraphicsPipelineCreateInfo,target_info) pointer target_info
 
+data SDL_GPUTextureCreateInfo=SDL_GPUTextureCreateInfo {this_type::Word32,format::Word32,usage::Word32,width::Word32,height::Word32,layer_count_or_depth::Word32,num_levels::Word32,sample_count::Word32}
+
+instance Storable SDL_GPUTextureCreateInfo where
+    sizeOf _=(#size SDL_GPUTextureCreateInfo)
+    alignment _=(#alignment SDL_GPUTextureCreateInfo)
+    peek _=error "peek: error 1"
+    poke pointer texture_create_info=case texture_create_info of
+        (SDL_GPUTextureCreateInfo {this_type,format,usage,width,height,layer_count_or_depth,num_levels,sample_count})->do
+            fillBytes pointer 0 (#size SDL_GPUTextureCreateInfo)
+            (#poke SDL_GPUTextureCreateInfo,type) pointer this_type
+            (#poke SDL_GPUTextureCreateInfo,format) pointer format
+            (#poke SDL_GPUTextureCreateInfo,usage) pointer usage
+            (#poke SDL_GPUTextureCreateInfo,width) pointer width
+            (#poke SDL_GPUTextureCreateInfo,height) pointer height
+            (#poke SDL_GPUTextureCreateInfo,layer_count_or_depth) pointer layer_count_or_depth
+            (#poke SDL_GPUTextureCreateInfo,num_levels) pointer num_levels
+            (#poke SDL_GPUTextureCreateInfo,sample_count) pointer sample_count
+
+data SDL_GPUSamplerCreateInfo=SDL_GPUSamplerCreateInfo {min_filter::Word32,mag_filter::Word32,mipmap_mode::Word32,address_mode_u::Word32,address_mode_v::Word32,address_mode_w::Word32}
+
+instance Storable SDL_GPUSamplerCreateInfo where
+    sizeOf _=(#size SDL_GPUSamplerCreateInfo)
+    alignment _=(#alignment SDL_GPUSamplerCreateInfo)
+    peek _=error "peek: error 1"
+    poke pointer sampler_create_info=case sampler_create_info of
+        (SDL_GPUSamplerCreateInfo {min_filter,mag_filter,mipmap_mode,address_mode_u,address_mode_v,address_mode_w})->do
+            fillBytes pointer 0 (#size SDL_GPUSamplerCreateInfo)
+            (#poke SDL_GPUSamplerCreateInfo,min_filter) pointer min_filter
+            (#poke SDL_GPUSamplerCreateInfo,mag_filter) pointer mag_filter
+            (#poke SDL_GPUSamplerCreateInfo,mipmap_mode) pointer mipmap_mode
+            (#poke SDL_GPUSamplerCreateInfo,address_mode_u) pointer address_mode_u
+            (#poke SDL_GPUSamplerCreateInfo,address_mode_v) pointer address_mode_v
+            (#poke SDL_GPUSamplerCreateInfo,address_mode_w) pointer address_mode_w
+
+data SDL_GPUTextureSamplerBinding=SDL_GPUTextureSamplerBinding {texture::Ptr SDL_GPUTexture,sampler::Ptr SDL_GPUSampler}
+
+instance Storable SDL_GPUTextureSamplerBinding where
+    sizeOf _=(#size SDL_GPUTextureSamplerBinding)
+    alignment _=(#alignment SDL_GPUTextureSamplerBinding)
+    peek _=error "peek: error 1"
+    poke pointer texture_sampler_binding=case texture_sampler_binding of
+        (SDL_GPUTextureSamplerBinding {texture,sampler})->do
+            fillBytes pointer 0 (#size SDL_GPUTextureSamplerBinding)
+            (#poke SDL_GPUTextureSamplerBinding,texture) pointer texture
+            (#poke SDL_GPUTextureSamplerBinding,sampler) pointer sampler
+
+data SDL_GPUTextureTransferInfo=SDL_GPUTextureTransferInfo {transfer_buffer::Ptr SDL_GPUTransferBuffer,offset::Word32,pixels_per_row::Word32,rows_per_layer::Word32}
+
+instance Storable SDL_GPUTextureTransferInfo where
+    sizeOf _=(#size SDL_GPUTextureTransferInfo)
+    alignment _=(#alignment SDL_GPUTextureTransferInfo)
+    peek _=error "peek: error 1"
+    poke pointer texture_transfer_info=case texture_transfer_info of
+        (SDL_GPUTextureTransferInfo {transfer_buffer,offset,pixels_per_row,rows_per_layer})->do
+            fillBytes pointer 0 (#size SDL_GPUTextureTransferInfo)
+            (#poke SDL_GPUTextureTransferInfo,transfer_buffer) pointer transfer_buffer
+            (#poke SDL_GPUTextureTransferInfo,offset) pointer offset
+            (#poke SDL_GPUTextureTransferInfo,pixels_per_row) pointer pixels_per_row
+            (#poke SDL_GPUTextureTransferInfo,rows_per_layer) pointer rows_per_layer
+
+data SDL_GPUTextureRegion=SDL_GPUTextureRegion {texture::Ptr SDL_GPUTexture,mip_level::Word32,layer::Word32,x::Word32,y::Word32,z::Word32,w::Word32,h::Word32,d::Word32}
+
+instance Storable SDL_GPUTextureRegion where
+    sizeOf _=(#size SDL_GPUTextureRegion)
+    alignment _=(#alignment SDL_GPUTextureRegion)
+    peek _=error "peek: error 1"
+    poke pointer texture_region=case texture_region of
+        (SDL_GPUTextureRegion {texture,mip_level,layer,x,y,z,w,h,d})->do
+            fillBytes pointer 0 (#size SDL_GPUTextureRegion)
+            (#poke SDL_GPUTextureRegion,texture) pointer texture
+            (#poke SDL_GPUTextureRegion,mip_level) pointer mip_level
+            (#poke SDL_GPUTextureRegion,layer) pointer layer
+            (#poke SDL_GPUTextureRegion,x) pointer x
+            (#poke SDL_GPUTextureRegion,y) pointer y
+            (#poke SDL_GPUTextureRegion,z) pointer z
+            (#poke SDL_GPUTextureRegion,w) pointer w
+            (#poke SDL_GPUTextureRegion,h) pointer h
+            (#poke SDL_GPUTextureRegion,d) pointer d
+
 sdl_init_video::Word32
 sdl_init_video=(#const SDL_INIT_VIDEO)
 
@@ -301,6 +380,30 @@ sdl_gpu_colorcomponent_a=(#const SDL_GPU_COLORCOMPONENT_A)
 sdl_gpu_indexelementsize_32bit::Word32
 sdl_gpu_indexelementsize_32bit=(#const SDL_GPU_INDEXELEMENTSIZE_32BIT)
 
+sdl_gpu_textureformat_r8g8b8a8_unorm::Word32
+sdl_gpu_textureformat_r8g8b8a8_unorm=(#const SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM)
+
+sdl_gpu_texturetype_2d::Word32
+sdl_gpu_texturetype_2d=(#const SDL_GPU_TEXTURETYPE_2D)
+
+sdl_gpu_textureusage_color_target::Word32
+sdl_gpu_textureusage_color_target=(#const SDL_GPU_TEXTUREUSAGE_COLOR_TARGET)
+
+sdl_gpu_textureusage_sampler::Word32
+sdl_gpu_textureusage_sampler=(#const SDL_GPU_TEXTUREUSAGE_SAMPLER)
+
+sdl_gpu_samplecount_1::Word32
+sdl_gpu_samplecount_1=(#const SDL_GPU_SAMPLECOUNT_1)
+
+sdl_gpu_filter_nearest::Word32
+sdl_gpu_filter_nearest=(#const SDL_GPU_FILTER_NEAREST)
+
+sdl_gpu_samplermipmapmode_linear::Word32
+sdl_gpu_samplermipmapmode_linear=(#const SDL_GPU_SAMPLERMIPMAPMODE_LINEAR)
+
+sdl_gpu_sampleraddressmode_clamp_to_edge::Word32
+sdl_gpu_sampleraddressmode_clamp_to_edge=(#const SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE)
+
 sdl_window_fullscreen::Word64
 sdl_window_fullscreen=(#const SDL_WINDOW_FULLSCREEN)
 
@@ -312,6 +415,9 @@ sdl_window_borderless=(#const SDL_WINDOW_BORDERLESS)
 
 sdl_window_resizable::Word64
 sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
+
+sdl_pixelformat_rgba32::Word32
+sdl_pixelformat_rgba32=(#const SDL_PIXELFORMAT_RGBA32)
 
 sdl_event_size::Int
 sdl_event_size=(#size SDL_Event)
@@ -330,6 +436,15 @@ sdl_keyboardevent_windowid pointer=(#peek SDL_KeyboardEvent,windowID) pointer
 
 sdl_keyboardevent_key::Ptr ()->IO Word32
 sdl_keyboardevent_key pointer=(#peek SDL_KeyboardEvent,key) pointer
+
+sdl_surface_w::Ptr SDL_Surface->IO CInt
+sdl_surface_w pointer=(#peek SDL_Surface,w) pointer
+
+sdl_surface_h::Ptr SDL_Surface->IO CInt
+sdl_surface_h pointer=(#peek SDL_Surface,h) pointer
+
+sdl_surface_pixels::Ptr SDL_Surface->IO (Ptr ())
+sdl_surface_pixels pointer=(#peek SDL_Surface,pixels) pointer
 
 pattern SDL_EVENT_QUIT::Word32
 pattern SDL_EVENT_QUIT=(#const SDL_EVENT_QUIT)

@@ -60,7 +60,9 @@ do_request request engine=case request of
         Trigger_request {}->return (create_active father widget_request widget_id engine,False)
         Io_trigger_request {}->return (create_active father widget_request widget_id engine,False)
         Collector_request {}->return (create_free father widget_request widget_id engine,False)
-        Geometry_request {}->return (create_bound father widget_request widget_id engine,False)
+        Geometry_request {}->do
+            new_engine<-create_bound father widget_request widget_id engine
+            return (new_engine,False)
     Remove_widget {widget_type,widget_id}->case widget_type of
         Active_widget->return (remove_active widget_id engine,False)
         Free_widget->return (remove_free widget_id engine,False)
@@ -108,6 +110,7 @@ do_request request engine=case request of
                                             F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr pointer) (fromIntegral size)
                                         FMU.with (C.SDL_GPUBufferBinding {buffer=engine.vertex_buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
                                         FMU.with (C.SDL_GPUBufferBinding {buffer=engine.index_buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
+                                        FMU.with (C.SDL_GPUTextureSamplerBinding {texture=engine.texture,sampler=engine.sampler}) (\texture_sampler_binding->F.sdl_bindgpufragmentsamplers render_pass 0 texture_sampler_binding 1)
                                         F.sdl_drawgpuindexedprimitives render_pass index_length 1 0 0 0
                                 F.sdl_endgpurenderpass render_pass
                     catch_false (F.sdl_submitgpucommandbuffer command_buffer)

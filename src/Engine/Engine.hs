@@ -4,6 +4,7 @@
 
 module Engine.Engine where
 
+import Engine.Atlas
 import Engine.Backup
 import Engine.Other
 import Engine.Request
@@ -12,6 +13,7 @@ import Engine.Type
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified SDL.Type as T
+import qualified Data.Bits as DB
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Map as DM
@@ -21,6 +23,7 @@ import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
@@ -32,16 +35,26 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::a->(Engine a->Event->Maybe Int)->Backup_strategy->Int->DW.Word64->Maybe DW.Word64->DW.Word32->DW.Word32->IO (Engine a)
-create_engine state main_id backup_strategy count time maybe_interval vertex_size index_size=do
+create_engine::a->(Engine a->Event->Maybe Int)->Backup_strategy->FCT.CInt->FCT.CInt->FCT.CInt->Int->Int->DW.Word64->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->IO (Engine a)
+create_engine state main_id backup_strategy width height padding index count time maybe_interval vertex_size index_size picture_size=if padding<0 then error "create_engine: error 1" else do
     device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
-    vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex 1 "Vertex.cso"
-    fragment_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_fragment 0 "Fragment.cso"
+    vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex 0 1 "Vertex.cso"
+    fragment_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_fragment 1 0 "Fragment.cso"
+    texture<-FMU.with (C.SDL_GPUTextureCreateInfo {this_type=C.sdl_gpu_texturetype_2d,format=C.sdl_gpu_textureformat_r8g8b8a8_unorm,usage=C.sdl_gpu_textureusage_sampler DB..|. C.sdl_gpu_textureusage_color_target,width=fromIntegral width,height=fromIntegral height,layer_count_or_depth=1,num_levels=1,sample_count=C.sdl_gpu_samplecount_1}) (return_catch_null . F.sdl_creategputexture device)
+    sampler<-FMU.with (C.SDL_GPUSamplerCreateInfo {min_filter=C.sdl_gpu_filter_nearest,mag_filter=C.sdl_gpu_filter_nearest,mipmap_mode=C.sdl_gpu_samplermipmapmode_linear,address_mode_u=C.sdl_gpu_sampleraddressmode_clamp_to_edge,address_mode_v=C.sdl_gpu_sampleraddressmode_clamp_to_edge,address_mode_w=C.sdl_gpu_sampleraddressmode_clamp_to_edge}) (return_catch_null . F.sdl_creategpusampler device)
+    command_buffer<-F.sdl_acquiregpucommandbuffer device
+    catch_null command_buffer
+    FMU.with (C.SDL_GPUColorTargetInfo {texture=texture,clear_color=C.SDL_FColor {r=0,g=0,b=0,a=0},load_op=C.sdl_gpu_loadop_clear,store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
+        render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
+        catch_null render_pass
+        F.sdl_endgpurenderpass render_pass
+    catch_false (F.sdl_submitgpucommandbuffer command_buffer)
     let create_buffer=return_catch_null . F.sdl_creategpubuffer device
     vertex_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_vertex,size=vertex_size}) create_buffer
     index_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {usage=C.sdl_gpu_bufferusage_index,size=index_size}) create_buffer
     transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {usage=C.sdl_gpu_transferbufferusage_upload,size=vertex_size+index_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
+    picture_transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {usage=C.sdl_gpu_transferbufferusage_upload,size=picture_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
     event_number<-F.sdl_registerevents 1
     callback<-F.wrapper $ \_ _ interval->do
         FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment $ \pointer->do
@@ -49,14 +62,26 @@ create_engine state main_id backup_strategy count time maybe_interval vertex_siz
             FS.poke (FP.castPtr pointer) event_number
             catch_false (F.sdl_pushevent pointer)
         return interval
-    case maybe_interval of
-        Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,time=time,timer=Off,event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
-        Just interval->if 0<interval
-            then do
-                timer_id<-F.sdl_addtimerns interval callback FP.nullPtr
-                catch_zero timer_id
-                return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,count=count,time=time,timer=On {timer_id=timer_id,interval=interval},event_number=event_number,callback=callback,device=device,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size})
-            else error "create_engine: error 1"
+    FCS.withCString "White.png" $ \path->do
+        surface<-F.img_load path
+        catch_null surface
+        new_surface<-F.sdl_convertsurface surface C.sdl_pixelformat_rgba32
+        catch_null new_surface
+        F.sdl_destroysurface surface
+        new_width<-C.sdl_surface_w new_surface
+        new_height<-C.sdl_surface_h new_surface
+        pixel<-C.sdl_surface_pixels new_surface
+        let new_picture_size=fromIntegral picture_size
+        (atlas,new_index,u,v)<-upload_picture device texture picture_transfer_buffer new_picture_size (FP.castPtr pixel) new_width new_height padding (init_atlas width height index)
+        F.sdl_destroysurface new_surface
+        case maybe_interval of
+            Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,u=u,v=v,padding=padding,atlas=atlas,index=new_index,count=count,time=time,timer=Off,event_number=event_number,callback=callback,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size,picture_size=new_picture_size})
+            Just interval->if 0<interval
+                then do
+                    timer_id<-F.sdl_addtimerns interval callback FP.nullPtr
+                    catch_zero timer_id
+                    return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,backup_strategy=backup_strategy,u=u,v=v,padding=padding,atlas=atlas,index=new_index,count=count,time=time,timer=On {timer_id=timer_id,interval=interval},event_number=event_number,callback=callback,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size,picture_size=new_picture_size})
+                else error "create_engine: error 2"
 
 clean_engine::Engine a->IO ()
 clean_engine engine=do
@@ -65,9 +90,12 @@ clean_engine engine=do
         Off->return ()
         On {timer_id}->catch_false (F.sdl_removetimer timer_id)
     FP.freeHaskellFunPtr engine.callback
+    F.sdl_releasegputexture engine.device engine.texture
+    F.sdl_releasegpusampler engine.device engine.sampler
     F.sdl_releasegpubuffer engine.device engine.vertex_buffer
     F.sdl_releasegpubuffer engine.device engine.index_buffer
     F.sdl_releasegputransferbuffer engine.device engine.transfer_buffer
+    F.sdl_releasegputransferbuffer engine.device engine.picture_transfer_buffer
     F.sdl_releasegpushader engine.device engine.vertex_shader
     F.sdl_releasegpushader engine.device engine.fragment_shader
     F.sdl_destroygpudevice engine.device

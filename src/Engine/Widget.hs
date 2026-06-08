@@ -4,10 +4,15 @@
 
 module Engine.Widget where
 
+import Engine.Atlas
 import Engine.Other
 import Engine.Type
+import SDL.Constant as C
+import SDL.Function as F
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
+import qualified Foreign.C.String as FCS
+import qualified Foreign.Ptr as FP
 
 create_active::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_active father widget_request active_id engine=let (widget,next)=make_active widget_request in case father of
@@ -30,15 +35,37 @@ make_free widget_request=case widget_request of
     Collector_request {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,graph=DIM.empty}
     _->error "make_free: error 1"
 
-create_bound::Maybe Int->Widget_request a->Int->Engine a->Engine a
-create_bound father widget_request bound_id engine=let (widget,window_id)=make_bound widget_request in let new_window=intmap_update window_id (\window->window {window_bound=intset_insert bound_id window.window_bound}) engine.window in case father of
-    Nothing->engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,backup=Single widget}) engine.bound,window=new_window}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) engine.node in engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,backup=Single widget}) engine.bound,node=new_node,window=new_window}
+create_bound::Maybe Int->Widget_request a->Int->Engine a->IO (Engine a)
+create_bound father widget_request bound_id engine=do
+    (new_engine,widget,window_id)<-make_bound widget_request engine
+    let new_window=intmap_update window_id (\window->window {window_bound=intset_insert bound_id window.window_bound}) new_engine.window in case father of
+        Nothing->return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,backup=Single widget}) new_engine.bound,window=new_window})
+        Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) new_engine.node in return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,backup=Single widget}) new_engine.bound,node=new_node,window=new_window})
 
-make_bound::Widget_request a->(Widget a,Int)
-make_bound widget_request=case widget_request of
-    Geometry_request {window_id,red,green,blue,alpha,matrix,geometry}->(Geometry {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,geometry=geometry},window_id)
+make_bound::Widget_request a->Engine a->IO (Engine a,Widget a,Int)
+make_bound widget_request engine=case widget_request of
+    Geometry_request {window_id,red,green,blue,alpha,matrix,geometry_request}->do
+        (new_engine,geometry)<-make_geometry geometry_request engine
+        return (new_engine,Geometry {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,geometry=geometry},window_id)
     _->error "make_bound: error 1"
+
+make_geometry::Geometry_request->Engine a->IO (Engine a,Geometry)
+make_geometry geometry_request engine=case geometry_request of
+    Triangle_request {first_point,second_point,third_point}->return (engine,Triangle {first_point,second_point,third_point})
+    Convex_polygon_request {point}->return (engine,Convex_polygon {point})
+    Regular_polygon_request {number,center,radius,angle}->return (engine,Regular_polygon {number,center,radius,angle})
+    Picture_request {center,path}->FCS.withCString path $ \this_path->do
+        surface<-F.img_load this_path
+        catch_null surface
+        new_surface<-F.sdl_convertsurface surface C.sdl_pixelformat_rgba32
+        catch_null new_surface
+        F.sdl_destroysurface surface
+        width<-C.sdl_surface_w new_surface
+        height<-C.sdl_surface_h new_surface
+        pixel<-C.sdl_surface_pixels new_surface
+        (atlas,index,_,_)<-upload_picture engine.device engine.texture engine.picture_transfer_buffer engine.picture_size (FP.castPtr pixel) width height engine.padding engine.atlas
+        F.sdl_destroysurface new_surface
+        let new_width=fromIntegral width/2 in let new_height=fromIntegral height/2 in return (engine {atlas=atlas},Picture {left=center.x-new_width,down=center.y-new_height,right=center.x+new_width,up=center.y+new_height,index=index})
 
 remove_active::Int->Engine a->Engine a
 remove_active active_id engine=let (new_active,active)=intmap_delete_lookup active_id engine.active in case active.ancestry of
