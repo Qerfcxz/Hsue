@@ -39,7 +39,7 @@ data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
 data Widget_type=Active_widget|Free_widget|Bound_widget
 
-data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,triangle_graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,window_bound::DIS.IntSet}
+data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,triangle_graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,window_bound::DIS.IntSet,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat}
 
 data Geometry=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,index::Int}
 
@@ -71,7 +71,7 @@ data Submit_strategy=Submit {consume::Bool}
 
 data Event=Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}
 
-data Action=Close|Press {press::Press,change::Key,maintain::DSet.Set Key}
+data Action=Close|Resize {width::FCT.CFloat,height::FCT.CFloat}|Press {press::Press,change::Key,maintain::DSet.Set Key}
 
 data Press=Press_up|Press_down
 

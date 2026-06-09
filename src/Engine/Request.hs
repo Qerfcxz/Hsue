@@ -77,7 +77,7 @@ do_request request engine=case request of
         sdl_window_id<-F.sdl_getwindowid sdl_window
         catch_zero sdl_window_id
         triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
-        let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,window_bound=DIS.empty}) engine.window in case maybe_window of
+        let new_width=fromIntegral width in let new_height=fromIntegral height in let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,window_bound=DIS.empty,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height}) engine.window in case maybe_window of
             Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
             _->error "do_request: error 3"
     Remove_window {window_id}->do
@@ -90,8 +90,8 @@ do_request request engine=case request of
                     command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
                     catch_null command_buffer
                     maybe_index_length<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.transfer_buffer engine.vertex_size engine.index_size vertex index
-                    FMA.alloca $ \pointer_texture->FMA.alloca $ \pointer_width->FMA.alloca $ \pointer_height->do
-                        value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window pointer_texture pointer_width pointer_height
+                    FMA.alloca $ \pointer_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
+                        value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window pointer_texture width height
                         CM.when (FMU.toBool value) $ do
                             texture<-FS.peek pointer_texture
                             CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {texture=texture,clear_color=C.SDL_FColor {r=0,g=0,b=0,a=1},load_op=C.sdl_gpu_loadop_clear,store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
@@ -102,11 +102,9 @@ do_request request engine=case request of
                                     Just index_length->do
                                         F.sdl_bindgpugraphicspipeline render_pass window.triangle_graphics_pipeline
                                         let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \pointer->do
-                                            width<-FS.peek pointer_width
-                                            height<-FS.peek pointer_height
                                             FMU.fillBytes pointer 0 size
-                                            FS.pokeElemOff pointer 0 (fromIntegral width::FCT.CFloat)
-                                            FS.pokeElemOff pointer 1 (fromIntegral height::FCT.CFloat)
+                                            FS.pokeElemOff pointer 0 window.adaptive_width
+                                            FS.pokeElemOff pointer 1 window.adaptive_height
                                             F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr pointer) (fromIntegral size)
                                         FMU.with (C.SDL_GPUBufferBinding {buffer=engine.vertex_buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
                                         FMU.with (C.SDL_GPUBufferBinding {buffer=engine.index_buffer,offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)

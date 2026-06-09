@@ -431,6 +431,12 @@ sdl_event_type pointer=(#peek SDL_Event,type) pointer
 sdl_windowevent_windowid::Ptr ()->IO Word32
 sdl_windowevent_windowid pointer=(#peek SDL_WindowEvent,windowID) pointer
 
+sdl_windowevent_data1::Ptr ()->IO Word32
+sdl_windowevent_data1 pointer=(#peek SDL_WindowEvent,data1) pointer
+
+sdl_windowevent_data2::Ptr ()->IO Word32
+sdl_windowevent_data2 pointer=(#peek SDL_WindowEvent,data2) pointer
+
 sdl_keyboardevent_windowid::Ptr ()->IO Word32
 sdl_keyboardevent_windowid pointer=(#peek SDL_KeyboardEvent,windowID) pointer
 
@@ -451,6 +457,9 @@ pattern SDL_EVENT_QUIT=(#const SDL_EVENT_QUIT)
 
 pattern SDL_EVENT_WINDOW_CLOSE_REQUESTED::Word32
 pattern SDL_EVENT_WINDOW_CLOSE_REQUESTED=(#const SDL_EVENT_WINDOW_CLOSE_REQUESTED)
+
+pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED::Word32
+pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED=(#const SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
 
 pattern SDL_EVENT_KEY_UP::Word32
 pattern SDL_EVENT_KEY_UP=(#const SDL_EVENT_KEY_UP)

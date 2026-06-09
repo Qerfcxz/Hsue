@@ -158,6 +158,13 @@ loop_event on event_type sdl_event engine=case event_type of
         case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Close}) sdl_event engine
+    C.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED->do
+        sdl_window_id<-C.sdl_windowevent_windowid sdl_event
+        first_data<-C.sdl_windowevent_data1 sdl_event
+        second_data<-C.sdl_windowevent_data2 sdl_event
+        case DM.lookup sdl_window_id engine.window_map of
+            Nothing->loop_event_a on sdl_event engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Resize {width=fromIntegral first_data,height=fromIntegral second_data}}) sdl_event engine
     C.SDL_EVENT_KEY_UP->do
         sdl_window_id<-C.sdl_keyboardevent_windowid sdl_event
         sdl_keycode<-C.sdl_keyboardevent_key sdl_event
