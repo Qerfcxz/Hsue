@@ -14,7 +14,7 @@ import qualified Foreign.C.Types as FCT
 
 remove_window::Int->Engine a->IO (Engine a)
 remove_window window_id engine=let (new_window,window)=intmap_delete_lookup window_id engine.window in case window of
-    Window {sdl_window_id,sdl_window,window_bound,triangle_graphics_pipeline}->do
+    Window {sdl_window_id,sdl_window,triangle_graphics_pipeline,window_bound}->do
         catch_false (F.sdl_waitforgpuidle engine.device)
         F.sdl_releasewindowfromgpudevice engine.device sdl_window
         F.sdl_releasegpugraphicspipeline engine.device triangle_graphics_pipeline
@@ -33,9 +33,9 @@ create_adaptive_window_trigger_request::(Engine a->Event->Maybe Int)->DIS.IntSet
 create_adaptive_window_trigger_request next window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a window_id}
 
 create_adaptive_window_trigger_request_a::DIS.IntSet->Event->Engine a->Engine a
-create_adaptive_window_trigger_request_a this_window_id event engine=case event of
+create_adaptive_window_trigger_request_a intset event engine=case event of
     At {window_id,action}->case action of
-        Resize {width,height}->if DIS.member window_id this_window_id then engine {window=intmap_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
+        Resize {width,height}->if DIS.member window_id intset then engine {window=intmap_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
         _->engine
     _->engine
 

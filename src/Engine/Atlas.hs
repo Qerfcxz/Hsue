@@ -46,7 +46,7 @@ upload_picture device texture picture_transfer_buffer picture_size pixel width h
     catch_null command_buffer
     copy_pass<-F.sdl_begingpucopypass command_buffer
     catch_null copy_pass
-    FMU.with (C.SDL_GPUTextureTransferInfo {transfer_buffer=picture_transfer_buffer,offset=0,pixels_per_row=new_width,rows_per_layer=new_height}) $ \texture_transfer_info->FMU.with (C.SDL_GPUTextureRegion {texture=texture,mip_level=0,layer=0,x=fromIntegral left,y=fromIntegral down,z=0,w=new_width,h=new_height,d=1}) $ \texture_region->F.sdl_uploadtogputexture copy_pass texture_transfer_info texture_region (FMU.fromBool False)
+    FMU.with (C.SDL_GPUTextureTransferInfo {sdl_transfer_buffer=picture_transfer_buffer,sdl_offset=0,sdl_pixels_per_row=new_width,sdl_rows_per_layer=new_height}) $ \texture_transfer_info->FMU.with (C.SDL_GPUTextureRegion {sdl_texture=texture,sdl_mip_level=0,sdl_layer=0,sdl_x=fromIntegral left,sdl_y=fromIntegral down,sdl_z=0,sdl_w=new_width,sdl_h=new_height,sdl_d=1}) $ \texture_region->F.sdl_uploadtogputexture copy_pass texture_transfer_info texture_region (FMU.fromBool False)
     F.sdl_endgpucopypass copy_pass
     catch_false (F.sdl_submitgpucommandbuffer command_buffer)
     return (new_atlas,index,u,v)

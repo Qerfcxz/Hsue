@@ -16,8 +16,8 @@ import qualified Foreign.Ptr as FP
 
 create_active::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_active father widget_request active_id engine=let (widget,next)=make_active widget_request in case father of
-    Nothing->engine {active=intmap_insert active_id (Active {next=next,ancestry=DS.empty,backup=Single widget}) engine.active}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {active_child=intset_insert active_id this_node.active_child}) engine.node in engine {active=intmap_insert active_id (Active {next=next,ancestry=node.ancestry DS.|> node_id,backup=Single widget}) engine.active,node=new_node}
+    Nothing->engine {active=intmap_insert active_id (Active {next=next,ancestry=DS.empty,projection=Without widget}) engine.active}
+    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {active_child=intset_insert active_id this_node.active_child}) engine.node in engine {active=intmap_insert active_id (Active {next=next,ancestry=node.ancestry DS.|> node_id,projection=Without widget}) engine.active,node=new_node}
 
 make_active::Widget_request a->(Widget a,Engine a->Event->Maybe Int)
 make_active widget_request=case widget_request of
@@ -27,8 +27,8 @@ make_active widget_request=case widget_request of
 
 create_free::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_free father widget_request free_id engine=let widget=make_free widget_request in case father of
-    Nothing->engine {free=intmap_insert free_id (Free {ancestry=DS.empty,backup=Single widget}) engine.free}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {free_child=intset_insert free_id this_node.free_child}) engine.node in engine {free=intmap_insert free_id (Free {ancestry=node.ancestry DS.|> node_id,backup=Single widget}) engine.free,node=new_node}
+    Nothing->engine {free=intmap_insert free_id (Free {ancestry=DS.empty,projection=Without widget}) engine.free}
+    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {free_child=intset_insert free_id this_node.free_child}) engine.node in engine {free=intmap_insert free_id (Free {ancestry=node.ancestry DS.|> node_id,projection=Without widget}) engine.free,node=new_node}
 
 make_free::Widget_request a->Widget a
 make_free widget_request=case widget_request of
@@ -39,18 +39,18 @@ create_bound::Maybe Int->Widget_request a->Int->Engine a->IO (Engine a)
 create_bound father widget_request bound_id engine=do
     (new_engine,widget,window_id)<-make_bound widget_request engine
     let new_window=intmap_update window_id (\window->window {window_bound=intset_insert bound_id window.window_bound}) new_engine.window in case father of
-        Nothing->return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,backup=Single widget}) new_engine.bound,window=new_window})
-        Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) new_engine.node in return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,backup=Single widget}) new_engine.bound,node=new_node,window=new_window})
+        Nothing->return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,projection=Without widget}) new_engine.bound,window=new_window})
+        Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) new_engine.node in return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,projection=Without widget}) new_engine.bound,node=new_node,window=new_window})
 
 make_bound::Widget_request a->Engine a->IO (Engine a,Widget a,Int)
 make_bound widget_request engine=case widget_request of
-    Geometry_request {window_id,red,green,blue,alpha,matrix,geometry_request}->do
-        (new_engine,geometry)<-make_geometry geometry_request engine
-        return (new_engine,Geometry {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,geometry=geometry},window_id)
+    Visual_request {window_id,red,green,blue,alpha,matrix,visual_request}->do
+        (new_engine,visual)<-make_visual visual_request engine
+        return (new_engine,Visual {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,visual=visual},window_id)
     _->error "make_bound: error 1"
 
-make_geometry::Geometry_request->Engine a->IO (Engine a,Geometry)
-make_geometry geometry_request engine=case geometry_request of
+make_visual::Visual_request->Engine a->IO (Engine a,Visual)
+make_visual visual_request engine=case visual_request of
     Triangle_request {first_point,second_point,third_point}->return (engine,Triangle {first_point,second_point,third_point})
     Convex_polygon_request {point}->return (engine,Convex_polygon {point})
     Regular_polygon_request {number,center,radius,angle}->return (engine,Regular_polygon {number,center,radius,angle})

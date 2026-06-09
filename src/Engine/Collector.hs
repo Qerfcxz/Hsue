@@ -4,8 +4,8 @@
 
 module Engine.Collector where
 
-import Engine.Backup
 import Engine.Other
+import Engine.Projection
 import Engine.Type
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
@@ -13,20 +13,20 @@ import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 
-collect::Backup_path->Backup_path->Collect_strategy->Engine a->Engine a
-collect from_backup_path to_backup_path collect_strategy engine=engine {free=path_update_backup_free to_backup_path (collect_a (DS.singleton (to_graph engine.u engine.v engine.atlas (path_lookup_backup_bound from_backup_path engine.bound))) collect_strategy) engine.free}
+collect::Projection_path->Int->Collect_strategy->Engine a->Engine a
+collect projection_path collect_id collect_strategy engine=engine {free=intmap_update collect_id (update_projection_free (projection_update_object (collect_a (DS.singleton (to_graph engine.u engine.v engine.atlas (path_lookup_projection_bound projection_path engine.bound))) collect_strategy))) engine.free}
 
 collect_a::DS.Seq Graph->Collect_strategy->Widget a->Widget a
-collect_a new_graph collect_strategy widget=case widget of
+collect_a seq_graph collect_strategy widget=case widget of
     Collector {initial_min_index,initial_max_index,min_index,max_index,graph}->case collect_strategy of
-        Min_collect->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index-1,max_index=max_index,graph=intmap_insert min_index new_graph graph}
-        Max_collect->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index+1,graph=intmap_insert max_index new_graph graph}
-        Index_collect {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=seat-1,max_index=max_index,graph=intmap_insert seat new_graph graph} else if max_index<=seat then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=seat+1,graph=intmap_insert seat new_graph graph} else Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index,graph=intmap_insert seat new_graph graph}
+        Min_collect_strategy->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index-1,max_index=max_index,graph=intmap_insert min_index seq_graph graph}
+        Max_collect_strategy->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index+1,graph=intmap_insert max_index seq_graph graph}
+        Index_collect_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=seat-1,max_index=max_index,graph=intmap_insert seat seq_graph graph} else if max_index<=seat then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=seat+1,graph=intmap_insert seat seq_graph graph} else Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index,graph=intmap_insert seat seq_graph graph}
     _->error "collect_a: error 1"
 
 to_graph::FCT.CFloat->FCT.CFloat->Atlas->Widget a->Graph
 to_graph u v atlas widget=case widget of
-    Geometry {red,green,blue,alpha,matrix,geometry}->case geometry of
+    Visual {red,green,blue,alpha,matrix,visual}->case visual of
         Triangle {first_point,second_point,third_point}->let new_first_point=apply_matrix matrix first_point in let new_second_point=apply_matrix matrix second_point in let new_third_point=apply_matrix matrix third_point in Graph {vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_first_point.x,y=new_first_point.y,u=u,v=v}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_second_point.x,y=new_second_point.y,u=u,v=v} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_third_point.x,y=new_third_point.y,u=u,v=v},index=DS.singleton 0 DS.|> 1 DS.|> 2}
         Convex_polygon {point}->let vertex=fmap ((\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=this_point.x,y=this_point.y,u=u,v=v}) . apply_matrix matrix) point in let number=DS.length point in if number<3 then error "to_graph: error 1" else Graph {vertex=vertex,index=DS.fromFunction (3*(number-2)) for_convex_polygon}
         Regular_polygon {number,center,radius,angle}->if number<3 then error "to_graph: error 2" else let new_angle=2*pi/fromIntegral number in Graph {vertex=fmap ((\point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=point.x,y=point.y,u=u,v=v}) . apply_matrix matrix) (DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Point {x=center.x+radius*cos direction,y=center.y+radius*sin direction})),index=DS.fromFunction (3*(number-2)) for_convex_polygon}
@@ -41,19 +41,13 @@ for_convex_polygon index=let (quotient,remainder)=divMod index 3 in let new_quot
     2->new_quotient+1
     _->error "for_convex_polygon: error 1"
 
-move::Backup_path->Backup_path->Move_strategy->Engine a->Engine a
-move from_backup_path to_backup_path move_strategy engine=let (collect_strategy,consume)=to_collect_strategy move_strategy in let (free,widget)=consume_update_lookup_backup_free consume from_backup_path consume_widget engine.free in engine {free=path_update_backup_free to_backup_path (collect_a (move_a widget) collect_strategy) free}
+move::Projection_move->Int->Collect_strategy->Engine a->Engine a
+move projection_move collect_id collect_strategy engine=let (free,widget)=move_update_lookup_projection_free projection_move consume_widget engine.free in engine {free=intmap_update collect_id (update_projection_free (projection_update_object (collect_a (move_a widget) collect_strategy))) free}
 
 move_a::Widget a->DS.Seq Graph
 move_a widget=case widget of
     Collector {graph}->DF.foldl' (DS.><) DS.empty graph
     _->error "move_a: error 1"
-
-to_collect_strategy::Move_strategy->(Collect_strategy,Bool)
-to_collect_strategy move_strategy=case move_strategy of
-    Min_move {consume}->(Min_collect,consume)
-    Max_move {consume}->(Max_collect,consume)
-    Index_move {consume,seat}->(Index_collect {seat},consume)
 
 consume_widget::Widget a->Widget a
 consume_widget widget=case widget of
