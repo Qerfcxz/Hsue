@@ -21,9 +21,9 @@ import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
-import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
@@ -75,12 +75,12 @@ create_engine state main_id projection_strategy width height padding index count
         (atlas,new_index,u,v)<-upload_picture device texture picture_transfer_buffer new_picture_size (FP.castPtr pixel) new_width new_height padding (init_atlas width height index)
         F.sdl_destroysurface new_surface
         case maybe_interval of
-            Nothing->return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,projection_strategy=projection_strategy,u=u,v=v,padding=padding,atlas=atlas,index=new_index,count=count,time=time,timer=Off,event_number=event_number,callback=callback,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size,picture_size=new_picture_size})
+            Nothing->return (Engine {state=state,active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,projection_strategy=projection_strategy,u=u,v=v,padding=padding,atlas=atlas,index=new_index,count=count,time=time,timer=Off,event_number=event_number,callback=callback,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size,picture_size=new_picture_size})
             Just interval->if 0<interval
                 then do
                     timer_id<-F.sdl_addtimerns interval callback FP.nullPtr
                     catch_zero timer_id
-                    return (Engine {state=state,active=DIM.empty,free=DIM.empty,bound=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,projection_strategy=projection_strategy,u=u,v=v,padding=padding,atlas=atlas,index=new_index,count=count,time=time,timer=On {timer_id=timer_id,interval=interval},event_number=event_number,callback=callback,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size,picture_size=new_picture_size})
+                    return (Engine {state=state,active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,main_id=main_id,projection_strategy=projection_strategy,u=u,v=v,padding=padding,atlas=atlas,index=new_index,count=count,time=time,timer=On {timer_id=timer_id,interval=interval},event_number=event_number,callback=callback,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,vertex_size=fromIntegral vertex_size,index_size=fromIntegral index_size,picture_size=new_picture_size})
                 else error "create_engine: error 2"
 
 clean_engine::Engine a->IO ()

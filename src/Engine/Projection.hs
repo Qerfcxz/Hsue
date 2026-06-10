@@ -10,56 +10,33 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 
-create_projection::Widget_type->Int->Engine a->Engine a
-create_projection widget_type widget_id engine=case widget_type of
-    Active_widget->engine {active=intmap_update widget_id (ancestry_update_projection_active (`insert_projection` engine)) engine.active}
-    Free_widget->engine {free=intmap_update widget_id (ancestry_update_projection_free (`insert_projection` engine)) engine.free}
-    Bound_widget->engine {bound=intmap_update widget_id (ancestry_update_projection_bound (`insert_projection` engine)) engine.bound}
+create_projection::Bool->Int->Engine a->Engine a
+create_projection widget_type widget_id engine=if widget_type then engine {active=intmap_update widget_id (ancestry_update_projection_active (`insert_projection` engine)) engine.active} else engine {inactive=intmap_update widget_id (ancestry_update_projection_inactive (`insert_projection` engine)) engine.inactive}
 
-create_projection_safe::Widget_type->Int->Engine a->Engine a
-create_projection_safe widget_type widget_id engine=case widget_type of
-    Active_widget->engine {active=DIM.adjust (ancestry_update_projection_active (`insert_projection_safe` engine)) widget_id engine.active}
-    Free_widget->engine {free=DIM.adjust (ancestry_update_projection_free (`insert_projection_safe` engine)) widget_id engine.free}
-    Bound_widget->engine {bound=DIM.adjust (ancestry_update_projection_bound (`insert_projection_safe` engine)) widget_id engine.bound}
+create_projection_safe::Bool->Int->Engine a->Engine a
+create_projection_safe widget_type widget_id engine=if widget_type then engine {active=DIM.adjust (ancestry_update_projection_active (`insert_projection_safe` engine)) widget_id engine.active} else engine {inactive=DIM.adjust (ancestry_update_projection_inactive (`insert_projection_safe` engine)) widget_id engine.inactive}
 
-remove_projection::Widget_type->Int->Engine a->Engine a
-remove_projection widget_type widget_id engine=case widget_type of
-    Active_widget->engine {active=intmap_update widget_id (update_projection_active projection_remove) engine.active}
-    Free_widget->engine {free=intmap_update widget_id (update_projection_free projection_remove) engine.free}
-    Bound_widget->engine {bound=intmap_update widget_id (update_projection_bound projection_remove) engine.bound}
+remove_projection::Bool->Int->Engine a->Engine a
+remove_projection widget_type widget_id engine=if widget_type then engine {active=intmap_update widget_id (update_projection_active projection_remove) engine.active} else engine {inactive=intmap_update widget_id (update_projection_inactive projection_remove) engine.inactive}
 
-remove_projection_safe::Widget_type->Int->Engine a->Engine a
-remove_projection_safe widget_type widget_id engine=case widget_type of
-    Active_widget->engine {active=DIM.adjust (update_projection_active projection_remove_safe) widget_id engine.active}
-    Free_widget->engine {free=DIM.adjust (update_projection_free projection_remove_safe) widget_id engine.free}
-    Bound_widget->engine {bound=DIM.adjust (update_projection_bound projection_remove_safe) widget_id engine.bound}
+remove_projection_safe::Bool->Int->Engine a->Engine a
+remove_projection_safe widget_type widget_id engine=if widget_type then engine {active=DIM.adjust (update_projection_active projection_remove_safe) widget_id engine.active} else engine {inactive=DIM.adjust (update_projection_inactive projection_remove_safe) widget_id engine.inactive}
 
 update_projection_active::(Projection (Widget a)->Projection (Widget a))->Active a->Active a
 update_projection_active update active=case active of
     Active {next,ancestry,projection}->Active {next=next,ancestry=ancestry,projection=update projection}
 
-update_projection_free::(Projection (Widget a)->Projection (Widget a))->Free a->Free a
-update_projection_free update free=case free of
-    Free {ancestry,projection}->Free {ancestry=ancestry,projection=update projection}
-
-update_projection_bound::(Projection (Widget a)->Projection (Widget a))->Bound a->Bound a
-update_projection_bound update bound=case bound of
-    Bound {window_id,ancestry,projection}->Bound {window_id=window_id,ancestry=ancestry,projection=update projection}
+update_projection_inactive::(Projection (Widget a)->Projection (Widget a))->Inactive a->Inactive a
+update_projection_inactive update inactive=case inactive of
+    Inactive {ancestry,projection}->Inactive {ancestry=ancestry,projection=update projection}
 
 ancestry_update_projection_active::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Active a->Active a
 ancestry_update_projection_active update active=case active of
     Active {next,ancestry,projection}->Active {next=next,ancestry=ancestry,projection=update ancestry projection}
 
-ancestry_update_projection_free::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Free a->Free a
-ancestry_update_projection_free update free=case free of
-    Free {ancestry,projection}->Free {ancestry=ancestry,projection=update ancestry projection}
-
-ancestry_update_projection_bound::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Bound a->Bound a
-ancestry_update_projection_bound update bound=case bound of
-    Bound {window_id,ancestry,projection}->Bound {window_id=window_id,ancestry=ancestry,projection=update ancestry projection}
-
-do_widget_transform::DS.Seq Int->Engine a->Widget a->Widget a
-do_widget_transform ancestry engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine) widget ancestry
+ancestry_update_projection_inactive::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Inactive a->Inactive a
+ancestry_update_projection_inactive update inactive=case inactive of
+    Inactive {ancestry,projection}->Inactive {ancestry=ancestry,projection=update ancestry projection}
 
 insert_projection::DS.Seq Int->Engine a->Projection (Widget a)->Projection (Widget a)
 insert_projection ancestry engine projection=case projection of
@@ -70,6 +47,9 @@ insert_projection_safe::DS.Seq Int->Engine a->Projection (Widget a)->Projection 
 insert_projection_safe ancestry engine projection=case projection of
     Without {object}->With {object=object,image=do_widget_transform ancestry engine object}
     With {object}->With {object=object,image=do_widget_transform ancestry engine object}
+
+do_widget_transform::DS.Seq Int->Engine a->Widget a->Widget a
+do_widget_transform ancestry engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine) widget ancestry
 
 projection_remove::Projection a->Projection a
 projection_remove projection=case projection of
@@ -123,26 +103,26 @@ projection_update_image_safe update projection=case projection of
     Without {object}->Without {object=update object}
     With {object,image}->With {object=object,image=update image}
 
-path_lookup_projection_bound::Projection_path->DIM.IntMap (Bound a)->Widget a
-path_lookup_projection_bound projection_path bound=case projection_path of
-    Object_path {projection_id}->projection_lookup_object (intmap_lookup projection_id bound).projection
-    Image_path {projection_id}->projection_lookup_image (intmap_lookup projection_id bound).projection
-    Image_safe_path {projection_id}->projection_lookup_image_safe (intmap_lookup projection_id bound).projection
+path_lookup_projection_inactive::Projection_path->DIM.IntMap (Inactive a)->Widget a
+path_lookup_projection_inactive projection_path inactive=case projection_path of
+    Object_path {projection_id}->projection_lookup_object (intmap_lookup projection_id inactive).projection
+    Image_path {projection_id}->projection_lookup_image (intmap_lookup projection_id inactive).projection
+    Image_safe_path {projection_id}->projection_lookup_image_safe (intmap_lookup projection_id inactive).projection
 
-path_update_projection_free::Projection_path->(Widget a->Widget a)->DIM.IntMap (Free a)->DIM.IntMap (Free a)
-path_update_projection_free projection_path update free=case projection_path of
-    Object_path {projection_id}->intmap_update projection_id (update_projection_free (projection_update_object update)) free
-    Image_path {projection_id}->intmap_update projection_id (update_projection_free (projection_update_image update)) free
-    Image_safe_path {projection_id}->intmap_update projection_id (update_projection_free (projection_update_image_safe update)) free
+path_update_projection_inactive::Projection_path->(Widget a->Widget a)->DIM.IntMap (Inactive a)->DIM.IntMap (Inactive a)
+path_update_projection_inactive projection_path update inactive=case projection_path of
+    Object_path {projection_id}->intmap_update projection_id (update_projection_inactive (projection_update_object update)) inactive
+    Image_path {projection_id}->intmap_update projection_id (update_projection_inactive (projection_update_image update)) inactive
+    Image_safe_path {projection_id}->intmap_update projection_id (update_projection_inactive (projection_update_image_safe update)) inactive
 
-move_update_lookup_projection_free::Projection_move->(Widget a->Widget a)->DIM.IntMap (Free a)->(DIM.IntMap (Free a),Widget a)
-move_update_lookup_projection_free projection_move update free=case projection_move of
-    Object_move {consume,projection_id}->intmap_calculate projection_id (consume_update_lookup_projection_free_a consume update) free
-    Image_move {projection_id}->(free,projection_lookup_image (intmap_lookup projection_id free).projection)
-    Image_safe_move {projection_id}->(free,projection_lookup_image_safe (intmap_lookup projection_id free).projection)
+move_update_lookup_projection_inactive::Projection_move->(Widget a->Widget a)->DIM.IntMap (Inactive a)->(DIM.IntMap (Inactive a),Widget a)
+move_update_lookup_projection_inactive projection_move update inactive=case projection_move of
+    Object_move {consume,projection_id}->intmap_calculate projection_id (move_update_lookup_projection_inactive_a consume update) inactive
+    Image_move {projection_id}->(inactive,projection_lookup_image (intmap_lookup projection_id inactive).projection)
+    Image_safe_move {projection_id}->(inactive,projection_lookup_image_safe (intmap_lookup projection_id inactive).projection)
 
-consume_update_lookup_projection_free_a::Bool->(Widget a->Widget a)->Free a->(Free a,Widget a)
-consume_update_lookup_projection_free_a consume update free=case free of
-    Free {ancestry,projection}->case projection of
-        Without {object}->(if consume then Free {ancestry=ancestry,projection=projection {object=update object}} else free,object)
-        With {object}->(if consume then Free {ancestry=ancestry,projection=projection {object=update object}} else free,object)
+move_update_lookup_projection_inactive_a::Bool->(Widget a->Widget a)->Inactive a->(Inactive a,Widget a)
+move_update_lookup_projection_inactive_a consume update inactive=case inactive of
+    Inactive {ancestry,projection}->case projection of
+        Without {object}->(if consume then Inactive {ancestry=ancestry,projection=projection {object=update object}} else inactive,object)
+        With {object}->(if consume then Inactive {ancestry=ancestry,projection=projection {object=update object}} else inactive,object)

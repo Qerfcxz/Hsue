@@ -19,7 +19,6 @@ import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
-import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
@@ -59,14 +58,13 @@ do_request request engine=case request of
     Create_widget {father,widget_request,widget_id}->case widget_request of
         Trigger_request {}->return (create_active father widget_request widget_id engine,False)
         Io_trigger_request {}->return (create_active father widget_request widget_id engine,False)
-        Collector_request {}->return (create_free father widget_request widget_id engine,False)
-        Visual_request {}->do
-            new_engine<-create_bound father widget_request widget_id engine
+        Collector_request {}->do
+            new_engine<-create_inactive father widget_request widget_id engine
             return (new_engine,False)
-    Remove_widget {widget_type,widget_id}->case widget_type of
-        Active_widget->return (remove_active widget_id engine,False)
-        Free_widget->return (remove_free widget_id engine,False)
-        Bound_widget->return (remove_bound widget_id engine,False)
+        Visual_request {}->do
+            new_engine<-create_inactive father widget_request widget_id engine
+            return (new_engine,False)
+    Remove_widget {widget_type,widget_id}->if widget_type then return (remove_active widget_id engine,False) else return (remove_inactive widget_id engine,False)
     Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine,False)
     Remove_node {node_id}->return (remove_node node_id engine,False)
     Create_window {window_id,title,width,height,red,green,blue,alpha,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
@@ -77,13 +75,13 @@ do_request request engine=case request of
         sdl_window_id<-F.sdl_getwindowid sdl_window
         catch_zero sdl_window_id
         triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
-        let new_width=fromIntegral width in let new_height=fromIntegral height in let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,window_bound=DIS.empty,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in case maybe_window of
+        let new_width=fromIntegral width in let new_height=fromIntegral height in let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in case maybe_window of
             Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
             _->error "do_request: error 3"
     Remove_window {window_id}->do
         new_engine<-remove_window window_id engine
         return (new_engine,False)
-    Render {projection_move,window_id}->let (free,widget)=move_update_lookup_projection_free projection_move consume_widget engine.free in case widget of
+    Render {projection_move,window_id}->let (inactive,widget)=move_update_lookup_projection_inactive projection_move consume_widget engine.inactive in case widget of
         Collector {graph}->case for_submit graph of
             Graph {vertex,index}->let window=intmap_lookup window_id engine.window in do
                 command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
@@ -111,7 +109,7 @@ do_request request engine=case request of
                                     F.sdl_drawgpuindexedprimitives render_pass index_length 1 0 0 0
                             F.sdl_endgpurenderpass render_pass
                 catch_false (F.sdl_submitgpucommandbuffer command_buffer)
-                return (engine {free=free},False)
+                return (engine {inactive=inactive},False)
         _->error "do_request: error 4"
     Io {io}->do
         new_engine<-io engine

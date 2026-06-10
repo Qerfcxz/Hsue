@@ -25,29 +25,20 @@ make_active widget_request=case widget_request of
     Io_trigger_request {next,io_trigger}->(Io_trigger {io_trigger=io_trigger},next)
     _->error "make_active: error 1"
 
-create_free::Maybe Int->Widget_request a->Int->Engine a->Engine a
-create_free father widget_request free_id engine=let widget=make_free widget_request in case father of
-    Nothing->engine {free=intmap_insert free_id (Free {ancestry=DS.empty,projection=Without widget}) engine.free}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {free_child=intset_insert free_id this_node.free_child}) engine.node in engine {free=intmap_insert free_id (Free {ancestry=node.ancestry DS.|> node_id,projection=Without widget}) engine.free,node=new_node}
+create_inactive::Maybe Int->Widget_request a->Int->Engine a->IO (Engine a)
+create_inactive father widget_request inactive_id engine=do
+    (new_engine,widget)<-make_inactive widget_request engine
+    case father of
+        Nothing->return (new_engine {inactive=intmap_insert inactive_id (Inactive {ancestry=DS.empty,projection=Without widget}) new_engine.inactive})
+        Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {inactive_child=intset_insert inactive_id this_node.inactive_child}) new_engine.node in return (new_engine {inactive=intmap_insert inactive_id (Inactive {ancestry=node.ancestry DS.|> node_id,projection=Without widget}) new_engine.inactive,node=new_node})
 
-make_free::Widget_request a->Widget a
-make_free widget_request=case widget_request of
-    Collector_request {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,graph=DIM.empty}
-    _->error "make_free: error 1"
-
-create_bound::Maybe Int->Widget_request a->Int->Engine a->IO (Engine a)
-create_bound father widget_request bound_id engine=do
-    (new_engine,widget,window_id)<-make_bound widget_request engine
-    let new_window=intmap_update window_id (\window->window {window_bound=intset_insert bound_id window.window_bound}) new_engine.window in case father of
-        Nothing->return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=DS.empty,projection=Without widget}) new_engine.bound,window=new_window})
-        Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {bound_child=intset_insert bound_id this_node.bound_child}) new_engine.node in return (new_engine {bound=intmap_insert bound_id (Bound {window_id=window_id,ancestry=node.ancestry DS.|> node_id,projection=Without widget}) new_engine.bound,node=new_node,window=new_window})
-
-make_bound::Widget_request a->Engine a->IO (Engine a,Widget a,Int)
-make_bound widget_request engine=case widget_request of
-    Visual_request {window_id,red,green,blue,alpha,matrix,visual_request}->do
+make_inactive::Widget_request a->Engine a->IO (Engine a,Widget a)
+make_inactive widget_request engine=case widget_request of
+    Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,graph=DIM.empty})
+    Visual_request {red,green,blue,alpha,matrix,visual_request}->do
         (new_engine,visual)<-make_visual visual_request engine
-        return (new_engine,Visual {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,visual=visual},window_id)
-    _->error "make_bound: error 1"
+        return (new_engine,Visual {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,visual=visual})
+    _->error "make_inactive: error 1"
 
 make_visual::Visual_request->Engine a->IO (Engine a,Visual)
 make_visual visual_request engine=case visual_request of
@@ -72,12 +63,7 @@ remove_active active_id engine=let (new_active,active)=intmap_delete_lookup acti
     DS.Empty->engine {active=new_active}
     _ DS.:|> node_id->engine {active=new_active,node=intmap_update node_id (\node->node {active_child=intset_delete active_id node.active_child}) engine.node}
 
-remove_free::Int->Engine a->Engine a
-remove_free free_id engine=let (new_free,free)=intmap_delete_lookup free_id engine.free in case free.ancestry of
-    DS.Empty->engine {free=new_free}
-    _ DS.:|> node_id->engine {free=new_free,node=intmap_update node_id (\node->node {free_child=intset_delete free_id node.free_child}) engine.node}
-
-remove_bound::Int->Engine a->Engine a
-remove_bound bound_id engine=let (new_bound,bound)=intmap_delete_lookup bound_id engine.bound in let new_window=intmap_update bound.window_id (\window->window {window_bound=intset_delete bound_id window.window_bound}) engine.window in case bound.ancestry of
-    DS.Empty->engine {bound=new_bound,window=new_window}
-    _ DS.:|> node_id->engine {bound=new_bound,node=intmap_update node_id (\node->node {bound_child=intset_delete bound_id node.bound_child}) engine.node,window=new_window}
+remove_inactive::Int->Engine a->Engine a
+remove_inactive inactive_id engine=let (new_inactive,inactive)=intmap_delete_lookup inactive_id engine.inactive in case inactive.ancestry of
+    DS.Empty->engine {inactive=new_inactive}
+    _ DS.:|> node_id->engine {inactive=new_inactive,node=intmap_update node_id (\node->node {inactive_child=intset_delete inactive_id node.inactive_child}) engine.node}
