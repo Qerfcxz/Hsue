@@ -18,10 +18,12 @@ common warnings
 library
     import:           warnings
     exposed-modules:
+        Engine.Atlas
+        Engine.Collector
         Engine.Engine
-        Engine.Event
         Engine.Node
         Engine.Other
+        Engine.Projection
         Engine.Request
         Engine.Shader
         Engine.Type
@@ -43,6 +45,9 @@ library
 executable Hsue
     import:           warnings
     main-is:          Main.hs
+    ghc-options:
+        -threaded
+        -with-rtsopts=-N
     -- other-modules:
     -- other-extensions:
     build-depends:
@@ -51,8 +56,13 @@ executable Hsue
         containers ==0.8,
         text ==2.1.4,
         Hsue
-    extra-libraries:  SDL3
-    include-dirs:     C:\D\MSYS2\mingw64\include\SDL3
-    extra-lib-dirs:   C:\D\MSYS2\mingw64\lib
+    extra-libraries:
+        SDL3
+        SDL3_image
+    include-dirs:
+        C:\D\MSYS2\mingw64\include\SDL3
+        C:\D\MSYS2\mingw64\include\SDL3_image
+    extra-lib-dirs:
+        C:\D\MSYS2\mingw64\lib
     hs-source-dirs:   app
     default-language: Haskell2010
