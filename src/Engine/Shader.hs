@@ -34,11 +34,11 @@ create_triangle_graphics_pipeline sdl_window device vertex_shader fragment_shade
         FMU.with C.SDL_GPUColorTargetDescription {sdl_format=format,sdl_blend_state=standard_blend_state} (\color_target_description->FMU.with C.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader,sdl_fragment_shader=fragment_shader,sdl_vertex_input_state=C.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=vertex_buffer_description,sdl_num_vertex_buffers=1,sdl_vertex_attributes=vertex_attribute,sdl_num_vertex_attributes=3},sdl_primitive_type=C.sdl_gpu_primitivetype_trianglelist,sdl_target_info=C.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . F.sdl_creategpugraphicspipeline device))
 
 update_buffer::FP.Ptr T.SDL_GPUDevice->FP.Ptr T.SDL_GPUCommandBuffer->FP.Ptr T.SDL_GPUBuffer->FP.Ptr T.SDL_GPUBuffer->FP.Ptr T.SDL_GPUTransferBuffer->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->IO (Maybe DW.Word32)
-update_buffer device command_buffer vertex_buffer index_buffer transfer_buffer vertex_size index_size vertex index=let vertex_length=DS.length vertex in let index_length=DS.length index in if vertex_length==0||index_length==0 then return Nothing else let new_vertex_size=vertex_length*FS.sizeOf (undefined::Vertex) in let new_index_size=index_length*FS.sizeOf (undefined::DW.Word32) in if vertex_size<new_vertex_size||index_size<new_index_size then error "update_buffer: error 1" else do
+update_buffer device command_buffer vertex_buffer index_buffer transfer_buffer vertex_size index_size vertex index=let vertex_length=DS.length vertex in let index_length=DS.length index in if vertex_length==0||index_length==0 then return Nothing else let single_vertex=FS.sizeOf (undefined::Vertex) in let single_index=FS.sizeOf (undefined::DW.Word32) in let new_vertex_size=vertex_length*single_vertex in let new_index_size=index_length*single_index in if vertex_size<new_vertex_size||index_size<new_index_size then error "update_buffer: error 1" else do
     map_transfer_buffer<-F.sdl_mapgputransferbuffer device transfer_buffer (FMU.fromBool True)
     catch_null map_transfer_buffer
-    seq_poke_array (FP.castPtr map_transfer_buffer) vertex
-    seq_poke_array (FP.plusPtr map_transfer_buffer vertex_size) index
+    seq_poke_array single_vertex vertex (FP.castPtr map_transfer_buffer)
+    seq_poke_array single_index index (FP.plusPtr map_transfer_buffer vertex_size)
     F.sdl_unmapgputransferbuffer device transfer_buffer
     copy_pass<-F.sdl_begingpucopypass command_buffer
     catch_null copy_pass

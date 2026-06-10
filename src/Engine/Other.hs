@@ -5,6 +5,7 @@ module Engine.Other where
 
 import Engine.Type
 import qualified Control.Monad as CM
+import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
@@ -91,12 +92,8 @@ intset_delete key intset=if DIS.member key intset then DIS.delete key intset els
 intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
 intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) return
 
-seq_poke_array::FS.Storable a=>FP.Ptr a->DS.Seq a->IO ()
-seq_poke_array pointer seq_value=case seq_value of
-    DS.Empty->return ()
-    value DS.:<| other_value->let size=FS.sizeOf value in do
-        FS.poke pointer value
-        CM.foldM_ (\this_pointer this_value->FS.poke this_pointer this_value>>return (FP.plusPtr this_pointer size)) (FP.plusPtr pointer size) other_value
+seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
+seq_poke_array size seq_value pointer=CM.void (DF.foldlM (\this_pointer value->FS.poke this_pointer value>>return (FP.plusPtr this_pointer size)) pointer seq_value)
 
 apply_matrix::Matrix->Point->Point
 apply_matrix matrix point=Point {x=matrix.x_x*point.x+matrix.x_y*point.y,y=matrix.y_x*point.x+matrix.y_y*point.y}
