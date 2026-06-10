@@ -17,7 +17,7 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-data Engine a=Engine {state::a,atlas::Atlas,u::FCT.CFloat,v::FCT.CFloat,padding::FCT.CInt,main_id::Engine a->Event->Maybe Int,projection_strategy::Engine a->Event->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),count::Int,index::Int,index_size::Int,picture_size::Int,vertex_size::Int,active::DIM.IntMap (Active a),inactive::DIM.IntMap (Inactive a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,index_buffer::FP.Ptr T.SDL_GPUBuffer,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,device::FP.Ptr T.SDL_GPUDevice,sampler::FP.Ptr T.SDL_GPUSampler,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_shader::FP.Ptr T.SDL_GPUShader,texture::FP.Ptr T.SDL_GPUTexture,picture_transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,request::DSeq.Seq (Request a),key::DSet.Set Key,timer::Timer,event_number::DW.Word32,time::DW.Word64}
+data Engine a=Engine {state::a,atlas::Atlas,u::FCT.CFloat,v::FCT.CFloat,picture_size::FCT.CInt,main_id::Engine a->Event->Maybe Int,projection_strategy::Engine a->Event->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),album_id::Int,atlas_id::Int,count::Int,index_size::Int,vertex_size::Int,active::DIM.IntMap (Active a),album::DIM.IntMap Album,inactive::DIM.IntMap (Inactive a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,window_map::DM.Map DW.Word32 Int,index_buffer::FP.Ptr T.SDL_GPUBuffer,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,device::FP.Ptr T.SDL_GPUDevice,sampler::FP.Ptr T.SDL_GPUSampler,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_shader::FP.Ptr T.SDL_GPUShader,texture::FP.Ptr T.SDL_GPUTexture,picture_transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,request::DSeq.Seq (Request a),key::DSet.Set Key,timer::Timer,event_number::DW.Word32,padding::DW.Word32,time::DW.Word64}
 
 data Active a=Active {next::Engine a->Event->Maybe Int,ancestry::DSeq.Seq Int,projection::Projection (Widget a)}
 
@@ -25,7 +25,7 @@ data Inactive a=Inactive {ancestry::DSeq.Seq Int,projection::Projection (Widget 
 
 data Node a=Node {active_child::DIS.IntSet,inactive_child::DIS.IntSet,node_child::DIS.IntSet,ancestry::DSeq.Seq Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}
 
-data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,graph::DIM.IntMap (DSeq.Seq Graph)}|Visual {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,matrix::Matrix,visual::Visual}
+data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,matrix::Matrix,visual::Visual}
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {father::Maybe Int,widget_request::Widget_request a,widget_id::Int}|Remove_widget {widget_type::Bool,widget_id::Int}|Create_node {father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a,node_id::Int}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Render {projection_move::Projection_move,window_id::Int}|Io {io::Engine a->IO (Engine a)}
 
@@ -33,19 +33,21 @@ data Widget_request a=Trigger_request {next::Engine a->Event->Maybe Int,trigger:
 
 data Projection a=Without {object::a}|With {object::a,image::a}
 
+data Album=Album {width::DW.Word32,height::DW.Word32,texture::FP.Ptr T.SDL_GPUTexture}
+
 data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
 data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,triangle_graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
-data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,index::Int}
+data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int,atlas_id::Int}|Large_picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int}
 
-data Visual_request=Triangle_request {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {point::DSeq.Seq Point}|Regular_polygon_request {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {center::Point,path::String}
+data Visual_request=Triangle_request {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {point::DSeq.Seq Point}|Regular_polygon_request {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {center::Point,path::String}|Large_picture_request {center::Point,path::String}
 
 data Matrix=Matrix {x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat}
 
 data Point=Point {x::FCT.CFloat,y::FCT.CFloat}
 
-data Rectangle=Rectangle {left::FCT.CInt,down::FCT.CInt,right::FCT.CInt,up::FCT.CInt}
+data Rectangle=Rectangle {left::DW.Word32,down::DW.Word32,right::DW.Word32,up::DW.Word32}
 
 data Pack=Leaf_pack {rectangle::Rectangle,used::Bool}|Node_pack {rectangle::Rectangle,left_pack::Pack,right_pack::Pack}
 
@@ -71,7 +73,7 @@ data Press=Press_up|Press_down
 
 data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z deriving (Eq,Ord)
 
-data Graph=Graph {vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32}
+data Submit=Submit {maybe_album_id::Maybe Int,vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32,vertex_length::DW.Word32,index_length::DW.Word32}
 
 data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat}
 
@@ -79,13 +81,13 @@ instance FS.Storable Vertex where
     sizeOf _=32
     alignment _=4
     peek _=error "peek: error 1"
-    poke pointer vertex=case vertex of
-        (Vertex {red,green,blue,alpha,x,y,u,v})->let new_pointer=FP.castPtr pointer::FP.Ptr FCT.CFloat in do
-            FS.pokeElemOff new_pointer 0 red
-            FS.pokeElemOff new_pointer 1 green
-            FS.pokeElemOff new_pointer 2 blue
-            FS.pokeElemOff new_pointer 3 alpha
-            FS.pokeElemOff new_pointer 4 x
-            FS.pokeElemOff new_pointer 5 y
-            FS.pokeElemOff new_pointer 6 u
-            FS.pokeElemOff new_pointer 7 v
+    poke ptr vertex=case vertex of
+        (Vertex {red,green,blue,alpha,x,y,u,v})->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
+            FS.pokeElemOff new_ptr 0 red
+            FS.pokeElemOff new_ptr 1 green
+            FS.pokeElemOff new_ptr 2 blue
+            FS.pokeElemOff new_ptr 3 alpha
+            FS.pokeElemOff new_ptr 4 x
+            FS.pokeElemOff new_ptr 5 y
+            FS.pokeElemOff new_ptr 6 u
+            FS.pokeElemOff new_ptr 7 v

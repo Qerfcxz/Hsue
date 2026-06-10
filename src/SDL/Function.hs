@@ -76,9 +76,6 @@ foreign import ccall safe "SDL_CreateGPUTexture"
 foreign import ccall safe "SDL_ReleaseGPUTexture"
     sdl_releasegputexture::Ptr SDL_GPUDevice->Ptr SDL_GPUTexture->IO ()
 
-foreign import ccall safe "SDL_UploadToGPUTexture"
-    sdl_uploadtogputexture::Ptr SDL_GPUCopyPass->Ptr SDL_GPUTextureTransferInfo->Ptr SDL_GPUTextureRegion->CBool->IO ()
-
 foreign import ccall safe "SDL_DestroySurface"
     sdl_destroysurface::Ptr SDL_Surface->IO ()
 
@@ -153,6 +150,12 @@ foreign import ccall unsafe "SDL_PushGPUVertexUniformData"
 
 foreign import ccall unsafe "SDL_BindGPUFragmentSamplers"
     sdl_bindgpufragmentsamplers::Ptr SDL_GPURenderPass->Word32->Ptr SDL_GPUTextureSamplerBinding->Word32->IO ()
+
+foreign import ccall unsafe "SDL_CopyGPUTextureToTexture"
+    sdl_copygputexturetotexture::Ptr SDL_GPUCopyPass->Ptr SDL_GPUTextureLocation->Ptr SDL_GPUTextureLocation->Word32->Word32->Word32->CBool->IO ()
+
+foreign import ccall unsafe "SDL_UploadToGPUTexture"
+    sdl_uploadtogputexture::Ptr SDL_GPUCopyPass->Ptr SDL_GPUTextureTransferInfo->Ptr SDL_GPUTextureRegion->CBool->IO ()
 
 foreign import ccall unsafe "SDL_RegisterEvents"
     sdl_registerevents::CInt->IO Word32

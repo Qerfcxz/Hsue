@@ -33,7 +33,7 @@ create_triangle_graphics_pipeline sdl_window device vertex_shader fragment_shade
         format<-F.sdl_getgpuswapchaintextureformat device sdl_window
         FMU.with C.SDL_GPUColorTargetDescription {sdl_format=format,sdl_blend_state=standard_blend_state} (\color_target_description->FMU.with C.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader,sdl_fragment_shader=fragment_shader,sdl_vertex_input_state=C.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=vertex_buffer_description,sdl_num_vertex_buffers=1,sdl_vertex_attributes=vertex_attribute,sdl_num_vertex_attributes=3},sdl_primitive_type=C.sdl_gpu_primitivetype_trianglelist,sdl_target_info=C.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . F.sdl_creategpugraphicspipeline device))
 
-update_buffer::FP.Ptr T.SDL_GPUDevice->FP.Ptr T.SDL_GPUCommandBuffer->FP.Ptr T.SDL_GPUBuffer->FP.Ptr T.SDL_GPUBuffer->FP.Ptr T.SDL_GPUTransferBuffer->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->IO (Maybe DW.Word32)
+update_buffer::FP.Ptr T.SDL_GPUDevice->FP.Ptr T.SDL_GPUCommandBuffer->FP.Ptr T.SDL_GPUBuffer->FP.Ptr T.SDL_GPUBuffer->FP.Ptr T.SDL_GPUTransferBuffer->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->IO (Maybe ())
 update_buffer device command_buffer vertex_buffer index_buffer transfer_buffer vertex_size index_size vertex index=let vertex_length=DS.length vertex in let index_length=DS.length index in if vertex_length==0||index_length==0 then return Nothing else let single_vertex=FS.sizeOf (undefined::Vertex) in let single_index=FS.sizeOf (undefined::DW.Word32) in let new_vertex_size=vertex_length*single_vertex in let new_index_size=index_length*single_index in if vertex_size<new_vertex_size||index_size<new_index_size then error "update_buffer: error 1" else do
     map_transfer_buffer<-F.sdl_mapgputransferbuffer device transfer_buffer (FMU.fromBool True)
     catch_null map_transfer_buffer
@@ -45,7 +45,7 @@ update_buffer device command_buffer vertex_buffer index_buffer transfer_buffer v
     FMU.with (C.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=transfer_buffer,sdl_offset=0}) (\transfer_buffer_location->FMU.with (C.SDL_GPUBufferRegion {sdl_buffer=vertex_buffer,sdl_offset=0,sdl_size=fromIntegral new_vertex_size}) (\buffer_region->F.sdl_uploadtogpubuffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
     FMU.with (C.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=transfer_buffer,sdl_offset=fromIntegral vertex_size}) (\transfer_buffer_location->FMU.with (C.SDL_GPUBufferRegion {sdl_buffer=index_buffer,sdl_offset=0,sdl_size=fromIntegral new_index_size}) (\buffer_region->F.sdl_uploadtogpubuffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
     F.sdl_endgpucopypass copy_pass
-    return (Just (fromIntegral index_length))
+    return (Just ())
 
 load_shader::FP.Ptr T.SDL_GPUDevice->DW.Word32->DW.Word32->DW.Word32->DW.Word32->String->IO (FP.Ptr T.SDL_GPUShader)
 load_shader device format stage num_sampler num_uniform_buffer path=do

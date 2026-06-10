@@ -23,12 +23,12 @@ adaptive_window::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(FCT.CFloat,FCT
 adaptive_window design_width design_height width height=if design_width*height<design_height*width then (design_height/height*width,design_height) else (design_width,design_width/width*height)
 
 create_adaptive_window_trigger_request::(Engine a->Event->Maybe Int)->DIS.IntSet->Widget_request a
-create_adaptive_window_trigger_request next window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a window_id}
+create_adaptive_window_trigger_request next set_window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a set_window_id}
 
 create_adaptive_window_trigger_request_a::DIS.IntSet->Event->Engine a->Engine a
-create_adaptive_window_trigger_request_a intset event engine=case event of
+create_adaptive_window_trigger_request_a set_window_id event engine=case event of
     At {window_id,action}->case action of
-        Resize {width,height}->if DIS.member window_id intset then engine {window=intmap_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
+        Resize {width,height}->if DIS.member window_id set_window_id then engine {window=intmap_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
         _->engine
     _->engine
 
