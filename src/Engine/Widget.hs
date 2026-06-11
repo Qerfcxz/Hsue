@@ -75,5 +75,8 @@ clean_widget widget engine=case widget of
         Large_picture {album_id}->let (new_album,album)=intmap_delete_lookup album_id engine.album in do
             F.sdl_releasegputexture engine.device album.texture
             return (engine {album=new_album})
+        Locked_picture {album_id}->let (new_album,album)=intmap_delete_lookup album_id engine.album in do
+            F.sdl_releasegputexture engine.device album.texture
+            return (engine {album=new_album})
         _->return engine
     _->return engine

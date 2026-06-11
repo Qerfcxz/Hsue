@@ -95,10 +95,10 @@ seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)
 
 apply_matrix::Matrix->Point->Point
-apply_matrix matrix point=Point {x=matrix.x_x*point.x+matrix.x_y*point.y,y=matrix.y_x*point.x+matrix.y_y*point.y}
+apply_matrix matrix point=let x=point.x-matrix.x in let y=point.y-matrix.y in Point {x=matrix.x+matrix.x_x*x+matrix.x_y*y,y=matrix.y+matrix.y_x*x+matrix.y_y*y}
 
-identity_matrix::Matrix
-identity_matrix=Matrix {x_x=1,x_y=0,y_x=0,y_y=1}
+identity_matrix::FCT.CFloat->FCT.CFloat->Matrix
+identity_matrix x y=Matrix {x=x,y=y,x_x=1,x_y=0,y_x=0,y_y=1}
 
 mebibyte::Num a=>a
 mebibyte=1048576

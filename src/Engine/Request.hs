@@ -93,7 +93,7 @@ do_request request engine=case request of
         return (new_engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,atlas_id,x,y,u,v)=atlas_insert_initial initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height engine.initial_atlas_id) in do
         copy_texture engine.device initial_album.texture engine.texture x y initial_album.width initial_album.height
-        return (engine {atlas=atlas,atlas_id=atlas_id,u=u,v=v},False)
+        return (engine {atlas=atlas,inactive=fmap (update_inactive_projection (update_object lock_widget)) engine.inactive,atlas_id=atlas_id,u=u,v=v},False)
     Render {window_id,projection_move}->let (inactive,widget)=update_lookup_inactive_object projection_move consume_widget engine.inactive in case widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
@@ -139,6 +139,13 @@ from_window_flag window_flag=case window_flag of
     Window_hidden->C.sdl_window_hidden
     Window_borderless->C.sdl_window_borderless
     Window_resizable->C.sdl_window_resizable
+
+lock_widget::Widget a->Widget a
+lock_widget widget=case widget of
+    Visual {visual}->case visual of
+        Picture {left,down,right,up,album_id}->widget {visual=Locked_picture {left,down,right,up,album_id}}
+        _->widget
+    _->widget
 
 do_render::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of

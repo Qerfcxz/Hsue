@@ -39,11 +39,11 @@ data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
 data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,triangle_graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
-data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int,atlas_id::Int}|Large_picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int}
+data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int,atlas_id::Int}|Large_picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int}|Locked_picture {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,album_id::Int}
 
 data Visual_request=Triangle_request {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {point::DSeq.Seq Point}|Regular_polygon_request {number::Int,center::Point,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {center::Point,path::String}|Large_picture_request {center::Point,path::String}
 
-data Matrix=Matrix {x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat}
+data Matrix=Matrix {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat}
 
 data Point=Point {x::FCT.CFloat,y::FCT.CFloat}
 
