@@ -24,7 +24,7 @@ remove_projection_safe widget_type widget_id engine=if widget_type then engine {
 
 update_projection_active::(Projection (Widget a)->Projection (Widget a))->Active a->Active a
 update_projection_active update active=case active of
-    Active {next,ancestry,projection}->Active {next=next,ancestry=ancestry,projection=update projection}
+    Active {ancestry,projection,next}->Active {ancestry=ancestry,projection=update projection,next=next}
 
 update_projection_inactive::(Projection (Widget a)->Projection (Widget a))->Inactive a->Inactive a
 update_projection_inactive update inactive=case inactive of
@@ -32,7 +32,7 @@ update_projection_inactive update inactive=case inactive of
 
 ancestry_update_projection_active::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Active a->Active a
 ancestry_update_projection_active update active=case active of
-    Active {next,ancestry,projection}->Active {next=next,ancestry=ancestry,projection=update ancestry projection}
+    Active {ancestry,projection,next}->Active {ancestry=ancestry,projection=update ancestry projection,next=next}
 
 ancestry_update_projection_inactive::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Inactive a->Inactive a
 ancestry_update_projection_inactive update inactive=case inactive of

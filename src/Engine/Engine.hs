@@ -35,8 +35,8 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::a->FCT.CInt->(Engine a->Event->Maybe Int)->(Engine a->Event->Projection_strategy)->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word64->IO (Engine a)
-create_engine state picture_size main_id projection_strategy count album_id atlas_id maybe_interval width height vertex_size index_size padding time=if padding<0 then error "create_engine: error 1" else do
+create_engine::a->(Engine a->Event->Maybe Int)->(Engine a->Event->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->IO (Engine a)
+create_engine state main_id projection_strategy picture_size vertex_size index_size atlas_id album_id count maybe_interval time padding width height=if padding<0 then error "create_engine: error 1" else do
     device<-F.sdl_creategpudevice C.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
     vertex_shader<-load_shader device C.sdl_gpu_shaderformat_dxil C.sdl_gpu_shaderstage_vertex 0 1 "Vertex.cso"
@@ -51,9 +51,11 @@ create_engine state picture_size main_id projection_strategy count album_id atla
         F.sdl_endgpurenderpass render_pass
     catch_false (F.sdl_submitgpucommandbuffer command_buffer)
     let create_buffer=return_catch_null . F.sdl_creategpubuffer device
-    vertex_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {sdl_usage=C.sdl_gpu_bufferusage_vertex,sdl_size=vertex_size}) create_buffer
-    index_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {sdl_usage=C.sdl_gpu_bufferusage_index,sdl_size=index_size}) create_buffer
-    transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {sdl_usage=C.sdl_gpu_transferbufferusage_upload,sdl_size=vertex_size+index_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
+    let new_vertex_size=fromIntegral vertex_size
+    let new_index_size=fromIntegral index_size
+    vertex_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {sdl_usage=C.sdl_gpu_bufferusage_vertex,sdl_size=new_vertex_size}) create_buffer
+    index_buffer<-FMU.with (C.SDL_GPUBufferCreateInfo {sdl_usage=C.sdl_gpu_bufferusage_index,sdl_size=new_index_size}) create_buffer
+    transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {sdl_usage=C.sdl_gpu_transferbufferusage_upload,sdl_size=new_vertex_size+new_index_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
     picture_transfer_buffer<-FMU.with (C.SDL_GPUTransferBufferCreateInfo {sdl_usage=C.sdl_gpu_transferbufferusage_upload,sdl_size=fromIntegral picture_size}) (return_catch_null . F.sdl_creategputransferbuffer device)
     event_number<-F.sdl_registerevents 1
     callback<-F.wrapper $ \_ _ interval->do
@@ -65,13 +67,13 @@ create_engine state picture_size main_id projection_strategy count album_id atla
     (new_texture,new_width,new_height)<-load_texture device picture_transfer_buffer picture_size "White.png"
     let (new_atlas,new_atlas_id,left,down,u,v)=atlas_insert_white new_width new_height padding (init_atlas width height atlas_id)
     copy_texture device new_texture texture left down new_width new_height
-    case maybe_interval of
-        Nothing->return (Engine {state=state,atlas=new_atlas,u=u,v=v,picture_size=picture_size,main_id=main_id,projection_strategy=projection_strategy,callback=callback,album_id=album_id+1,atlas_id=new_atlas_id,count=count,index_size=fromIntegral index_size,vertex_size=fromIntegral vertex_size,active=DIM.empty,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,index_buffer=index_buffer,vertex_buffer=vertex_buffer,device=device,sampler=sampler,fragment_shader=fragment_shader,vertex_shader=vertex_shader,texture=texture,picture_transfer_buffer=picture_transfer_buffer,transfer_buffer=transfer_buffer,request=DSeq.empty,key=DSet.empty,timer=Off,event_number=event_number,padding=padding,time=time})
+    let new_album_id=album_id+1 in case maybe_interval of
+        Nothing->return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,initial_atlas_id=new_atlas_id,atlas_id=new_atlas_id,initial_album_id=new_album_id,album_id=new_album_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,u=u,v=v})
         Just interval->if 0<interval
             then do
                 timer_id<-F.sdl_addtimerns interval callback FP.nullPtr
                 catch_zero timer_id
-                return (Engine {state=state,atlas=new_atlas,u=u,v=v,picture_size=picture_size,main_id=main_id,projection_strategy=projection_strategy,callback=callback,album_id=album_id+1,atlas_id=new_atlas_id,count=count,index_size=fromIntegral index_size,vertex_size=fromIntegral vertex_size,active=DIM.empty,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,index_buffer=index_buffer,vertex_buffer=vertex_buffer,device=device,sampler=sampler,fragment_shader=fragment_shader,vertex_shader=vertex_shader,texture=texture,picture_transfer_buffer=picture_transfer_buffer,transfer_buffer=transfer_buffer,request=DSeq.empty,key=DSet.empty,timer=On {timer_id=timer_id,interval=interval},event_number=event_number,padding=padding,time=time})
+                return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,initial_atlas_id=new_atlas_id,atlas_id=new_atlas_id,initial_album_id=new_album_id,album_id=new_album_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,u=u,v=v})
             else error "create_engine: error 2"
 
 clean_engine::Engine a->IO ()

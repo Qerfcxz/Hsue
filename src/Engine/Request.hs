@@ -56,7 +56,7 @@ do_request request engine=case request of
         On {timer_id}->do
             catch_false (F.sdl_removetimer timer_id)
             return (engine {timer=Off},True)
-    Create_widget {father,widget_request,widget_id}->case widget_request of
+    Create_widget {widget_id,father,widget_request}->case widget_request of
         Trigger_request {}->return (create_active father widget_request widget_id engine,False)
         Io_trigger_request {}->return (create_active father widget_request widget_id engine,False)
         Collector_request {}->do
@@ -65,14 +65,14 @@ do_request request engine=case request of
         Visual_request {}->do
             new_engine<-create_inactive father widget_request widget_id engine
             return (new_engine,False)
-    Remove_widget {widget_type,widget_id}->if widget_type
+    Remove_widget {widget_id,widget_type}->if widget_type
         then do
             new_engine<-remove_active widget_id engine
             return (new_engine,False)
         else do
             new_engine<-remove_inactive widget_id engine
             return (new_engine,False)
-    Create_node {father,event_transform,widget_transform,node_id}->return (create_node father event_transform widget_transform node_id engine,False)
+    Create_node {node_id,father,event_transform,widget_transform}->return (create_node father event_transform widget_transform node_id engine,False)
     Remove_node {node_id}->do
         new_engine<-remove_node node_id engine
         return (new_engine,False)
@@ -90,7 +90,7 @@ do_request request engine=case request of
     Remove_window {window_id}->do
         new_engine<-remove_window window_id engine
         return (new_engine,False)
-    Render {projection_move,window_id}->let (inactive,widget)=move_update_lookup_projection_inactive projection_move consume_widget engine.inactive in case widget of
+    Render {window_id,projection_move}->let (inactive,widget)=move_update_lookup_projection_inactive projection_move consume_widget engine.inactive in case widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
             catch_null command_buffer

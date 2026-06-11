@@ -11,8 +11,8 @@ import qualified Data.Sequence as DS
 
 create_node::Maybe Int->(Engine a->Event->Event)->(Engine a->Widget a->Widget a)->Int->Engine a->Engine a
 create_node father event_transform widget_transform node_id engine=case father of
-    Nothing->engine {node=intmap_insert node_id (Node {active_child=DIS.empty,inactive_child=DIS.empty,node_child=DIS.empty,ancestry=DS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
-    Just new_node_id->let (new_node,node)=intmap_update_lookup new_node_id (\this_node->this_node {node_child=intset_insert node_id this_node.node_child}) engine.node in engine {node=intmap_insert node_id (Node {active_child=DIS.empty,inactive_child=DIS.empty,node_child=DIS.empty,ancestry=node.ancestry DS.|> new_node_id,event_transform=event_transform,widget_transform=widget_transform}) new_node}
+    Nothing->engine {node=intmap_insert node_id (Node {ancestry=DS.empty,active_child=DIS.empty,inactive_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
+    Just new_node_id->let (new_node,node)=intmap_update_lookup new_node_id (\this_node->this_node {node_child=intset_insert node_id this_node.node_child}) engine.node in engine {node=intmap_insert node_id (Node {ancestry=node.ancestry DS.|> new_node_id,active_child=DIS.empty,inactive_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) new_node}
 
 remove_node::Int->Engine a->IO (Engine a)
 remove_node node_id engine=let (new_node,node)=intmap_delete_lookup node_id engine.node in case node.ancestry of

@@ -13,13 +13,13 @@ import qualified Data.Sequence as DS
 
 create_active::Maybe Int->Widget_request a->Int->Engine a->Engine a
 create_active father widget_request active_id engine=let (widget,next)=make_active widget_request in case father of
-    Nothing->engine {active=intmap_insert active_id (Active {next=next,ancestry=DS.empty,projection=Without widget}) engine.active}
-    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {active_child=intset_insert active_id this_node.active_child}) engine.node in engine {active=intmap_insert active_id (Active {next=next,ancestry=node.ancestry DS.|> node_id,projection=Without widget}) engine.active,node=new_node}
+    Nothing->engine {active=intmap_insert active_id (Active {ancestry=DS.empty,projection=Without widget,next=next}) engine.active}
+    Just node_id->let (new_node,node)=intmap_update_lookup node_id (\this_node->this_node {active_child=intset_insert active_id this_node.active_child}) engine.node in engine {active=intmap_insert active_id (Active {ancestry=node.ancestry DS.|> node_id,projection=Without widget,next=next}) engine.active,node=new_node}
 
 make_active::Widget_request a->(Widget a,Engine a->Event->Maybe Int)
 make_active widget_request=case widget_request of
-    Trigger_request {next,trigger}->(Trigger {trigger=trigger},next)
-    Io_trigger_request {next,io_trigger}->(Io_trigger {io_trigger=io_trigger},next)
+    Trigger_request {trigger,next}->(Trigger {trigger=trigger},next)
+    Io_trigger_request {io_trigger,next}->(Io_trigger {io_trigger=io_trigger},next)
     _->error "make_active: error 1"
 
 create_inactive::Maybe Int->Widget_request a->Int->Engine a->IO (Engine a)
