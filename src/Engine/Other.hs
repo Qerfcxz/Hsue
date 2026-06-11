@@ -6,6 +6,7 @@ module Engine.Other where
 import Engine.Type
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
+import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
@@ -74,13 +75,25 @@ intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLo
     Just value->(new_intmap,value)
     _->error "intmap_update_lookup: error 1"
 
-intmap_calculate::Int->(a->(a,b))->DIM.IntMap a->(DIM.IntMap a,b)
-intmap_calculate key calculate intmap=DT.swap (DIM.alterF (intmap_calculate_a calculate) key intmap)
+intmap_update_calculate::Int->(a->(a,b))->DIM.IntMap a->(DIM.IntMap a,b)
+intmap_update_calculate key calculate intmap=DT.swap (DIM.alterF (intmap_update_calculate_a calculate) key intmap)
 
-intmap_calculate_a::(a->(a,b))->Maybe a->(b,Maybe a)
-intmap_calculate_a calculate maybe_value=case maybe_value of
+intmap_update_calculate_a::(a->(a,b))->Maybe a->(b,Maybe a)
+intmap_update_calculate_a calculate maybe_value=case maybe_value of
     Just value->let (new_value,calculate_value)=calculate value in (calculate_value,Just new_value)
-    _->error "intmap_calculate_a: error 1"
+    _->error "intmap_update_calculate_a: error 1"
+
+intmap_io_update_calculate::Int->(a->IO (a,b))->DIM.IntMap a->IO (DIM.IntMap a,b)
+intmap_io_update_calculate key calculate intmap=do
+    (calculate_value,new_intmap)<-DFC.getCompose (DIM.alterF (DFC.Compose . intmap_io_update_calculate_a calculate) key intmap)
+    return (new_intmap,calculate_value)
+
+intmap_io_update_calculate_a::(a->IO (a,b))->Maybe a->IO (b,Maybe a)
+intmap_io_update_calculate_a calculate maybe_value=case maybe_value of
+    Just value->do
+        (new_value,calculate_value)<-calculate value
+        return (calculate_value,Just new_value)
+    _->error "intmap_io_update_calculate_a: error 1"
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then error "intset_insert: error 1" else DIS.insert key intset

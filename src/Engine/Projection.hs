@@ -10,6 +10,9 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 
+do_widget_transform::DS.Seq Int->Engine a->Widget a->Widget a
+do_widget_transform ancestry engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine) widget ancestry
+
 create_image::Bool->Int->Engine a->Engine a
 create_image widget_type widget_id engine=if widget_type then engine {active=intmap_update widget_id (ancestry_update_active_projection (`create_image_a` engine)) engine.active} else engine {inactive=intmap_update widget_id (ancestry_update_inactive_projection (`create_image_a` engine)) engine.inactive}
 
@@ -58,8 +61,11 @@ ancestry_update_inactive_projection::(DS.Seq Int->Projection (Widget a)->Project
 ancestry_update_inactive_projection update inactive=case inactive of
     Inactive {ancestry,projection}->Inactive {ancestry=ancestry,projection=update ancestry projection}
 
-do_widget_transform::DS.Seq Int->Engine a->Widget a->Widget a
-do_widget_transform ancestry engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine) widget ancestry
+io_update_calculate_inactive_projection::(Projection (Widget a)->IO (Projection (Widget a),b))->Inactive a->IO (Inactive a,b)
+io_update_calculate_inactive_projection calculate inactive=case inactive of
+    Inactive {ancestry,projection}->do
+        (new_projection,calculate_value)<-calculate projection
+        return (Inactive {ancestry=ancestry,projection=new_projection},calculate_value)
 
 lookup_projection::Projection_strategy->Projection a->a
 lookup_projection projection_strategy=case projection_strategy of
@@ -87,6 +93,15 @@ update_object update projection=case projection of
     Without {object}->Without {object=update object}
     With {object}->Without {object=update object}
 
+io_update_calculate_object::(a->IO (a,b))->Projection a->IO (Projection a,b)
+io_update_calculate_object calculate projection=case projection of
+    Without {object}->do
+        (new_object,calculate_value)<-calculate object
+        return (Without {object=new_object},calculate_value)
+    With {object}->do
+        (new_object,calculate_value)<-calculate object
+        return (Without {object=new_object},calculate_value)
+
 lookup_inactive_widget::Projection_path->DIM.IntMap (Inactive a)->Widget a
 lookup_inactive_widget projection_path inactive=case projection_path of
     Object_path {projection_id}->lookup_projection_object (intmap_lookup projection_id inactive).projection
@@ -95,7 +110,7 @@ lookup_inactive_widget projection_path inactive=case projection_path of
 
 update_lookup_inactive_object::Projection_move->(Widget a->Widget a)->DIM.IntMap (Inactive a)->(DIM.IntMap (Inactive a),Widget a)
 update_lookup_inactive_object projection_move update inactive=case projection_move of
-    Object_move {consume,projection_id}->intmap_calculate projection_id (update_lookup_inactive_object_a consume update) inactive
+    Object_move {consume,projection_id}->intmap_update_calculate projection_id (update_lookup_inactive_object_a consume update) inactive
     Image_move {projection_id}->(inactive,lookup_projection_image (intmap_lookup projection_id inactive).projection)
     Image_safe_move {projection_id}->(inactive,lookup_projection_image_safe (intmap_lookup projection_id inactive).projection)
 
