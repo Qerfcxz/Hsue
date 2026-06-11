@@ -4,6 +4,7 @@
 
 module Engine.Request where
 
+import Engine.Atlas
 import Engine.Collector
 import Engine.Node
 import Engine.Other
@@ -47,23 +48,23 @@ do_request request engine=case request of
                 return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
         else error "do_request: error 1"
     Stop_timer->case engine.timer of
-        Off->error "do_request: error 2"
         On {timer_id}->do
             catch_false (F.sdl_removetimer timer_id)
             return (engine {timer=Off},True)
+        _->error "do_request: error 2"
     Stop_timer_safe->case engine.timer of
         Off->return (engine,False)
         On {timer_id}->do
             catch_false (F.sdl_removetimer timer_id)
             return (engine {timer=Off},True)
     Create_widget {widget_id,father,widget_request}->case widget_request of
-        Trigger_request {}->return (create_active father widget_request widget_id engine,False)
-        Io_trigger_request {}->return (create_active father widget_request widget_id engine,False)
+        Trigger_request {}->return (create_active widget_id father widget_request engine,False)
+        Io_trigger_request {}->return (create_active widget_id father widget_request engine,False)
         Collector_request {}->do
-            new_engine<-create_inactive father widget_request widget_id engine
+            new_engine<-create_inactive widget_id father widget_request engine
             return (new_engine,False)
         Visual_request {}->do
-            new_engine<-create_inactive father widget_request widget_id engine
+            new_engine<-create_inactive widget_id father widget_request engine
             return (new_engine,False)
     Remove_widget {widget_id,widget_type}->if widget_type
         then do
@@ -72,7 +73,7 @@ do_request request engine=case request of
         else do
             new_engine<-remove_inactive widget_id engine
             return (new_engine,False)
-    Create_node {node_id,father,event_transform,widget_transform}->return (create_node father event_transform widget_transform node_id engine,False)
+    Create_node {node_id,father,event_transform,widget_transform}->return (create_node node_id father event_transform widget_transform engine,False)
     Remove_node {node_id}->do
         new_engine<-remove_node node_id engine
         return (new_engine,False)
@@ -90,7 +91,10 @@ do_request request engine=case request of
     Remove_window {window_id}->do
         new_engine<-remove_window window_id engine
         return (new_engine,False)
-    Render {window_id,projection_move}->let (inactive,widget)=move_update_lookup_projection_inactive projection_move consume_widget engine.inactive in case widget of
+    Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,atlas_id,x,y,u,v)=atlas_insert_initial initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height engine.initial_atlas_id) in do
+        copy_texture engine.device initial_album.texture engine.texture x y initial_album.width initial_album.height
+        return (engine {atlas=atlas,atlas_id=atlas_id,u=u,v=v},False)
+    Render {window_id,projection_move}->let (inactive,widget)=update_lookup_inactive_object projection_move consume_widget engine.inactive in case widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
             catch_null command_buffer

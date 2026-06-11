@@ -6,9 +6,9 @@ module Engine.Atlas where
 
 import Engine.Other
 import Engine.Type
-import SDL.Constant as C
-import SDL.Function as F
-import SDL.Type as T
+import qualified SDL.Constant as C
+import qualified SDL.Function as F
+import qualified SDL.Type as T
 import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.Word as DW
@@ -20,15 +20,15 @@ import qualified Foreign.Ptr as FP
 init_atlas::DW.Word32->DW.Word32->Int->Atlas
 init_atlas width height next=Atlas {next=next,width=fromIntegral width,height=fromIntegral height,pack=Leaf_pack {rectangle=Rectangle {left=0,down=0,right=width,up=height},used=False},region=DIM.empty}
 
-atlas_insert_white::DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,Int,DW.Word32,DW.Word32,FCT.CFloat,FCT.CFloat)
-atlas_insert_white width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas.pack of
-    Nothing->error "atlas_insert_white: error 1"
+atlas_insert_initial::DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,Int,DW.Word32,DW.Word32,FCT.CFloat,FCT.CFloat)
+atlas_insert_initial width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas.pack of
     Just (pack,left,down,right,up)->let new_left=left+padding in let new_down=down+padding in let new_right=right-padding in let new_up=up-padding in let min_u=fromIntegral new_left/atlas.width in let min_v=fromIntegral new_down/atlas.height in let max_u=fromIntegral new_right/atlas.width in let max_v=fromIntegral new_up/atlas.height in (atlas {next=atlas.next+1,pack=pack,region=DIM.insert atlas.next (Region {min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v}) atlas.region},atlas.next,new_left,new_down,(min_u+max_u)/2,(min_v+max_v)/2)
+    _->error "atlas_insert_initial: error 1"
 
 atlas_insert::DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,Int,DW.Word32,DW.Word32)
 atlas_insert width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas.pack of
-    Nothing->error "atlas_insert: error 1"
     Just (pack,left,down,right,up)->let new_left=left+padding in let new_down=down+padding in let new_right=right-padding in let new_up=up-padding in (atlas {next=atlas.next+1,pack=pack,region=DIM.insert atlas.next (Region {min_u=fromIntegral new_left/atlas.width,min_v=fromIntegral new_down/atlas.height,max_u=fromIntegral new_right/atlas.width,max_v=fromIntegral new_up/atlas.height}) atlas.region},atlas.next,new_left,new_down)
+    _->error "atlas_insert: error 1"
 
 atlas_insert_a::DW.Word32->DW.Word32->Pack->Maybe (Pack,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert_a width height pack=case pack of
@@ -39,8 +39,8 @@ atlas_insert_a width height pack=case pack of
             Nothing->Nothing
             Just (new_right_pack,left,down,right,up)->Just (Node_pack {rectangle=rectangle,left_pack=left_pack,right_pack=new_right_pack},left,down,right,up)
         Just (new_left_pack,left,down,right,up)->Just (Node_pack {rectangle=rectangle,left_pack=new_left_pack,right_pack=right_pack},left,down,right,up)
-
-load_texture::FP.Ptr T.SDL_GPUDevice->FP.Ptr SDL_GPUTransferBuffer->FCT.CInt->String->IO (FP.Ptr T.SDL_GPUTexture,DW.Word32,DW.Word32)
+    
+load_texture::FP.Ptr T.SDL_GPUDevice->FP.Ptr T.SDL_GPUTransferBuffer->FCT.CInt->String->IO (FP.Ptr T.SDL_GPUTexture,DW.Word32,DW.Word32)
 load_texture device picture_transfer_buffer picture_size path=FCS.withCString path $ \this_path->do
     surface<-F.img_load this_path
     catch_null surface

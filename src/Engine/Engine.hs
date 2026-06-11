@@ -65,15 +65,15 @@ create_engine state main_id projection_strategy picture_size vertex_size index_s
             catch_false (F.sdl_pushevent ptr)
         return interval
     (new_texture,new_width,new_height)<-load_texture device picture_transfer_buffer picture_size "White.png"
-    let (new_atlas,new_atlas_id,left,down,u,v)=atlas_insert_white new_width new_height padding (init_atlas width height atlas_id)
-    copy_texture device new_texture texture left down new_width new_height
+    let (new_atlas,new_atlas_id,x,y,u,v)=atlas_insert_initial new_width new_height padding (init_atlas width height atlas_id)
+    copy_texture device new_texture texture x y new_width new_height
     let new_album_id=album_id+1 in case maybe_interval of
-        Nothing->return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,initial_atlas_id=new_atlas_id,atlas_id=new_atlas_id,initial_album_id=new_album_id,album_id=new_album_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,u=u,v=v})
+        Nothing->return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,initial_atlas_id=new_atlas_id,atlas_id=new_atlas_id,initial_album_id=new_album_id,album_id=new_album_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,u=u,v=v})
         Just interval->if 0<interval
             then do
                 timer_id<-F.sdl_addtimerns interval callback FP.nullPtr
                 catch_zero timer_id
-                return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,initial_atlas_id=new_atlas_id,atlas_id=new_atlas_id,initial_album_id=new_album_id,album_id=new_album_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,u=u,v=v})
+                return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton album_id (Album {width=new_width,height=new_height,texture=new_texture}),active=DIM.empty,inactive=DIM.empty,node=DIM.empty,window=DIM.empty,window_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,initial_atlas_id=new_atlas_id,atlas_id=new_atlas_id,initial_album_id=new_album_id,album_id=new_album_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,u=u,v=v})
             else error "create_engine: error 2"
 
 clean_engine::Engine a->IO ()
@@ -131,7 +131,7 @@ loop_engine_on sdl_event engine=do
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
-            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+engine.timer.interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=engine.timer.interval}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
+            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+get_interval engine.timer in loop_event_b (not switch) (Time {tick=count,time=time,interval=get_interval engine.timer}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
         else error "loop_engine_on: error 1"
 
 loop_engine_on_a::FP.Ptr ()->Engine a->IO ()
@@ -140,8 +140,13 @@ loop_engine_on_a sdl_event engine=do
     if FMU.toBool value
         then do
             event_type<-C.sdl_event_type sdl_event
-            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+engine.timer.interval in loop_event_b True (Time {tick=count,time=time,interval=engine.timer.interval}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
+            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+get_interval engine.timer in loop_event_b True (Time {tick=count,time=time,interval=get_interval engine.timer}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
         else error "loop_engine_on_a: error 1"
+
+get_interval::Timer->DW.Word64
+get_interval timer=case timer of
+    On {interval}->interval
+    _->error "get_interval: error 1"
 
 loop_event::Bool->DW.Word32->FP.Ptr ()->Engine a->IO ()
 loop_event on event_type sdl_event engine=case event_type of
@@ -221,7 +226,7 @@ run_event event engine=case engine.main_id engine event of
     Just active_id->run_event_a active_id event engine
 
 run_event_a::Int->Event->Engine a->Engine a
-run_event_a active_id event engine=let active=intmap_lookup active_id engine.active in let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event active.ancestry in let new_engine=run_widget new_event (projection_lookup (engine.projection_strategy engine new_event) active.projection) engine in case active.next new_engine new_event of
+run_event_a active_id event engine=let active=intmap_lookup active_id engine.active in let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event active.ancestry in let new_engine=run_widget new_event (lookup_projection (engine.projection_strategy engine new_event) active.projection) engine in case active.next new_engine new_event of
     Nothing->new_engine
     Just new_active_id->run_event_a new_active_id event new_engine
 

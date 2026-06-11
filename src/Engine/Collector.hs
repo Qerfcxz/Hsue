@@ -14,7 +14,7 @@ import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 
 collect::Projection_path->Int->Collect_strategy->Engine a->Engine a
-collect projection_path inactive_id collect_strategy engine=engine {inactive=intmap_update inactive_id (update_projection_inactive (projection_update_object (collect_a (DS.singleton (to_submit engine.u engine.v engine.atlas (path_lookup_projection_inactive projection_path engine.inactive))) collect_strategy))) engine.inactive}
+collect projection_path inactive_id collect_strategy engine=engine {inactive=intmap_update inactive_id (update_inactive_projection (update_object (collect_a (DS.singleton (to_submit engine.u engine.v engine.atlas (lookup_inactive_widget projection_path engine.inactive))) collect_strategy))) engine.inactive}
 
 collect_a::DS.Seq Submit->Collect_strategy->Widget a->Widget a
 collect_a seq_submit collect_strategy widget=case widget of
@@ -43,7 +43,7 @@ for_convex_polygon index=let (quotient,remainder)=divMod index 3 in let new_quot
     _->error "for_convex_polygon: error 1"
 
 move::Projection_move->Int->Collect_strategy->Engine a->Engine a
-move projection_move inactive_id collect_strategy engine=let (inactive,widget)=move_update_lookup_projection_inactive projection_move consume_widget engine.inactive in engine {inactive=intmap_update inactive_id (update_projection_inactive (projection_update_object (collect_a (move_a widget) collect_strategy))) inactive}
+move projection_move inactive_id collect_strategy engine=let (inactive,widget)=update_lookup_inactive_object projection_move consume_widget engine.inactive in engine {inactive=intmap_update inactive_id (update_inactive_projection (update_object (collect_a (move_a widget) collect_strategy))) inactive}
 
 move_a::Widget a->DS.Seq Submit
 move_a widget=case widget of
