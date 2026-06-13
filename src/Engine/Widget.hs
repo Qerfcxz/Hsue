@@ -45,11 +45,11 @@ make_visual visual_request engine=case visual_request of
     Regular_polygon_request {number,center,radius,angle}->return (engine,Regular_polygon {number,center,radius,angle})
     Picture_request {center,path}->do
         (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
-        let (atlas,atlas_id,x,y)=atlas_insert width height engine.padding engine.atlas
-        copy_texture engine.device texture engine.texture x y width height
+        let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
+        copy_texture engine.device texture engine.texture left down width height
         let new_width=fromIntegral width/2
         let new_height=fromIntegral height/2
-        return (engine {atlas=atlas,album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},Picture {left=center.x-new_width,down=center.y-new_height,right=center.x+new_width,up=center.y+new_height,album_id=engine.album_id,atlas_id=atlas_id})
+        return (engine {atlas=atlas,album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},Picture {left=center.x-new_width,down=center.y-new_height,right=center.x+new_width,up=center.y+new_height,album_id=engine.album_id,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height})
     Large_picture_request {center,path}->do
         (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
         let new_width=fromIntegral width/2
