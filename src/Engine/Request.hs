@@ -17,8 +17,11 @@ import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified SDL.Type as T
 import qualified Control.Monad as CM
+import qualified Data.Aeson as DA
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
+import qualified Data.ByteString.Builder as DBSB
+import qualified Data.ByteString.Lazy as DBSL
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
@@ -29,6 +32,8 @@ import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+import qualified System.Directory as SD
+import qualified System.Process as SP
 
 create_request::Request a->Engine a->Engine a
 create_request request engine=engine {request=engine.request DS.|> request}
@@ -97,6 +102,23 @@ do_request request engine=case request of
     Reload_atlas {inactive_id}->do
         (inactive,new_engine)<-intmap_io_update_calculate inactive_id (io_update_calculate_inactive_projection (io_update_calculate_object (`for_reload_atlas` engine))) engine.inactive
         return (new_engine {inactive=inactive},False)
+    Load_font {font_id,path,char}->do
+        let charset_path=path++"_charset_temporary"
+        let imageout_path=path++"_imageout_temporary"
+        let json_path="_json_temporary"
+        DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' DBSB.charUtf8 char))
+        SP.callProcess "msdf-atlas-gen" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path]
+        json<-DBS.readFile json_path
+        case DA.decodeStrict json::Maybe MSDF_Output of
+            Nothing->error "do_request: error 4"
+            Just output->do
+                (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size imageout_path
+                let (new_atlas,left,down,_,_)=atlas_insert width height engine.padding engine.atlas
+                copy_texture engine.device texture engine.texture left down width height
+                SD.removeFile charset_path
+                SD.removeFile imageout_path
+                SD.removeFile json_path
+                return (engine {font=DIM.alter (union_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (for_load_font (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font,atlas=new_atlas,album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},False)
     Render {window_id,projection_move}->let (inactive,widget)=update_lookup_inactive_object projection_move consume_widget engine.inactive in case widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
@@ -131,7 +153,7 @@ do_request request engine=case request of
                             F.sdl_endgpurenderpass render_pass
             catch_false (F.sdl_submitgpucommandbuffer command_buffer)
             return (engine {inactive=inactive},False)
-        _->error "do_request: error 4"
+        _->error "do_request: error 5"
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
@@ -160,6 +182,18 @@ for_reload_atlas widget engine=case widget of
             return (widget {visual=Picture {left=left,down=down,right=right,up=up,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height}},engine {atlas=atlas})
         _->error "for_reload_atlas: error 1"
     _->error "for_reload_atlas: error 2"
+
+for_load_font::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Int,Glyph)
+for_load_font x y reciprocal_width reciprocal_height glyph=case glyph of
+    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_planeBounds,msdf_atlasBounds}->case msdf_planeBounds of
+        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlasBounds of
+            MSDF_Bounds {msdf_left=atlas_left,msdf_bottom=atlas_bottom,msdf_right=atlas_right,msdf_top=atlas_top}->
+                (msdf_unicode,Glyph {advance=msdf_advance,left=plane_left,down=plane_bottom,right=plane_right,up=plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height})
+
+union_font::FCT.CFloat->FCT.CFloat->DS.Seq MSDF_Glyph->(MSDF_Glyph->(Int,Glyph))->Maybe Font->Maybe Font
+union_font ascent descent seq_msdf_glyph transform maybe_font=case maybe_font of
+    Nothing->Just (Font {ascent=ascent,descent=descent,glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (key,glyph)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) DIM.empty seq_msdf_glyph})
+    Just font->Just (font {glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (key,glyph)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) font.glyph seq_msdf_glyph})
 
 do_render::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
