@@ -18,15 +18,6 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-to_extended::a->Extended a
-to_extended number=Finite {number}
-
-from_extended::Num a=>Extended a->a
-from_extended extended=case extended of
-    Negative_infinity->0
-    Finite {number}->number
-    Positive_infinity->0
-
 catch_false::IO FCT.CBool->IO ()
 catch_false io=do
     value<-io
@@ -116,6 +107,20 @@ intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) r
 
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)
+
+to_extended::a->Extended a
+to_extended number=Finite {number}
+
+from_extended::Num a=>Extended a->a
+from_extended extended=case extended of
+    Negative_infinity->0
+    Finite {number}->number
+    Positive_infinity->0
+
+point_addition::Point->Point->Point
+point_addition first_point second_point=case first_point of
+    Point {x=first_x,y=first_y}->case second_point of
+        Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=first_y+second_y}
 
 apply_matrix::Matrix->Point->Point
 apply_matrix matrix point=let x=point.x-matrix.x in let y=point.y-matrix.y in Point {x=matrix.x+matrix.x_x*x+matrix.x_y*y,y=matrix.y+matrix.y_x*x+matrix.y_y*y}

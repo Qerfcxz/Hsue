@@ -7,6 +7,7 @@ module Engine.Widget where
 import Engine.Atlas
 import Engine.Other
 import Engine.Projection
+import Engine.Text
 import Engine.Type
 import qualified SDL.Function as F
 import qualified Data.IntMap as DIM
@@ -33,28 +34,25 @@ create_inactive inactive_id father widget_request engine=do
 make_inactive::Widget_request a->Engine a->IO (Engine a,Widget a)
 make_inactive widget_request engine=case widget_request of
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty})
-    Visual_request {red,green,blue,alpha,matrix,visual_request}->do
+    Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
         (new_engine,visual)<-make_visual visual_request engine
-        return (new_engine,Visual {red=red,green=green,blue=blue,alpha=alpha,matrix=matrix,visual=visual})
+        return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
+    Text_request {origin,matrix,width,height,text,calculate_width,calculate_typesetting}->return (engine,Text {origin=origin,matrix=matrix,width=width,height=height,text=do_typesetting calculate_typesetting (for_text engine.font text calculate_width)})
     _->error "make_inactive: error 1"
 
 make_visual::Visual_request->Engine a->IO (Engine a,Visual)
 make_visual visual_request engine=case visual_request of
-    Triangle_request {first_point,second_point,third_point}->return (engine,Triangle {first_point,second_point,third_point})
+    Triangle_request {first_point,second_point,third_point}->return (engine,Triangle {first_point=first_point,second_point=second_point,third_point=third_point})
     Convex_polygon_request {point}->return (engine,Convex_polygon {point})
-    Regular_polygon_request {number,center,radius,angle}->return (engine,Regular_polygon {number,center,radius,angle})
-    Picture_request {center,path}->do
+    Regular_polygon_request {number,radius,angle}->return (engine,Regular_polygon {number=number,radius=radius,angle=angle})
+    Picture_request {path}->do
         (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
         let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
         copy_texture engine.device texture engine.texture left down width height
-        let new_width=fromIntegral width/2
-        let new_height=fromIntegral height/2
-        return (engine {atlas=atlas,album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},Picture {left=center.x-new_width,down=center.y-new_height,right=center.x+new_width,up=center.y+new_height,album_id=engine.album_id,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height})
-    Large_picture_request {center,path}->do
+        return (engine {atlas=atlas,album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},Picture {width=fromIntegral width,height=fromIntegral height,album_id=engine.album_id,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,locked=False})
+    Large_picture_request {path}->do
         (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
-        let new_width=fromIntegral width/2
-        let new_height=fromIntegral height/2
-        return (engine {album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},Large_picture {left=center.x-new_width,down=center.y-new_height,right=center.x+new_width,up=center.y+new_height,album_id=engine.album_id})
+        return (engine {album=intmap_insert engine.album_id (Album width height texture) engine.album,album_id=engine.album_id+1},Large_picture {width=fromIntegral width,height=fromIntegral height,album_id=engine.album_id})
 
 remove_active::Int->Engine a->IO (Engine a)
 remove_active active_id engine=let (new_active,active)=intmap_delete_lookup active_id engine.active in case active.ancestry of
@@ -73,9 +71,6 @@ clean_widget widget engine=case widget of
             F.sdl_releasegputexture engine.device album.texture
             return (engine {album=new_album})
         Large_picture {album_id}->let (new_album,album)=intmap_delete_lookup album_id engine.album in do
-            F.sdl_releasegputexture engine.device album.texture
-            return (engine {album=new_album})
-        Locked_picture {album_id}->let (new_album,album)=intmap_delete_lookup album_id engine.album in do
             F.sdl_releasegputexture engine.device album.texture
             return (engine {album=new_album})
         _->return engine

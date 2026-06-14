@@ -74,6 +74,9 @@ do_request request engine=case request of
         Visual_request {}->do
             new_engine<-create_inactive widget_id father widget_request engine
             return (new_engine,False)
+        Text_request {}->do
+            new_engine<-create_inactive widget_id father widget_request engine
+            return (new_engine,False)
     Remove_widget {widget_id,widget_type}->if widget_type
         then do
             new_engine<-remove_active widget_id engine
@@ -165,18 +168,18 @@ from_window_flag window_flag=case window_flag of
 lock_widget::Widget a->Widget a
 lock_widget widget=case widget of
     Visual {visual}->case visual of
-        Picture {left,down,right,up,album_id}->widget {visual=Locked_picture {left,down,right,up,album_id}}
+        Picture {}->widget {visual=visual {locked=True}}
         _->widget
     _->widget
 
 for_reload_atlas::Widget a->Engine a->IO (Widget a,Engine a)
 for_reload_atlas widget engine=case widget of
     Visual {visual}->case visual of
-        Locked_picture {left,down,right,up,album_id}->do
+        Picture {album_id}->do
             let album=intmap_lookup album_id engine.album
             let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas
             copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
-            return (widget {visual=Picture {left=left,down=down,right=right,up=up,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height}},engine {atlas=atlas})
+            return (widget {visual=visual {min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}},engine {atlas=atlas})
         _->error "for_reload_atlas: error 1"
     _->error "for_reload_atlas: error 2"
 
