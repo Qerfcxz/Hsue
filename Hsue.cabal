@@ -26,6 +26,7 @@ library
         Engine.Projection
         Engine.Request
         Engine.Shader
+        Engine.Text
         Engine.Type
         Engine.Widget
         Engine.Window
