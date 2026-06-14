@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Other where
@@ -16,6 +17,15 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+
+to_extended::a->Extended a
+to_extended number=Finite {number}
+
+from_extended::Num a=>Extended a->a
+from_extended extended=case extended of
+    Negative_infinity->0
+    Finite {number}->number
+    Positive_infinity->0
 
 catch_false::IO FCT.CBool->IO ()
 catch_false io=do

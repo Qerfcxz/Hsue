@@ -101,14 +101,14 @@ do_request request engine=case request of
         return (new_engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {atlas=atlas,inactive=fmap (update_inactive_projection (update_object lock_widget)) engine.inactive,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
+        return (engine {font=DIM.empty,atlas=atlas,inactive=fmap (update_inactive_projection (update_object lock_widget)) engine.inactive,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
     Reload_visual {visual_id}->do
         (inactive,new_engine)<-intmap_io_update_calculate visual_id (io_update_calculate_inactive_projection (io_update_calculate_object (`for_reload_atlas` engine))) engine.inactive
         return (new_engine {inactive=inactive},False)
     Load_font {font_id,path,char}->do
         let charset_path=path++"_charset_temporary"
         let imageout_path=path++"_imageout_temporary"
-        let json_path="_json_temporary"
+        let json_path=path++"_json_temporary"
         case DIM.lookup font_id engine.font of
             Nothing->do
                 DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' DBSB.charUtf8 char))
@@ -182,7 +182,7 @@ for_reload_atlas widget engine=case widget of
 
 for_load_font::Int->String->String->String->String->Engine a->IO (Engine a,Bool)
 for_load_font font_id path charset_path imageout_path json_path engine=do
-    SP.callProcess "msdf-atlas-gen" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path]
+    SP.callProcess "msdf-atlas-gen" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size]
     json<-DBS.readFile json_path
     case DA.decodeStrict json::Maybe MSDF_Output of
         Nothing->error "do_request: error 4"
