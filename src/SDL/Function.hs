@@ -139,6 +139,9 @@ foreign import ccall unsafe "SDL_BindGPUVertexBuffers"
 foreign import ccall unsafe "SDL_BindGPUIndexBuffer"
     sdl_bindgpuindexbuffer::Ptr SDL_GPURenderPass->Ptr SDL_GPUBufferBinding->Word32->IO ()
 
+foreign import ccall unsafe "SDL_BindGPUVertexStorageBuffers"
+    sdl_bindgpuvertexstoragebuffers::Ptr SDL_GPURenderPass->Word32->Ptr (Ptr SDL_GPUBuffer)->Word32->IO ()
+
 foreign import ccall unsafe "SDL_BeginGPURenderPass"
     sdl_begingpurenderpass::Ptr SDL_GPUCommandBuffer->Ptr SDL_GPUColorTargetInfo->Word32->Ptr SDL_GPUDepthStencilTargetInfo->IO (Ptr SDL_GPURenderPass)
 

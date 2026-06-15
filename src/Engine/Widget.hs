@@ -34,10 +34,10 @@ create_inactive inactive_id father widget_request engine=do
 make_inactive::Widget_request a->Engine a->IO (Engine a,Widget a)
 make_inactive widget_request engine=case widget_request of
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty})
-    Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
+    Visual_request {origin,matrix,clip,red,green,blue,alpha,visual_request}->do
         (new_engine,visual)<-make_visual visual_request engine
-        return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
-    Text_request {origin,matrix,width,height,text,calculate_width,calculate_typesetting}->return (engine,Text {origin=origin,matrix=matrix,width=width,height=height,text=do_typesetting calculate_typesetting (for_text engine.font text calculate_width)})
+        return (new_engine,Visual {origin=origin,matrix=matrix,clip=clip,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
+    Text_request {origin,matrix,width,height,text,calculate_width,calculate_typesetting}->return (engine,Text {origin=origin,matrix=matrix,width=width,height=height,y=0,text=do_typesetting (height/2) calculate_typesetting (for_text engine.font text calculate_width)})
     _->error "make_inactive: error 1"
 
 make_visual::Visual_request->Engine a->IO (Engine a,Visual)

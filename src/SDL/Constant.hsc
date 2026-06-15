@@ -357,6 +357,12 @@ sdl_gpu_bufferusage_vertex=(#const SDL_GPU_BUFFERUSAGE_VERTEX)
 sdl_gpu_bufferusage_index::Word32
 sdl_gpu_bufferusage_index=(#const SDL_GPU_BUFFERUSAGE_INDEX)
 
+sdl_gpu_bufferusage_graphics_storage_read::Word32
+sdl_gpu_bufferusage_graphics_storage_read=(#const SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ)
+
+sdl_gpu_vertexelementformat_float::Word32
+sdl_gpu_vertexelementformat_float=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT)
+
 sdl_gpu_vertexelementformat_float2::Word32
 sdl_gpu_vertexelementformat_float2=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2)
 

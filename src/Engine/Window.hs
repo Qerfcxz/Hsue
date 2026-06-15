@@ -12,10 +12,10 @@ import qualified Foreign.C.Types as FCT
 
 remove_window::Int->Engine a->IO (Engine a)
 remove_window window_id engine=let (new_window,window)=intmap_delete_lookup window_id engine.window in case window of
-    Window {sdl_window_id,sdl_window,triangle_graphics_pipeline}->do
+    Window {sdl_window_id,sdl_window,graphics_pipeline}->do
         catch_false (F.sdl_waitforgpuidle engine.device)
         F.sdl_releasewindowfromgpudevice engine.device sdl_window
-        F.sdl_releasegpugraphicspipeline engine.device triangle_graphics_pipeline
+        F.sdl_releasegpugraphicspipeline engine.device graphics_pipeline
         F.sdl_destroywindow sdl_window
         return (engine {window=new_window,window_map=map_delete sdl_window_id engine.window_map})
 
@@ -23,12 +23,12 @@ adaptive_window::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(FCT.CFloat,FCT
 adaptive_window design_width design_height width height=if design_width*height<design_height*width then (design_height/height*width,design_height) else (design_width,design_width/width*height)
 
 create_adaptive_window_trigger_request::(Engine a->Event->Maybe Int)->DIS.IntSet->Widget_request a
-create_adaptive_window_trigger_request next set_window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a set_window_id}
+create_adaptive_window_trigger_request next this_window_id=Trigger_request {trigger=create_adaptive_window_trigger_request_a this_window_id,next=next}
 
 create_adaptive_window_trigger_request_a::DIS.IntSet->Event->Engine a->Engine a
-create_adaptive_window_trigger_request_a set_window_id event engine=case event of
+create_adaptive_window_trigger_request_a this_window_id event engine=case event of
     At {window_id,action}->case action of
-        Resize {width,height}->if DIS.member window_id set_window_id then engine {window=intmap_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
+        Resize {width,height}->if DIS.member window_id this_window_id then engine {window=intmap_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
         _->engine
     _->engine
 

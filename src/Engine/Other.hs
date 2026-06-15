@@ -1,6 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Other where
 
@@ -121,9 +120,6 @@ point_addition::Point->Point->Point
 point_addition first_point second_point=case first_point of
     Point {x=first_x,y=first_y}->case second_point of
         Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=first_y+second_y}
-
-apply_matrix::Matrix->Point->Point
-apply_matrix matrix point=let x=point.x-matrix.x in let y=point.y-matrix.y in Point {x=matrix.x+matrix.x_x*x+matrix.x_y*y,y=matrix.y+matrix.y_x*x+matrix.y_y*y}
 
 identity_matrix::FCT.CFloat->FCT.CFloat->Matrix
 identity_matrix x y=Matrix {x=x,y=y,x_x=1,x_y=0,y_x=0,y_y=1}

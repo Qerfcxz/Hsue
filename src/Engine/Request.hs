@@ -95,8 +95,8 @@ do_request request engine=case request of
         catch_false (F.sdl_setgpuswapchainparameters engine.device sdl_window C.sdl_gpu_swapchaincomposition_sdr C.sdl_gpu_presentmode_mailbox)
         sdl_window_id<-F.sdl_getwindowid sdl_window
         catch_zero sdl_window_id
-        triangle_graphics_pipeline<-create_triangle_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
-        let new_width=fromIntegral width in let new_height=fromIntegral height in let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,triangle_graphics_pipeline=triangle_graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in case maybe_window of
+        graphics_pipeline<-create_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
+        let new_width=fromIntegral width in let new_height=fromIntegral height in let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,graphics_pipeline=graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in case maybe_window of
             Nothing->return (engine {window=new_window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
             _->error "do_request: error 3"
     Remove_window {window_id}->do
@@ -114,17 +114,17 @@ do_request request engine=case request of
         let json_path=path++"_json_temporary"
         case DIM.lookup font_id engine.font of
             Nothing->do
-                DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' DBSB.charUtf8 char))
+                DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\int->DBSB.stringUtf8 (show int++" ")) (DIS.toAscList (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))))))
                 for_load_font font_id path charset_path imageout_path json_path engine
-            Just font->let new_char=DSet.difference char (DSet.fromDistinctAscList (map DC.chr (DIS.toAscList (DIM.keysSet font.glyph)))) in if DSet.null new_char then return (engine,False) else do
-                DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' DBSB.charUtf8 new_char))
+            Just font->let intset=DIS.difference (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))) (DIM.keysSet font.glyph) in if DIS.null intset then return (engine,False) else do
+                DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\int->DBSB.stringUtf8 (show int++" ")) (DIS.toAscList intset)))
                 for_load_font font_id path charset_path imageout_path json_path engine
     Render {window_id,projection_move}->let (inactive,widget)=update_lookup_inactive_object projection_move consume_widget engine.inactive in case widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
             catch_null command_buffer
-            let (vertex,index,draw_call)=for_submit submit
-            maybe_value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.transfer_buffer engine.vertex_size engine.index_size vertex index
+            let (vertex,index,parameter,draw_call)=for_submit submit
+            maybe_value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
             case maybe_value of
                 Nothing->FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
                     value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
@@ -141,11 +141,14 @@ do_request request engine=case request of
                         CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=C.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=C.sdl_gpu_loadop_clear,sdl_store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
                             render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
                             catch_null render_pass
-                            F.sdl_bindgpugraphicspipeline render_pass window.triangle_graphics_pipeline
+                            F.sdl_bindgpugraphicspipeline render_pass window.graphics_pipeline
+                            FMU.with engine.parameter_buffer (\parameter_buffer->F.sdl_bindgpuvertexstoragebuffers render_pass 0 parameter_buffer 1)
                             let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
                                 FMU.fillBytes ptr 0 size
                                 FS.pokeElemOff ptr 0 window.adaptive_width
                                 FS.pokeElemOff ptr 1 window.adaptive_height
+                                FS.pokeElemOff ptr 2 engine.font_size
+                                FS.pokeElemOff ptr 3 engine.pixel_range
                                 F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
                             FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
                             FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
@@ -153,7 +156,7 @@ do_request request engine=case request of
                             F.sdl_endgpurenderpass render_pass
             catch_false (F.sdl_submitgpucommandbuffer command_buffer)
             return (engine {inactive=inactive},False)
-        _->error "do_request: error 5"
+        _->error "do_request: error 4"
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
@@ -167,48 +170,48 @@ from_window_flag window_flag=case window_flag of
 
 lock_widget::Widget a->Widget a
 lock_widget widget=case widget of
-    Visual {visual}->case visual of
-        Picture {}->widget {visual=visual {locked=True}}
+    Visual {origin,matrix,clip,red,green,blue,alpha,visual}->case visual of
+        Picture {width,height,album_id,min_u,min_v,max_u,max_v}->Visual {origin=origin,matrix=matrix,clip=clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,locked=True}}
         _->widget
     _->widget
 
 for_reload_atlas::Widget a->Engine a->IO (Widget a,Engine a)
 for_reload_atlas widget engine=case widget of
-    Visual {visual}->case visual of
-        Picture {album_id}->do
+    Visual {origin,matrix,clip,red,green,blue,alpha,visual}->case visual of
+        Picture {width,height,album_id}->do
             let album=intmap_lookup album_id engine.album
             let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas
             copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
-            return (widget {visual=visual {min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}},engine {atlas=atlas})
+            return (Visual {origin=origin,matrix=matrix,clip=clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}},engine {atlas=atlas})
         _->error "for_reload_atlas: error 1"
     _->error "for_reload_atlas: error 2"
 
 for_load_font::Int->String->String->String->String->Engine a->IO (Engine a,Bool)
 for_load_font font_id path charset_path imageout_path json_path engine=do
-    SP.callProcess "msdf-atlas-gen" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size]
+    SP.callProcess "msdf-atlas-gen.exe" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size,"-yorigin","top"]
     json<-DBS.readFile json_path
     case DA.decodeStrict json::Maybe MSDF_Output of
-        Nothing->error "do_request: error 4"
+        Nothing->error "for_load_font: error 1"
         Just output->do
             (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size imageout_path
-            let (new_atlas,left,down,_,_)=atlas_insert width height engine.padding engine.atlas
+            let (atlas,left,down,_,_)=atlas_insert width height engine.padding engine.atlas
             copy_texture engine.device texture engine.texture left down width height
             F.sdl_releasegputexture engine.device texture
             SD.removeFile charset_path
             SD.removeFile imageout_path
             SD.removeFile json_path
-            return (engine {font=DIM.alter (from_maybe_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font,atlas=new_atlas},False)
+            return (engine {font=DIM.alter (from_maybe_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font,atlas=atlas},False)
 
 from_msdf_glyph::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Int,Glyph)
 from_msdf_glyph x y reciprocal_width reciprocal_height msdf_glyph=case msdf_glyph of
     MSDF_Glyph {msdf_unicode,msdf_advance,msdf_planeBounds,msdf_atlasBounds}->case msdf_planeBounds of
         MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlasBounds of
             MSDF_Bounds {msdf_left=atlas_left,msdf_bottom=atlas_bottom,msdf_right=atlas_right,msdf_top=atlas_top}->
-                (msdf_unicode,Glyph {advance=msdf_advance,left=plane_left,down=plane_bottom,right=plane_right,up=plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height})
+                (msdf_unicode,Glyph {advance=msdf_advance,left=plane_left,down=negate plane_bottom,right=plane_right,up=negate plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height})
 
 from_maybe_font::FCT.CFloat->FCT.CFloat->DSeq.Seq MSDF_Glyph->(MSDF_Glyph->(Int,Glyph))->Maybe Font->Maybe Font
 from_maybe_font ascent descent seq_msdf_glyph transform maybe_font=case maybe_font of
-    Nothing->Just (Font {ascent=ascent,descent=descent,glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (key,glyph)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) DIM.empty seq_msdf_glyph})
+    Nothing->Just (Font {descent=descent,ascent=ascent,glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (key,glyph)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) DIM.empty seq_msdf_glyph})
     Just font->Just (font {glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (key,glyph)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) font.glyph seq_msdf_glyph})
 
 do_render::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
