@@ -28,11 +28,11 @@ data Inactive a=Inactive {ancestry::DSeq.Seq Int,projection::Projection (Widget 
 
 data Node a=Node {ancestry::DSeq.Seq Int,active_child::DIS.IntSet,inactive_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}
 
-data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,clip::Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,text::DSeq.Seq (DSeq.Seq Row)}
+data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row)}
 
-data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {widget_id::Int,father::Maybe Int,widget_request::Widget_request a}|Remove_widget {widget_id::Int,widget_type::Bool}|Create_node {node_id::Int,father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Reload_visual {visual_id::Int}|Load_font {font_id::Int,path::String,char::DSet.Set Char}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
+data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {widget_id::Int,father::Maybe Int,widget_request::Widget_request a}|Remove_widget {widget_id::Int,widget_type::Bool}|Create_node {node_id::Int,father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Reload_inactive {inactive_id::Int}|Load_font {font_id::Int,path::String,char::DSet.Set Char}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
-data Widget_request a=Trigger_request {trigger::Event->Engine a->Engine a,next::Engine a->Event->Maybe Int}|Io_trigger_request {io_trigger::Event->Engine a->IO (Engine a),next::Engine a->Event->Maybe Int}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,clip::Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,text::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)}
+data Widget_request a=Trigger_request {trigger::Event->Engine a->Engine a,next::Engine a->Event->Maybe Int}|Io_trigger_request {io_trigger::Event->Engine a->IO (Engine a),next::Engine a->Event->Maybe Int}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)}
 
 data Projection a=Without {object::a}|With {object::a,image::a}
 
@@ -42,13 +42,13 @@ data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
 data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
-data Row=Blank|Row {seq_character::DSeq.Seq Character,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
+data Row=Blank|Row {row_core::DSeq.Seq Character,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
 
 data Character=Character {unicode::Int,font_id::Int,size::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
-data Sentence=Sentence {seq_phrase::DSeq.Seq Phrase,font_id::Int}
+data Sentence=Sentence {sentence_core::DSeq.Seq Phrase,font_id::Int}
 
-data Phrase=Phrase {text::DT.Text,size::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Phrase=Phrase {phrase_core::DT.Text,size::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
 data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {width::FCT.CFloat,height::FCT.CFloat,album_id::Int,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,locked::Bool}|Large_picture {width::FCT.CFloat,height::FCT.CFloat,album_id::Int}
 
@@ -109,14 +109,14 @@ instance FS.Storable Vertex where
             FS.pokeElemOff new_ptr 8 parameter_id
             FS.pokeElemOff new_ptr 9 size
 
-data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,clip_left::FCT.CFloat,clip_down::FCT.CFloat,clip_right::FCT.CFloat,clip_up::FCT.CFloat}
+data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,clip_flag::FCT.CFloat,clip_left::FCT.CFloat,clip_down::FCT.CFloat,clip_right::FCT.CFloat,clip_up::FCT.CFloat}
 
 instance FS.Storable Parameter where
     sizeOf _=48
     alignment _=4
     peek _=error "peek: error 1"
     poke ptr parameter=case parameter of
-        (Parameter {x,y,x_x,x_y,y_x,y_y,clip_left,clip_down,clip_right,clip_up})->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
+        (Parameter {x,y,x_x,x_y,y_x,y_y,clip_flag,clip_left,clip_down,clip_right,clip_up})->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
             FS.pokeElemOff new_ptr 0 x
             FS.pokeElemOff new_ptr 1 y
             FS.pokeElemOff new_ptr 2 x_x
@@ -124,7 +124,7 @@ instance FS.Storable Parameter where
             FS.pokeElemOff new_ptr 4 y_x
             FS.pokeElemOff new_ptr 5 y_y
             FS.pokeElemOff new_ptr 6 0
-            FS.pokeElemOff new_ptr 7 0
+            FS.pokeElemOff new_ptr 7 clip_flag
             FS.pokeElemOff new_ptr 8 clip_left
             FS.pokeElemOff new_ptr 9 clip_down
             FS.pokeElemOff new_ptr 10 clip_right

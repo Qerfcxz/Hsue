@@ -105,8 +105,8 @@ do_request request engine=case request of
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
         return (engine {font=DIM.empty,atlas=atlas,inactive=fmap (update_inactive_projection (update_object lock_widget)) engine.inactive,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
-    Reload_visual {visual_id}->do
-        (inactive,new_engine)<-intmap_io_update_calculate visual_id (io_update_calculate_inactive_projection (io_update_calculate_object (`for_reload_atlas` engine))) engine.inactive
+    Reload_inactive {inactive_id}->do
+        (inactive,new_engine)<-intmap_io_update_calculate inactive_id (io_update_calculate_inactive_projection (io_update_calculate_object (`for_reload_atlas` engine))) engine.inactive
         return (new_engine {inactive=inactive},False)
     Load_font {font_id,path,char}->do
         let charset_path=path++"_charset_temporary"
@@ -170,19 +170,19 @@ from_window_flag window_flag=case window_flag of
 
 lock_widget::Widget a->Widget a
 lock_widget widget=case widget of
-    Visual {origin,matrix,clip,red,green,blue,alpha,visual}->case visual of
-        Picture {width,height,album_id,min_u,min_v,max_u,max_v}->Visual {origin=origin,matrix=matrix,clip=clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,locked=True}}
+    Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
+        Picture {width,height,album_id,min_u,min_v,max_u,max_v}->Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,locked=True}}
         _->widget
     _->widget
 
 for_reload_atlas::Widget a->Engine a->IO (Widget a,Engine a)
 for_reload_atlas widget engine=case widget of
-    Visual {origin,matrix,clip,red,green,blue,alpha,visual}->case visual of
+    Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,album_id}->do
             let album=intmap_lookup album_id engine.album
             let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas
             copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
-            return (Visual {origin=origin,matrix=matrix,clip=clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}},engine {atlas=atlas})
+            return (Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}},engine {atlas=atlas})
         _->error "for_reload_atlas: error 1"
     _->error "for_reload_atlas: error 2"
 
