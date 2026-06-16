@@ -308,7 +308,7 @@ instance Storable SDL_GPUTextureLocation where
     sizeOf _=(#size SDL_GPUTextureLocation)
     alignment _=(#alignment SDL_GPUTextureLocation)
     peek _=error "peek: error 1"
-    poke ptr texture_region=case texture_region of
+    poke ptr texture_location=case texture_location of
         (SDL_GPUTextureLocation {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z})->do
             fillBytes ptr 0 (#size SDL_GPUTextureLocation)
             (#poke SDL_GPUTextureLocation,texture) ptr sdl_texture

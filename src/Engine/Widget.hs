@@ -22,6 +22,8 @@ make_active::Widget_request a->(Widget a,Engine a->Event->Maybe Int)
 make_active widget_request=case widget_request of
     Trigger_request {trigger,next}->(Trigger {trigger=trigger},next)
     Io_trigger_request {io_trigger,next}->(Io_trigger {io_trigger=io_trigger},next)
+    Int_trigger_request {int_trigger,int,next}->(Int_trigger {int_trigger=int_trigger,int=int},next)
+    Int_io_trigger_request {int_io_trigger,int,next}->(Int_io_trigger {int_io_trigger=int_io_trigger,int=int},next)
     _->error "make_active: error 1"
 
 create_inactive::Int->Maybe Int->Widget_request a->Engine a->IO (Engine a)

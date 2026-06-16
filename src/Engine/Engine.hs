@@ -111,7 +111,7 @@ run_engine engine=FMA.allocaBytesAligned C.sdl_event_size C.sdl_event_alignment 
 
 loop_engine_off::FP.Ptr ()->Engine a->IO ()
 loop_engine_off sdl_event engine=do
-    (switch,new_engine)<-run_request False engine
+    (new_engine,switch)<-run_request False engine
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
@@ -130,7 +130,7 @@ loop_engine_off_a sdl_event engine=do
 
 loop_engine_on::FP.Ptr ()->Engine a->IO ()
 loop_engine_on sdl_event engine=do
-    (switch,new_engine)<-run_request False engine
+    (new_engine,switch)<-run_request False engine
     value<-F.sdl_waitevent sdl_event
     if FMU.toBool value
         then do
@@ -217,9 +217,9 @@ to_key key=case key of
     C.SDLK_Z->Key_z
     _->Key_unknown
 
-run_request::Bool->Engine a->IO (Bool,Engine a)
+run_request::Bool->Engine a->IO (Engine a,Bool)
 run_request switch engine=case engine.request of
-    DSeq.Empty->return (switch,engine)
+    DSeq.Empty->return (engine,switch)
     (request DSeq.:<| other_request)->do
         (new_engine,new_switch)<-do_request request (engine {request=other_request})
         run_request (switch/=new_switch) new_engine
@@ -230,12 +230,14 @@ run_event event engine=case engine.main_id engine event of
     Just active_id->run_event_a active_id event engine
 
 run_event_a::Int->Event->Engine a->Engine a
-run_event_a active_id event engine=let active=intmap_lookup active_id engine.active in let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event active.ancestry in let new_engine=run_widget new_event (lookup_projection (engine.projection_strategy engine new_event) active.projection) engine in case active.next new_engine new_event of
+run_event_a active_id event engine=let (active,(update,next))=intmap_update_calculate active_id (\this_active->let this_event=DF.foldl' (\this_this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_this_event) event this_active.ancestry in let (widget,this_update)=run_widget this_event (lookup_projection_object this_active.projection) in (insert_active_object widget this_active,(this_update,\this_engine->this_active.next this_engine this_event))) engine.active in let new_engine=update (engine {active=active}) in case next new_engine of
     Nothing->new_engine
     Just new_active_id->run_event_a new_active_id event new_engine
 
-run_widget::Event->Widget a->Engine a->Engine a
-run_widget event widget engine=case widget of
-    Trigger {trigger}->trigger event engine
-    Io_trigger {io_trigger}->create_request (Io {io=io_trigger event}) engine
+run_widget::Event->Widget a->(Widget a,Engine a->Engine a)
+run_widget event widget=case widget of
+    Trigger {trigger}->(widget,trigger event)
+    Io_trigger {io_trigger}->(widget,create_request (Io {io=io_trigger event}))
+    Int_trigger {int_trigger,int}->let (update,new_int)=int_trigger int event in (Int_trigger {int_trigger=int_trigger,int=new_int},update)
+    Int_io_trigger {int_io_trigger,int}->let (update,new_int)=int_io_trigger int event in (Int_io_trigger {int_io_trigger=int_io_trigger,int=new_int},create_request (Io {io=update}))
     _->error "run_widget: error 1"

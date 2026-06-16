@@ -45,6 +45,10 @@ remove_image_safe_a projection=case projection of
     With {object}->Without {object=object}
     _->projection
 
+insert_active_object::Widget a->Active a->Active a
+insert_active_object widget active=case active of
+    Active {ancestry,next}->Active {ancestry=ancestry,projection=Without {object=widget},next=next}
+
 update_active_projection::(Projection (Widget a)->Projection (Widget a))->Active a->Active a
 update_active_projection update active=case active of
     Active {ancestry,projection,next}->Active {ancestry=ancestry,projection=update projection,next=next}

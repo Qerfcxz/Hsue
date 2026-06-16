@@ -76,23 +76,21 @@ intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLo
     _->error "intmap_update_lookup: error 1"
 
 intmap_update_calculate::Int->(a->(a,b))->DIM.IntMap a->(DIM.IntMap a,b)
-intmap_update_calculate key calculate intmap=DT.swap (DIM.alterF (intmap_update_calculate_a calculate) key intmap)
+intmap_update_calculate key calculate intmap=DT.swap (DIM.alterF (DT.swap . intmap_update_calculate_a calculate) key intmap)
 
-intmap_update_calculate_a::(a->(a,b))->Maybe a->(b,Maybe a)
+intmap_update_calculate_a::(a->(a,b))->Maybe a->(Maybe a,b)
 intmap_update_calculate_a calculate maybe_value=case maybe_value of
-    Just value->let (new_value,calculate_value)=calculate value in (calculate_value,Just new_value)
+    Just value->let (new_value,calculate_value)=calculate value in (Just new_value,calculate_value)
     _->error "intmap_update_calculate_a: error 1"
 
 intmap_io_update_calculate::Int->(a->IO (a,b))->DIM.IntMap a->IO (DIM.IntMap a,b)
-intmap_io_update_calculate key calculate intmap=do
-    (calculate_value,new_intmap)<-DFC.getCompose (DIM.alterF (DFC.Compose . intmap_io_update_calculate_a calculate) key intmap)
-    return (new_intmap,calculate_value)
+intmap_io_update_calculate key calculate intmap=functor_swap (DFC.getCompose (DIM.alterF (DFC.Compose . functor_swap . intmap_io_update_calculate_a calculate) key intmap))
 
-intmap_io_update_calculate_a::(a->IO (a,b))->Maybe a->IO (b,Maybe a)
+intmap_io_update_calculate_a::(a->IO (a,b))->Maybe a->IO (Maybe a,b)
 intmap_io_update_calculate_a calculate maybe_value=case maybe_value of
     Just value->do
         (new_value,calculate_value)<-calculate value
-        return (calculate_value,Just new_value)
+        return (Just new_value,calculate_value)
     _->error "intmap_io_update_calculate_a: error 1"
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
@@ -103,6 +101,9 @@ intset_delete key intset=if DIS.member key intset then DIS.delete key intset els
 
 intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
 intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) return
+
+functor_swap::Functor a=>a (b,c)->a (c,b)
+functor_swap=fmap DT.swap
 
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)
