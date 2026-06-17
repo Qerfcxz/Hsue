@@ -28,11 +28,11 @@ data Inactive a=Inactive {ancestry::DSeq.Seq Int,projection::Projection (Widget 
 
 data Node a=Node {ancestry::DSeq.Seq Int,active_child::DIS.IntSet,inactive_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}
 
-data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Int_trigger {int_trigger::Int->Event->(Engine a->Engine a,Int),int::Int}|Int_io_trigger {int_io_trigger::Int->Event->(Engine a->IO (Engine a),Int),int::Int}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row)}
+data Widget a=Trigger {trigger::Event->Engine a->Engine a}|Io_trigger {io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Int_trigger {int_trigger::Int->Event->Engine a->(Engine a->Engine a,Int),int::Int}|Int_io_trigger {int_io_trigger::Int->Event->Engine a->(Engine a->IO (Engine a),Int),int::Int}|Int_mix_trigger {int_mix_trigger::Int->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Int),order::Bool,int::Int}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row)}
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {widget_id::Int,father::Maybe Int,widget_request::Widget_request a}|Remove_widget {widget_id::Int,widget_type::Bool}|Create_node {node_id::Int,father::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Reload_inactive {inactive_id::Int}|Load_font {font_id::Int,path::String,char::DSet.Set Char}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
-data Widget_request a=Trigger_request {trigger::Event->Engine a->Engine a,next::Engine a->Event->Maybe Int}|Io_trigger_request {io_trigger::Event->Engine a->IO (Engine a),next::Engine a->Event->Maybe Int}|Int_trigger_request {int_trigger::Int->Event->(Engine a->Engine a,Int),int::Int,next::Engine a->Event->Maybe Int}|Int_io_trigger_request {int_io_trigger::Int->Event->(Engine a->IO (Engine a),Int),int::Int,next::Engine a->Event->Maybe Int}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)}
+data Widget_request a=Trigger_request {trigger::Event->Engine a->Engine a,next::Engine a->Event->Maybe Int}|Io_trigger_request {io_trigger::Event->Engine a->IO (Engine a),next::Engine a->Event->Maybe Int}|Mix_trigger_request {mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,next::Engine a->Event->Maybe Int}|Int_trigger_request {int_trigger::Int->Event->Engine a->(Engine a->Engine a,Int),int::Int,next::Engine a->Event->Maybe Int}|Int_io_trigger_request {int_io_trigger::Int->Event->Engine a->(Engine a->IO (Engine a),Int),int::Int,next::Engine a->Event->Maybe Int}|Int_mix_trigger_request {int_mix_trigger::Int->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Int),order::Bool,int::Int,next::Engine a->Event->Maybe Int}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)}
 
 data Projection a=Without {object::a}|With {object::a,image::a}
 
@@ -133,19 +133,35 @@ instance FS.Storable Parameter where
 data MSDF_Metrics=MSDF_Metrics {msdf_ascender::FCT.CFloat,msdf_descender::FCT.CFloat}
 
 instance DA.FromJSON MSDF_Metrics where
-    parseJSON=DA.withObject "MSDF_Metrics" (\object->fmap (MSDF_Metrics . realToFrac) (object DA..: "ascender"::DAT.Parser Double)<*>fmap realToFrac (object DA..: "descender"::DAT.Parser Double))
+    parseJSON=DA.withObject "MSDF_Metrics" $ \object->do
+        ascender<-object DA..: "ascender"::DAT.Parser Double
+        descender<-object DA..: "descender"::DAT.Parser Double
+        return (MSDF_Metrics {msdf_ascender=realToFrac ascender,msdf_descender=realToFrac descender})
 
 data MSDF_Bounds=MSDF_Bounds {msdf_left::FCT.CFloat,msdf_bottom::FCT.CFloat,msdf_right::FCT.CFloat,msdf_top::FCT.CFloat}
 
 instance DA.FromJSON MSDF_Bounds where
-    parseJSON=DA.withObject "MSDF_Bounds" (\object->fmap (MSDF_Bounds . realToFrac) (object DA..: "left"::DAT.Parser Double)<*>fmap realToFrac (object DA..: "bottom"::DAT.Parser Double)<*>fmap realToFrac (object DA..: "right"::DAT.Parser Double)<*>fmap realToFrac (object DA..: "top"::DAT.Parser Double))
+    parseJSON=DA.withObject "MSDF_Bounds" $ \object->do
+        left<-object DA..: "left"::DAT.Parser Double
+        bottom<-object DA..: "bottom"::DAT.Parser Double
+        right<-object DA..: "right"::DAT.Parser Double
+        top<-object DA..: "top"::DAT.Parser Double
+        return (MSDF_Bounds {msdf_left=realToFrac left,msdf_bottom=realToFrac bottom,msdf_right=realToFrac right,msdf_top=realToFrac top})
 
 data MSDF_Glyph=MSDF_Glyph {msdf_unicode::Int,msdf_advance::FCT.CFloat,msdf_planeBounds::MSDF_Bounds,msdf_atlasBounds::MSDF_Bounds}
 
 instance DA.FromJSON MSDF_Glyph where
-    parseJSON=DA.withObject "MSDF_Glyph" (\object->fmap MSDF_Glyph (object DA..: "unicode")<*>fmap realToFrac (object DA..: "advance"::DAT.Parser Double)<*>((object DA..:? "planeBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0})<*>((object DA..:? "atlasBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}))
+    parseJSON=DA.withObject "MSDF_Glyph" $ \object->do
+        unicode<-object DA..: "unicode"
+        advance<-object DA..: "advance"::DAT.Parser Double
+        planeBounds<-(object DA..:? "planeBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}
+        atlasBounds<-(object DA..:? "atlasBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}
+        return (MSDF_Glyph {msdf_unicode=unicode,msdf_advance=realToFrac advance,msdf_planeBounds=planeBounds,msdf_atlasBounds=atlasBounds})
 
 data MSDF_Output=MSDF_Output {msdf_metrics::MSDF_Metrics,msdf_glyphs::DSeq.Seq MSDF_Glyph}
 
 instance DA.FromJSON MSDF_Output where
-    parseJSON=DA.withObject "MSDF_Output" (\object->fmap MSDF_Output (object DA..: "metrics")<*>(object DA..: "glyphs"))
+    parseJSON=DA.withObject "MSDF_Output" $ \object->do
+        metrics<-object DA..: "metrics"
+        glyphs<-object DA..: "glyphs"
+        return (MSDF_Output {msdf_metrics=metrics,msdf_glyphs=glyphs})

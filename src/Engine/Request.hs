@@ -24,6 +24,7 @@ import qualified Data.ByteString.Builder as DBSB
 import qualified Data.ByteString.Lazy as DBSL
 import qualified Data.Char as DC
 import qualified Data.Foldable as DF
+import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DSeq
@@ -68,8 +69,10 @@ do_request request engine=case request of
     Create_widget {widget_id,father,widget_request}->case widget_request of
         Trigger_request {}->return (create_active widget_id father widget_request engine,False)
         Io_trigger_request {}->return (create_active widget_id father widget_request engine,False)
+        Mix_trigger_request {}->return (create_active widget_id father widget_request engine,False)
         Int_trigger_request {}->return (create_active widget_id father widget_request engine,False)
         Int_io_trigger_request {}->return (create_active widget_id father widget_request engine,False)
+        Int_mix_trigger_request {}->return (create_active widget_id father widget_request engine,False)
         Collector_request {}->do
             new_engine<-create_inactive widget_id father widget_request engine
             return (new_engine,False)
@@ -108,7 +111,7 @@ do_request request engine=case request of
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
         return (engine {font=DIM.empty,atlas=atlas,inactive=fmap (update_inactive_projection (update_object lock_widget)) engine.inactive,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
     Reload_inactive {inactive_id}->do
-        (inactive,new_engine)<-intmap_io_update_calculate inactive_id (io_update_calculate_inactive_projection (io_update_calculate_object (functor_swap . (`for_reload_atlas` engine)))) engine.inactive
+        (new_engine,inactive)<-DFC.getCompose (intmap_functor_update inactive_id (functor_update_inactive_projection (functor_update_object (\widget->DFC.Compose {getCompose=for_reload_atlas widget engine}))) engine.inactive)
         return (new_engine {inactive=inactive},False)
     Load_font {font_id,path,char}->do
         let charset_path=path++"_charset_temporary"

@@ -6,12 +6,10 @@ module Engine.Other where
 import Engine.Type
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
-import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
 import qualified Data.Sequence as DS
-import qualified Data.Tuple as DT
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -70,28 +68,18 @@ intmap_update key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWit
     Nothing->error "intmap_update: error 1"
     _->new_intmap
 
+intmap_functor_update::Functor b=>Int->(a->b a)->DIM.IntMap a->b (DIM.IntMap a)
+intmap_functor_update key update=DIM.alterF (intmap_functor_update_a update) key
+
+intmap_functor_update_a::Functor b=>(a->b a)->Maybe a->b (Maybe a)
+intmap_functor_update_a update maybe_value=case maybe_value of
+    Just value->fmap Just (update value)
+    _->error "intmap_functor_update_a: error 1"
+
 intmap_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
 intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
     Just value->(new_intmap,value)
     _->error "intmap_update_lookup: error 1"
-
-intmap_update_calculate::Int->(a->(a,b))->DIM.IntMap a->(DIM.IntMap a,b)
-intmap_update_calculate key calculate intmap=DT.swap (DIM.alterF (DT.swap . intmap_update_calculate_a calculate) key intmap)
-
-intmap_update_calculate_a::(a->(a,b))->Maybe a->(Maybe a,b)
-intmap_update_calculate_a calculate maybe_value=case maybe_value of
-    Just value->let (new_value,calculate_value)=calculate value in (Just new_value,calculate_value)
-    _->error "intmap_update_calculate_a: error 1"
-
-intmap_io_update_calculate::Int->(a->IO (a,b))->DIM.IntMap a->IO (DIM.IntMap a,b)
-intmap_io_update_calculate key calculate intmap=functor_swap (DFC.getCompose (DIM.alterF (DFC.Compose . functor_swap . intmap_io_update_calculate_a calculate) key intmap))
-
-intmap_io_update_calculate_a::(a->IO (a,b))->Maybe a->IO (Maybe a,b)
-intmap_io_update_calculate_a calculate maybe_value=case maybe_value of
-    Just value->do
-        (new_value,calculate_value)<-calculate value
-        return (Just new_value,calculate_value)
-    _->error "intmap_io_update_calculate_a: error 1"
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then error "intset_insert: error 1" else DIS.insert key intset
@@ -102,14 +90,11 @@ intset_delete key intset=if DIS.member key intset then DIS.delete key intset els
 intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
 intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) return
 
-functor_swap::Functor a=>a (b,c)->a (c,b)
-functor_swap=fmap DT.swap
-
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)
 
 to_extended::a->Extended a
-to_extended number=Finite {number}
+to_extended number=Finite {number=number}
 
 from_extended::Num a=>Extended a->a
 from_extended extended=case extended of

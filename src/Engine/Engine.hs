@@ -230,14 +230,16 @@ run_event event engine=case engine.main_id engine event of
     Just active_id->run_event_a active_id event engine
 
 run_event_a::Int->Event->Engine a->Engine a
-run_event_a active_id event engine=let (active,(update,next))=intmap_update_calculate active_id (\this_active->let this_event=DF.foldl' (\this_this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_this_event) event this_active.ancestry in let (widget,this_update)=run_widget this_event (lookup_projection_object this_active.projection) in (insert_active_object widget this_active,(this_update,\this_engine->this_active.next this_engine this_event))) engine.active in let new_engine=update (engine {active=active}) in case next new_engine of
+run_event_a active_id event engine=let (next,update,active)=intmap_functor_update active_id (\this_active->let this_event=DF.foldl' (\this_this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_this_event) event this_active.ancestry in let (this_update,widget)=run_widget (lookup_projection_object this_active.projection) this_event engine in (\this_engine->this_active.next this_engine this_event,this_update,insert_active_object widget this_active)) engine.active in let new_engine=update (engine {active=active}) in case next new_engine of
     Nothing->new_engine
     Just new_active_id->run_event_a new_active_id event new_engine
 
-run_widget::Event->Widget a->(Widget a,Engine a->Engine a)
-run_widget event widget=case widget of
-    Trigger {trigger}->(widget,trigger event)
-    Io_trigger {io_trigger}->(widget,create_request (Io {io=io_trigger event}))
-    Int_trigger {int_trigger,int}->let (update,new_int)=int_trigger int event in (Int_trigger {int_trigger=int_trigger,int=new_int},update)
-    Int_io_trigger {int_io_trigger,int}->let (update,new_int)=int_io_trigger int event in (Int_io_trigger {int_io_trigger=int_io_trigger,int=new_int},create_request (Io {io=update}))
+run_widget::Widget a->Event->Engine a->(Engine a->Engine a,Widget a)
+run_widget widget event engine=case widget of
+    Trigger {trigger}->(trigger event,widget)
+    Io_trigger {io_trigger}->(create_request (Io {io=io_trigger event}),widget)
+    Mix_trigger {mix_trigger,order}->(let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),widget)
+    Int_trigger {int_trigger,int}->let (update,new_int)=int_trigger int event engine in (update,Int_trigger {int_trigger=int_trigger,int=new_int})
+    Int_io_trigger {int_io_trigger,int}->let (update,new_int)=int_io_trigger int event engine in (create_request (Io {io=update}),Int_io_trigger {int_io_trigger=int_io_trigger,int=new_int})
+    Int_mix_trigger {int_mix_trigger,order,int}->let (update,io_update,new_int)=int_mix_trigger int event engine in (if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),Int_mix_trigger {int_mix_trigger=int_mix_trigger,order=order,int=new_int})
     _->error "run_widget: error 1"

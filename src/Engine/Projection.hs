@@ -9,6 +9,7 @@ import Engine.Type
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
+import qualified Data.Tuple as DT
 
 do_widget_transform::DS.Seq Int->Engine a->Widget a->Widget a
 do_widget_transform ancestry engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine) widget ancestry
@@ -57,6 +58,10 @@ update_inactive_projection::(Projection (Widget a)->Projection (Widget a))->Inac
 update_inactive_projection update inactive=case inactive of
     Inactive {ancestry,projection}->Inactive {ancestry=ancestry,projection=update projection}
 
+functor_update_inactive_projection::Functor b=>(Projection (Widget a)->b (Projection (Widget a)))->Inactive a->b (Inactive a)
+functor_update_inactive_projection update inactive=case inactive of
+    Inactive {ancestry,projection}->fmap (\this_projection->Inactive {ancestry=ancestry,projection=this_projection}) (update projection)
+
 ancestry_update_active_projection::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Active a->Active a
 ancestry_update_active_projection update active=case active of
     Active {ancestry,projection,next}->Active {ancestry=ancestry,projection=update ancestry projection,next=next}
@@ -64,12 +69,6 @@ ancestry_update_active_projection update active=case active of
 ancestry_update_inactive_projection::(DS.Seq Int->Projection (Widget a)->Projection (Widget a))->Inactive a->Inactive a
 ancestry_update_inactive_projection update inactive=case inactive of
     Inactive {ancestry,projection}->Inactive {ancestry=ancestry,projection=update ancestry projection}
-
-io_update_calculate_inactive_projection::(Projection (Widget a)->IO (Projection (Widget a),b))->Inactive a->IO (Inactive a,b)
-io_update_calculate_inactive_projection calculate inactive=case inactive of
-    Inactive {ancestry,projection}->do
-        (new_projection,calculate_value)<-calculate projection
-        return (Inactive {ancestry=ancestry,projection=new_projection},calculate_value)
 
 lookup_projection::Projection_strategy->Projection a->a
 lookup_projection projection_strategy=case projection_strategy of
@@ -97,14 +96,10 @@ update_object update projection=case projection of
     Without {object}->Without {object=update object}
     With {object}->Without {object=update object}
 
-io_update_calculate_object::(a->IO (a,b))->Projection a->IO (Projection a,b)
-io_update_calculate_object calculate projection=case projection of
-    Without {object}->do
-        (new_object,calculate_value)<-calculate object
-        return (Without {object=new_object},calculate_value)
-    With {object}->do
-        (new_object,calculate_value)<-calculate object
-        return (Without {object=new_object},calculate_value)
+functor_update_object::Functor b=>(a->b a)->Projection a->b (Projection a)
+functor_update_object update projection=case projection of
+    Without {object}->fmap (\this_object->Without {object=this_object}) (update object)
+    With {object}->fmap (\this_object->Without {object=this_object}) (update object)
 
 lookup_inactive_widget::Projection_path->DIM.IntMap (Inactive a)->Widget a
 lookup_inactive_widget projection_path inactive=case projection_path of
@@ -114,7 +109,7 @@ lookup_inactive_widget projection_path inactive=case projection_path of
 
 update_lookup_inactive_object::Projection_move->(Widget a->Widget a)->DIM.IntMap (Inactive a)->(DIM.IntMap (Inactive a),Widget a)
 update_lookup_inactive_object projection_move update inactive=case projection_move of
-    Object_move {consume,projection_id}->intmap_update_calculate projection_id (update_lookup_inactive_object_a consume update) inactive
+    Object_move {consume,projection_id}->DT.swap (intmap_functor_update projection_id (DT.swap . update_lookup_inactive_object_a consume update) inactive)
     Image_move {projection_id}->(inactive,lookup_projection_image (intmap_lookup projection_id inactive).projection)
     Image_safe_move {projection_id}->(inactive,lookup_projection_image_safe (intmap_lookup projection_id inactive).projection)
 

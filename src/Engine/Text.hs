@@ -12,20 +12,20 @@ import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Foreign.C.Types as FCT
 
-do_typesetting::FCT.CFloat->(Int->DS.Seq (DS.Seq Row)->(FCT.CFloat,FCT.CFloat))->DS.Seq (DS.Seq Row)->DS.Seq (DS.Seq Row)
-do_typesetting height calculate_typesetting article=do_typesetting_a (-height) (`calculate_typesetting` article) 1 article
+do_typesetting::FCT.CFloat->(Int->DS.Seq (DS.Seq Row)->(FCT.CFloat,FCT.CFloat))->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat)
+do_typesetting height calculate_typesetting article=do_typesetting_a (-height) (`calculate_typesetting` article) 1 article DS.empty
 
-do_typesetting_a::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat))->Int->DS.Seq (DS.Seq Row)->DS.Seq (DS.Seq Row)
-do_typesetting_a y calculate_typesetting row_number article=case article of
-    DS.Empty->DS.empty
-    (paragraph DS.:<| other_paragraph)->let (new_paragraph,new_row_number,new_y)=do_typesetting_b y calculate_typesetting row_number paragraph in new_paragraph DS.<| do_typesetting_a new_y calculate_typesetting new_row_number other_paragraph
+do_typesetting_a::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat))->Int->DS.Seq (DS.Seq Row)->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat)
+do_typesetting_a y calculate_typesetting row_number article this_article=case article of
+    DS.Empty->let (_,height)=calculate_typesetting row_number in (this_article,y+height)
+    (paragraph DS.:<| other_paragraph)->let (new_paragraph,new_row_number,new_y)=do_typesetting_b y calculate_typesetting row_number paragraph in do_typesetting_a new_y calculate_typesetting new_row_number other_paragraph (this_article DS.|> new_paragraph)
 
 do_typesetting_b::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat))->Int->DS.Seq Row->(DS.Seq Row,Int,FCT.CFloat)
 do_typesetting_b y calculate_typesetting row_number paragraph=case paragraph of
     DS.Empty->(DS.empty,row_number,y)
-    (row DS.:<| other_row)->let (x,new_y)=calculate_typesetting row_number in let new_new_y=y+new_y in let (final_paragraph,final_row_number,final_y)=do_typesetting_b new_new_y calculate_typesetting (row_number+1) other_row in case row of
+    (row DS.:<| other_row)->let (x,height)=calculate_typesetting row_number in let new_y=y+height in let (final_paragraph,final_row_number,final_y)=do_typesetting_b new_y calculate_typesetting (row_number+1) other_row in case row of
         Blank->(Blank DS.:<| final_paragraph,final_row_number,final_y)
-        Row {row_core,width,min_down,max_up,min_descent,max_ascent}->(Row {row_core=row_core,x=x-width/2,y=new_new_y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent} DS.:<| final_paragraph,final_row_number,final_y)
+        Row {row_core,width,min_down,max_up,min_descent,max_ascent}->(Row {row_core=row_core,x=x-width/2,y=new_y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent} DS.:<| final_paragraph,final_row_number,final_y)
 
 for_text::DIM.IntMap Font->DS.Seq (DS.Seq Sentence)->(Int->DS.Seq Row->DS.Seq (DS.Seq Row)->FCT.CFloat)->DS.Seq (DS.Seq Row)
 for_text font article calculate_width=for_text_a font article calculate_width 1 DS.empty
