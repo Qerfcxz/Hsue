@@ -193,7 +193,7 @@ for_reload_atlas widget engine=case widget of
 
 for_load_font::Int->String->String->String->String->Engine a->IO (Engine a,Bool)
 for_load_font font_id path charset_path imageout_path json_path engine=do
-    SP.callProcess "msdf-atlas-gen.exe" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size,"-yorigin","top"]
+    SP.callProcess "msdf-atlas-gen.exe" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size,"-pxrange",show engine.pixel_range,"-yorigin","top"]
     json<-DBS.readFile json_path
     case DA.decodeStrict json::Maybe MSDF_Output of
         Nothing->error "for_load_font: error 1"
