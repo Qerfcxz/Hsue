@@ -6,12 +6,12 @@ module Engine.Request where
 
 import Engine.Atlas
 import Engine.Collector
+import Engine.Leaf
 import Engine.Node
 import Engine.Other
 import Engine.Projection
 import Engine.Shader
 import Engine.Type
-import Engine.Widget
 import Engine.Window
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
@@ -66,30 +66,13 @@ do_request request engine=case request of
         On {timer_id}->do
             catch_false (F.sdl_removetimer timer_id)
             return (engine {timer=Off},True)
-    Create_widget {widget_id,father,widget_request}->case widget_request of
-        Trigger_request {}->return (create_active widget_id father widget_request engine,False)
-        Io_trigger_request {}->return (create_active widget_id father widget_request engine,False)
-        Mix_trigger_request {}->return (create_active widget_id father widget_request engine,False)
-        Int_trigger_request {}->return (create_active widget_id father widget_request engine,False)
-        Int_io_trigger_request {}->return (create_active widget_id father widget_request engine,False)
-        Int_mix_trigger_request {}->return (create_active widget_id father widget_request engine,False)
-        Collector_request {}->do
-            new_engine<-create_inactive widget_id father widget_request engine
-            return (new_engine,False)
-        Visual_request {}->do
-            new_engine<-create_inactive widget_id father widget_request engine
-            return (new_engine,False)
-        Text_request {}->do
-            new_engine<-create_inactive widget_id father widget_request engine
-            return (new_engine,False)
-    Remove_widget {widget_id,widget_type}->if widget_type
-        then do
-            new_engine<-remove_active widget_id engine
-            return (new_engine,False)
-        else do
-            new_engine<-remove_inactive widget_id engine
-            return (new_engine,False)
-    Create_node {node_id,father,event_transform,widget_transform}->return (create_node node_id father event_transform widget_transform engine,False)
+    Create_widget {leaf_id,maybe_father_id,widget_request}->do
+        new_engine<-create_leaf leaf_id maybe_father_id widget_request engine
+        return (new_engine,False)
+    Remove_widget {leaf_id}->do
+        new_engine<-remove_leaf leaf_id engine
+        return (new_engine,False)
+    Create_node {node_id,maybe_father_id,event_transform,widget_transform}->return (create_node node_id maybe_father_id event_transform widget_transform engine,False)
     Remove_node {node_id}->do
         new_engine<-remove_node node_id engine
         return (new_engine,False)
@@ -109,10 +92,10 @@ do_request request engine=case request of
         return (new_engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {font=DIM.empty,atlas=atlas,inactive=fmap (update_inactive_projection (update_object lock_widget)) engine.inactive,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
-    Reload_inactive {inactive_id}->do
-        (new_engine,inactive)<-DFC.getCompose (intmap_functor_update inactive_id (functor_update_inactive_projection (functor_update_object (\widget->DFC.Compose {getCompose=for_reload_atlas widget engine}))) engine.inactive)
-        return (new_engine {inactive=inactive},False)
+        return (engine {font=DIM.empty,atlas=atlas,leaf=fmap (update_projection_object lock_widget) engine.leaf,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
+    Reload_leaf {leaf_id}->do
+        (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_reload_atlas widget engine})) engine.leaf)
+        return (new_engine {leaf=leaf},False)
     Load_font {font_id,path,char}->do
         let charset_path=path++"_charset_temporary"
         let imageout_path=path++"_imageout_temporary"
@@ -124,7 +107,7 @@ do_request request engine=case request of
             Just font->let new_char=DIS.difference (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))) (DIM.keysSet font.glyph) in if DIS.null new_char then return (engine,False) else do
                 DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\int->DBSB.stringUtf8 (show int++" ")) (DIS.toAscList new_char)))
                 for_load_font font_id path charset_path imageout_path json_path engine
-    Render {window_id,projection_move}->let (inactive,widget)=update_lookup_inactive_object projection_move consume_widget engine.inactive in case widget of
+    Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=get_widget widget in case new_widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
             catch_null command_buffer
@@ -160,7 +143,7 @@ do_request request engine=case request of
                             DF.mapM_ (do_render render_pass engine) draw_call
                             F.sdl_endgpurenderpass render_pass
             catch_false (F.sdl_submitgpucommandbuffer command_buffer)
-            return (engine {inactive=inactive},False)
+            return (new_engine,False)
         _->error "do_request: error 4"
     Io {io}->do
         new_engine<-io engine
@@ -174,22 +157,39 @@ from_window_flag window_flag=case window_flag of
     Window_resizable->C.sdl_window_resizable
 
 lock_widget::Widget a->Widget a
-lock_widget widget=case widget of
+lock_widget this_widget=case this_widget of
+    Double {which,first_widget,second_widget}->Double {which=which,first_widget=lock_widget first_widget,second_widget=lock_widget second_widget}
+    Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=lock_widget widget}
+    Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=lock_widget widget}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=lock_widget widget}
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,album_id,min_u,min_v,max_u,max_v}->Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,locked=True}}
-        _->widget
-    _->widget
+        _->this_widget
+    _->this_widget
 
 for_reload_atlas::Widget a->Engine a->IO (Engine a,Widget a)
-for_reload_atlas widget engine=case widget of
+for_reload_atlas this_widget engine=case this_widget of
+    Double {which,first_widget,second_widget}->do
+        (new_engine,new_first_widget)<-for_reload_atlas first_widget engine
+        (new_new_engine,new_second_widget)<-for_reload_atlas second_widget new_engine
+        return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
+    Widget_trigger {next,widget_trigger,widget}->do
+        (new_engine,new_widget)<-for_reload_atlas widget engine
+        return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget})
+    Widget_io_trigger {next,widget_io_trigger,widget}->do
+        (new_engine,new_widget)<-for_reload_atlas widget engine
+        return (new_engine,Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget})
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
+        (new_engine,new_widget)<-for_reload_atlas widget engine
+        return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,album_id}->do
             let album=intmap_lookup album_id engine.album
             let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas
             copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
             return (engine {atlas=atlas},Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}})
-        _->error "for_reload_atlas: error 1"
-    _->error "for_reload_atlas: error 2"
+        _->return (engine,this_widget)
+    _->return (engine,this_widget)
 
 for_load_font::Int->String->String->String->String->Engine a->IO (Engine a,Bool)
 for_load_font font_id path charset_path imageout_path json_path engine=do
@@ -205,12 +205,12 @@ for_load_font font_id path charset_path imageout_path json_path engine=do
             SD.removeFile charset_path
             SD.removeFile imageout_path
             SD.removeFile json_path
-            return (engine {font=DIM.alter (from_maybe_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font,atlas=atlas},False)
+            return (engine {font=DIM.alter (from_maybe_font output.msdf_metric.msdf_ascender output.msdf_metric.msdf_descender output.msdf_glyph (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font,atlas=atlas},False)
 
 from_msdf_glyph::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Glyph,Int)
 from_msdf_glyph x y reciprocal_width reciprocal_height msdf_glyph=case msdf_glyph of
-    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_planeBounds,msdf_atlasBounds}->case msdf_planeBounds of
-        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlasBounds of
+    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_bound,msdf_atlas_bound}->case msdf_plane_bound of
+        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlas_bound of
             MSDF_Bounds {msdf_left=atlas_left,msdf_bottom=atlas_bottom,msdf_right=atlas_right,msdf_top=atlas_top}->
                 (Glyph {advance=msdf_advance,left=plane_left,down=negate plane_bottom,right=plane_right,up=negate plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height},msdf_unicode)
 

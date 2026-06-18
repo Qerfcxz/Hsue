@@ -88,7 +88,7 @@ intset_delete::Int->DIS.IntSet->DIS.IntSet
 intset_delete key intset=if DIS.member key intset then DIS.delete key intset else error "intset_delete: error 1"
 
 intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
-intset_foldm transform=DIS.foldr (\key next value->transform key value>>=next) return
+intset_foldm transform=DIS.foldr (\key update value->transform key value>>=update) return
 
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)

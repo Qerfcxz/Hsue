@@ -3,34 +3,30 @@
 
 module Engine.Node where
 
+import Engine.Leaf
 import Engine.Other
 import Engine.Projection
 import Engine.Type
-import Engine.Widget
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 
 create_node::Int->Maybe Int->(Engine a->Event->Event)->(Engine a->Widget a->Widget a)->Engine a->Engine a
-create_node node_id father event_transform widget_transform engine=case father of
-    Nothing->engine {node=intmap_insert node_id (Node {ancestry=DS.empty,active_child=DIS.empty,inactive_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
-    Just new_node_id->let (new_node,node)=intmap_update_lookup new_node_id (\this_node->this_node {node_child=intset_insert node_id this_node.node_child}) engine.node in engine {node=intmap_insert node_id (Node {ancestry=node.ancestry DS.|> new_node_id,active_child=DIS.empty,inactive_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) new_node}
+create_node node_id maybe_father_id event_transform widget_transform engine=case maybe_father_id of
+    Nothing->engine {node=intmap_insert node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
+    Just father_id->let (node,single_node)=intmap_update_lookup father_id (\this_node->this_node {node_child=intset_insert node_id this_node.node_child}) engine.node in engine {node=intmap_insert node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
 
 remove_node::Int->Engine a->IO (Engine a)
-remove_node node_id engine=let (new_node,node)=intmap_delete_lookup node_id engine.node in case node.ancestry of
-    DS.Empty->remove_node_a node.active_child node.inactive_child node.node_child (engine {node=new_node})
-    _ DS.:|> new_node_id->remove_node_a node.active_child node.inactive_child node.node_child (engine {node=intmap_update new_node_id (\this_node->this_node {node_child=intset_delete node_id this_node.node_child}) new_node})
+remove_node node_id engine=let (node,single_node)=intmap_delete_lookup node_id engine.node in case single_node.ancestry_id of
+    DS.Empty->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
+    _ DS.:|> father_id->remove_node_a single_node.leaf_child single_node.node_child (engine {node=intmap_update father_id (\this_node->this_node {node_child=intset_delete node_id this_node.node_child}) node})
 
-remove_node_a::DIS.IntSet->DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
-remove_node_a active_child inactive_child node_child engine=do
-    new_engine<-intset_foldm remove_node_active active_child engine
-    new_new_engine<-intset_foldm remove_node_inactive inactive_child new_engine
-    intset_foldm remove_node_node node_child new_new_engine
+remove_node_a::DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
+remove_node_a leaf_child node_child engine=do
+    new_engine<-intset_foldm remove_node_leaf leaf_child engine
+    intset_foldm remove_node_node node_child new_engine
 
-remove_node_active::Int->Engine a->IO (Engine a)
-remove_node_active active_id engine=let (new_active,active)=intmap_delete_lookup active_id engine.active in clean_widget (lookup_projection_object active.projection) (engine {active=new_active})
-
-remove_node_inactive::Int->Engine a->IO (Engine a)
-remove_node_inactive inactive_id engine=let (new_inactive,inactive)=intmap_delete_lookup inactive_id engine.inactive in clean_widget (lookup_projection_object inactive.projection) (engine {inactive=new_inactive})
+remove_node_leaf::Int->Engine a->IO (Engine a)
+remove_node_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
 
 remove_node_node::Int->Engine a->IO (Engine a)
-remove_node_node node_id engine=let node=intmap_lookup node_id engine.node in remove_node_a node.active_child node.inactive_child node.node_child (engine {node=intmap_delete node_id engine.node})
+remove_node_node node_id engine=let node=intmap_lookup node_id engine.node in remove_node_a node.leaf_child node.node_child (engine {node=intmap_delete node_id engine.node})
