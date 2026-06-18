@@ -6,16 +6,17 @@ module Engine.Leaf where
 
 import Engine.Atlas
 import Engine.Other
-import Engine.Projection
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as F
+import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 
 get_widget::Widget a->Widget a
 get_widget this_widget=case this_widget of
     Double {which,first_widget,second_widget}->if which then get_widget first_widget else get_widget second_widget
+    Group {index,group_widget}->get_widget (intmap_lookup index group_widget)
     Widget_trigger {widget}->get_widget widget
     Widget_io_trigger {widget}->get_widget widget
     Widget_mix_trigger {widget}->get_widget widget
@@ -34,6 +35,9 @@ create_widget this_widget_request engine=case this_widget_request of
         (new_engine,first_widget)<-create_widget first_widget_request engine
         (new_new_engine,second_widget)<-create_widget second_widget_request new_engine
         return (new_new_engine,Double {which=which,first_widget=first_widget,second_widget=second_widget})
+    Group_request {index,group_widget_request}->do
+        (new_engine,new_group_widget)<-DIM.foldrWithKey (\key widget transform->intmap_engine_transform key widget create_widget transform) (\this_engine->return (this_engine,DIM.empty)) group_widget_request engine
+        return (new_engine,Group {index=index,group_widget=new_group_widget})
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})
     Mix_trigger_request {next,mix_trigger,order}->return (engine,Mix_trigger {next=next,mix_trigger=mix_trigger,order=order})
@@ -82,6 +86,7 @@ remove_widget this_widget engine=case this_widget of
     Double {first_widget,second_widget}->do
         new_engine<-remove_widget first_widget engine
         remove_widget second_widget new_engine
+    Group {group_widget}->CM.foldM (flip remove_widget) engine group_widget
     Widget_trigger {widget}->remove_widget widget engine
     Widget_io_trigger {widget}->remove_widget widget engine
     Widget_mix_trigger {widget}->remove_widget widget engine
@@ -94,15 +99,3 @@ remove_widget this_widget engine=case this_widget of
             return (engine {album=album})
         _->return engine
     _->return engine
-
-create_responsive_widget_trigger_request::Int->(Engine a->Event->Maybe Int)->(Widget a->Widget a->Event->Engine a->(Engine a->Engine a,Widget a,Widget a))->Widget_request a->Widget_request a
-create_responsive_widget_trigger_request leaf_id next transform widget_request=Widget_trigger_request {next=next,widget_trigger=create_responsive_widget_trigger_request_a leaf_id transform,widget_request=widget_request}
-
-create_responsive_widget_trigger_request_a::Int->(Widget a->Widget a->Event->Engine a->(Engine a->Engine a,Widget a,Widget a))->Widget a->Event->Engine a->(Engine a->Engine a,Widget a)
-create_responsive_widget_trigger_request_a leaf_id transform widget event engine=let (update,new_widget,leaf)=intmap_functor_update leaf_id (functor_update_projection_object (\this_widget->transform this_widget widget event engine)) engine.leaf in (update . \this_engine->this_engine {leaf=leaf},new_widget)
-
-create_responsive_widget_io_trigger_request::Int->(Engine a->Event->Maybe Int)->(Widget a->Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a,Widget a))->Widget_request a->Widget_request a
-create_responsive_widget_io_trigger_request leaf_id next transform widget_request=Widget_mix_trigger_request {next=next,widget_mix_trigger=create_responsive_widget_io_trigger_request_a leaf_id transform,order=True,widget_request=widget_request}
-
-create_responsive_widget_io_trigger_request_a::Int->(Widget a->Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a,Widget a))->Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a)
-create_responsive_widget_io_trigger_request_a leaf_id transform widget event engine=let (update,new_widget,leaf)=intmap_functor_update leaf_id (functor_update_projection_object (\this_widget->transform this_widget widget event engine)) engine.leaf in (\this_engine->this_engine {leaf=leaf},update,new_widget)

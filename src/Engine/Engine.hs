@@ -242,6 +242,7 @@ run_event_b projection event engine=case projection of
 run_widget::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->Event->Maybe Int,Widget a)
 run_widget this_widget event engine=case this_widget of
     Double {which,first_widget,second_widget}->if which then let (update,next,new_first_widget)=run_widget first_widget event engine in (update,next,Double {which=which,first_widget=new_first_widget,second_widget=second_widget}) else let (update,next,new_second_widget)=run_widget second_widget event engine in (update,next,Double {which=which,first_widget=first_widget,second_widget=new_second_widget})
+    Group {index,group_widget}->let (update,next,new_group_widget)=intmap_functor_update index (\widget->run_widget widget event engine) group_widget in (update,next,Group {index=index,group_widget=new_group_widget})
     Trigger {next,trigger}->(trigger event,next,this_widget)
     Io_trigger {next,io_trigger}->(create_request (Io {io=io_trigger event}),next,this_widget)
     Mix_trigger {next,mix_trigger,order}->(let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next,this_widget)

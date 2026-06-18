@@ -68,6 +68,11 @@ intmap_update key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWit
     Nothing->error "intmap_update: error 1"
     _->new_intmap
 
+intmap_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
+intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
+    Just value->(new_intmap,value)
+    _->error "intmap_update_lookup: error 1"
+
 intmap_functor_update::Functor b=>Int->(a->b a)->DIM.IntMap a->b (DIM.IntMap a)
 intmap_functor_update key update=DIM.alterF (intmap_functor_update_a update) key
 
@@ -76,10 +81,11 @@ intmap_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
     _->error "intmap_functor_update_a: error 1"
 
-intmap_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
-intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
-    Just value->(new_intmap,value)
-    _->error "intmap_update_lookup: error 1"
+intmap_engine_transform::Int->a->(a->Engine b->IO (Engine b,c))->(Engine b->IO (Engine b,DIM.IntMap c))->Engine b->IO (Engine b,DIM.IntMap c)
+intmap_engine_transform key value first_transform second_transform engine=do
+    (first_engine,new_value)<-first_transform value engine
+    (second_engine,intmap)<-second_transform first_engine
+    return (second_engine,DIM.insert key new_value intmap)
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then error "intset_insert: error 1" else DIS.insert key intset

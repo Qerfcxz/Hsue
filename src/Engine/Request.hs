@@ -159,6 +159,7 @@ from_window_flag window_flag=case window_flag of
 lock_widget::Widget a->Widget a
 lock_widget this_widget=case this_widget of
     Double {which,first_widget,second_widget}->Double {which=which,first_widget=lock_widget first_widget,second_widget=lock_widget second_widget}
+    Group {index,group_widget}->Group {index=index,group_widget=fmap lock_widget group_widget}
     Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=lock_widget widget}
     Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=lock_widget widget}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=lock_widget widget}
@@ -173,6 +174,9 @@ for_reload_atlas this_widget engine=case this_widget of
         (new_engine,new_first_widget)<-for_reload_atlas first_widget engine
         (new_new_engine,new_second_widget)<-for_reload_atlas second_widget new_engine
         return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
+    Group {index,group_widget}->do
+        (new_engine,new_group_widget)<-DIM.foldrWithKey (\key widget transform->intmap_engine_transform key widget for_reload_atlas transform) (\this_engine->return (this_engine,DIM.empty)) group_widget engine
+        return (new_engine,Group {index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
         (new_engine,new_widget)<-for_reload_atlas widget engine
         return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget})
@@ -183,11 +187,11 @@ for_reload_atlas this_widget engine=case this_widget of
         (new_engine,new_widget)<-for_reload_atlas widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
-        Picture {width,height,album_id}->do
-            let album=intmap_lookup album_id engine.album
-            let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas
-            copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
-            return (engine {atlas=atlas},Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}})
+        Picture {width,height,album_id,locked}->if locked
+            then let album=intmap_lookup album_id engine.album in let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas in do
+                copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
+                return (engine {atlas=atlas},Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}})
+            else return (engine,this_widget)
         _->return (engine,this_widget)
     _->return (engine,this_widget)
 
