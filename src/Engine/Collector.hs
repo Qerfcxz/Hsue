@@ -26,6 +26,19 @@ second_maybe_update_collect update projection_path leaf_id collect_strategy engi
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
+clean_collect::Int->Engine a->Engine a
+clean_collect leaf_id engine=engine {leaf=intmap_update leaf_id (update_projection_object clean_collect_a) engine.leaf}
+
+clean_collect_a::Widget a->Widget a
+clean_collect_a this_widget=case this_widget of
+    Double {which,first_widget,second_widget}->Double {which=which,first_widget=clean_collect_a first_widget,second_widget=clean_collect_a second_widget}
+    Group {index,group_widget}->Group {index=index,group_widget=fmap clean_collect_a group_widget}
+    Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=clean_collect_a widget}
+    Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=clean_collect_a widget}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=clean_collect_a widget}
+    Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty}
+    _->this_widget
+
 collect::Projection_path->Int->Collect_strategy->Engine a->Engine a
 collect projection_path leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v (lookup_projection_widget projection_path engine))) collect_strategy)) engine.leaf}
 

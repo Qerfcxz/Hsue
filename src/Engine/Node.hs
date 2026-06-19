@@ -22,8 +22,8 @@ remove_node node_id engine=let (node,single_node)=intmap_delete_lookup node_id e
 
 remove_node_a::DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
 remove_node_a leaf_child node_child engine=do
-    new_engine<-intset_foldm remove_node_leaf leaf_child engine
-    intset_foldm remove_node_node node_child new_engine
+    new_engine<-intset_monad_fold remove_node_leaf leaf_child engine
+    intset_monad_fold remove_node_node node_child new_engine
 
 remove_node_leaf::Int->Engine a->IO (Engine a)
 remove_node_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in remove_widget (lookup_projection_object projection) (engine {leaf=leaf})

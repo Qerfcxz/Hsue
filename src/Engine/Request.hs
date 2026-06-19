@@ -11,24 +11,19 @@ import Engine.Node
 import Engine.Other
 import Engine.Projection
 import Engine.Shader
+import Engine.Text
 import Engine.Type
 import Engine.Window
 import qualified SDL.Constant as C
 import qualified SDL.Function as F
 import qualified SDL.Type as T
 import qualified Control.Monad as CM
-import qualified Data.Aeson as DA
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
-import qualified Data.ByteString.Builder as DBSB
-import qualified Data.ByteString.Lazy as DBSL
-import qualified Data.Char as DC
 import qualified Data.Foldable as DF
 import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
-import qualified Data.IntSet as DIS
-import qualified Data.Sequence as DSeq
-import qualified Data.Set as DSet
+import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
@@ -36,11 +31,9 @@ import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
-import qualified System.Directory as SD
-import qualified System.Process as SP
 
 create_request::Request a->Engine a->Engine a
-create_request request engine=engine {request=engine.request DSeq.|> request}
+create_request request engine=engine {request=engine.request DS.|> request}
 
 do_request::Request a->Engine a->IO (Engine a,Bool)
 do_request request engine=case request of
@@ -92,21 +85,10 @@ do_request request engine=case request of
         return (new_engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {font=DIM.empty,atlas=atlas,leaf=fmap (update_projection_object lock_widget) engine.leaf,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
-    Reload_leaf {leaf_id}->do
-        (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_reload_atlas widget engine})) engine.leaf)
+        return (engine {atlas=atlas,leaf=fmap (update_projection_object lock_widget) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
+    Unlock {leaf_id}->do
+        (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_unlock widget engine})) engine.leaf)
         return (new_engine {leaf=leaf},False)
-    Load_font {font_id,path,char}->do
-        let charset_path=path++"_charset_temporary"
-        let imageout_path=path++"_imageout_temporary"
-        let json_path=path++"_json_temporary"
-        case DIM.lookup font_id engine.font of
-            Nothing->do
-                DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\int->DBSB.stringUtf8 (show int++" ")) (DIS.toAscList (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))))))
-                for_load_font font_id path charset_path imageout_path json_path engine
-            Just font->let new_char=DIS.difference (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))) (DIM.keysSet font.glyph) in if DIS.null new_char then return (engine,False) else do
-                DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\int->DBSB.stringUtf8 (show int++" ")) (DIS.toAscList new_char)))
-                for_load_font font_id path charset_path imageout_path json_path engine
     Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=get_widget widget in case new_widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
@@ -164,64 +146,52 @@ lock_widget this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=lock_widget widget}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=lock_widget widget}
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
-        Picture {width,height,album_id,min_u,min_v,max_u,max_v}->Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,locked=True}}
+        Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
         _->this_widget
+    Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
     _->this_widget
 
-for_reload_atlas::Widget a->Engine a->IO (Engine a,Widget a)
-for_reload_atlas this_widget engine=case this_widget of
+for_unlock::Widget a->Engine a->IO (Engine a,Widget a)
+for_unlock this_widget engine=case this_widget of
     Double {which,first_widget,second_widget}->do
-        (new_engine,new_first_widget)<-for_reload_atlas first_widget engine
-        (new_new_engine,new_second_widget)<-for_reload_atlas second_widget new_engine
+        (new_engine,new_first_widget)<-for_unlock first_widget engine
+        (new_new_engine,new_second_widget)<-for_unlock second_widget new_engine
         return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
     Group {index,group_widget}->do
-        (new_engine,new_group_widget)<-DIM.foldrWithKey (\key widget transform->intmap_engine_transform key widget for_reload_atlas transform) (\this_engine->return (this_engine,DIM.empty)) group_widget engine
+        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulation key widget->intmap_engine_monad_fold key for_unlock widget accumulation) (return (engine,DIM.empty)) group_widget
         return (new_engine,Group {index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
-        (new_engine,new_widget)<-for_reload_atlas widget engine
+        (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget})
     Widget_io_trigger {next,widget_io_trigger,widget}->do
-        (new_engine,new_widget)<-for_reload_atlas widget engine
+        (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget})
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
-        (new_engine,new_widget)<-for_reload_atlas widget engine
+        (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
-        Picture {width,height,album_id,locked}->if locked
-            then let album=intmap_lookup album_id engine.album in let (atlas,new_left,new_down,new_right,new_up)=atlas_insert album.width album.height engine.padding engine.atlas in do
-                copy_texture engine.device album.texture engine.texture new_left new_down album.width album.height
-                return (engine {atlas=atlas},Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,album_id=album_id,min_u=fromIntegral new_left*engine.reciprocal_width,min_v=fromIntegral new_down*engine.reciprocal_height,max_u=fromIntegral new_right*engine.reciprocal_width,max_v=fromIntegral new_up*engine.reciprocal_height,locked=False}})
+        Picture {path,locked}->if locked
+            then do
+                (new_engine,new_visual)<-create_picture path engine
+                return (new_engine,Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
             else return (engine,this_widget)
         _->return (engine,this_widget)
+    Text {origin,matrix,width,height,y,max_y,article,charset,locked}->if locked
+        then do
+            new_engine<-update_font charset engine
+            return (new_engine,Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
+        else return (engine,this_widget)
     _->return (engine,this_widget)
 
-for_load_font::Int->String->String->String->String->Engine a->IO (Engine a,Bool)
-for_load_font font_id path charset_path imageout_path json_path engine=do
-    SP.callProcess "msdf-atlas-gen.exe" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size,"-pxrange",show engine.pixel_range,"-yorigin","top"]
-    json<-DBS.readFile json_path
-    case DA.decodeStrict json::Maybe MSDF_Output of
-        Nothing->error "for_load_font: error 1"
-        Just output->do
-            (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size imageout_path
-            let (atlas,left,down,_,_)=atlas_insert width height engine.padding engine.atlas
-            copy_texture engine.device texture engine.texture left down width height
-            F.sdl_releasegputexture engine.device texture
-            SD.removeFile charset_path
-            SD.removeFile imageout_path
-            SD.removeFile json_path
-            return (engine {font=DIM.alter (from_maybe_font output.msdf_metric.msdf_ascender output.msdf_metric.msdf_descender output.msdf_glyph (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font,atlas=atlas},False)
+update_article::DIM.IntMap Font->Row->Row
+update_article font row=case row of
+    Blank->Blank
+    Row {row_core,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a font) row_core,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
 
-from_msdf_glyph::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Glyph,Int)
-from_msdf_glyph x y reciprocal_width reciprocal_height msdf_glyph=case msdf_glyph of
-    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_bound,msdf_atlas_bound}->case msdf_plane_bound of
-        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlas_bound of
-            MSDF_Bounds {msdf_left=atlas_left,msdf_bottom=atlas_bottom,msdf_right=atlas_right,msdf_top=atlas_top}->
-                (Glyph {advance=msdf_advance,left=plane_left,down=negate plane_bottom,right=plane_right,up=negate plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height},msdf_unicode)
-
-from_maybe_font::FCT.CFloat->FCT.CFloat->DSeq.Seq MSDF_Glyph->(MSDF_Glyph->(Glyph,Int))->Maybe Font->Maybe Font
-from_maybe_font ascent descent seq_msdf_glyph transform maybe_font=case maybe_font of
-    Nothing->Just (Font {descent=descent,ascent=ascent,glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (glyph,key)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) DIM.empty seq_msdf_glyph})
-    Just font->Just (font {glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (glyph,key)=transform msdf_glyph in DIM.insert key glyph intmap_glyph) font.glyph seq_msdf_glyph})
+update_article_a::DIM.IntMap Font->Character->Character
+update_article_a font character=case character of
+    Character {unicode,font_id,size,left,down,right,up,red,green,blue,alpha}->case intmap_lookup unicode (intmap_lookup font_id font).glyph of
+        Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,size=size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,red=red,green=green,blue=blue,alpha=alpha}
 
 do_render::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of

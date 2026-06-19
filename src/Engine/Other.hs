@@ -33,6 +33,11 @@ return_catch_null io=do
     ptr<-io
     if ptr==FP.nullPtr then error "return_catch_null: error 1" else return ptr
 
+map_lookup::Ord a=>a->DM.Map a b->b
+map_lookup key this_map=case DM.lookup key this_map of
+    Just value->value
+    _->error "map_lookup: error 1"
+
 map_insert::Ord a=>a->b->DM.Map a b->DM.Map a b
 map_insert key value this_map=let (maybe_value,new_map)=DM.insertLookupWithKey (\_ _ this_value->this_value) key value this_map in case maybe_value of
     Nothing->new_map
@@ -81,11 +86,11 @@ intmap_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
     _->error "intmap_functor_update_a: error 1"
 
-intmap_engine_transform::Int->a->(a->Engine b->IO (Engine b,c))->(Engine b->IO (Engine b,DIM.IntMap c))->Engine b->IO (Engine b,DIM.IntMap c)
-intmap_engine_transform key value first_transform second_transform engine=do
-    (first_engine,new_value)<-first_transform value engine
-    (second_engine,intmap)<-second_transform first_engine
-    return (second_engine,DIM.insert key new_value intmap)
+intmap_engine_monad_fold::Monad c=>Int->(a->Engine b->c (Engine b,d))->a->c (Engine b,DIM.IntMap d)->c (Engine b,DIM.IntMap d)
+intmap_engine_monad_fold key transform value accumulation=do
+    (engine,intmap)<-accumulation
+    (new_engine,new_value)<-transform value engine
+    return (new_engine,intmap_insert key new_value intmap)
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then error "intset_insert: error 1" else DIS.insert key intset
@@ -93,8 +98,8 @@ intset_insert key intset=if DIS.member key intset then error "intset_insert: err
 intset_delete::Int->DIS.IntSet->DIS.IntSet
 intset_delete key intset=if DIS.member key intset then DIS.delete key intset else error "intset_delete: error 1"
 
-intset_foldm::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
-intset_foldm transform=DIS.foldr (\key update value->transform key value>>=update) return
+intset_monad_fold::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
+intset_monad_fold transform=DIS.foldr (\key update value->transform key value>>=update) return
 
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)
