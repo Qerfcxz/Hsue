@@ -89,41 +89,16 @@ do_request request engine=case request of
     Unlock {leaf_id}->do
         (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_unlock widget engine})) engine.leaf)
         return (new_engine {leaf=leaf},False)
+    Load_charset {charset}->do
+        new_engine<-update_font charset engine
+        return (new_engine,False)
     Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=get_widget widget in case new_widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
             catch_null command_buffer
             let (vertex,index,parameter,draw_call)=for_submit submit
-            maybe_value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
-            case maybe_value of
-                Nothing->FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-                    value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
-                    CM.when (FMU.toBool value) $ do
-                        texture<-FS.peek ptr_texture
-                        CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=C.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=C.sdl_gpu_loadop_clear,sdl_store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
-                            render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
-                            catch_null render_pass
-                            F.sdl_endgpurenderpass render_pass
-                _->FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-                    value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
-                    CM.when (FMU.toBool value) $ do
-                        texture<-FS.peek ptr_texture
-                        CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=C.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=C.sdl_gpu_loadop_clear,sdl_store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
-                            render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
-                            catch_null render_pass
-                            F.sdl_bindgpugraphicspipeline render_pass window.graphics_pipeline
-                            FMU.with engine.parameter_buffer (\parameter_buffer->F.sdl_bindgpuvertexstoragebuffers render_pass 0 parameter_buffer 1)
-                            let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
-                                FMU.fillBytes ptr 0 size
-                                FS.pokeElemOff ptr 0 window.adaptive_width
-                                FS.pokeElemOff ptr 1 window.adaptive_height
-                                FS.pokeElemOff ptr 2 engine.font_size
-                                FS.pokeElemOff ptr 3 engine.pixel_range
-                                F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
-                            FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
-                            FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
-                            DF.mapM_ (do_render render_pass engine) draw_call
-                            F.sdl_endgpurenderpass render_pass
+            value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
+            for_render window command_buffer (if value then \render_pass->do_render engine window command_buffer render_pass draw_call else F.sdl_endgpurenderpass)
             catch_false (F.sdl_submitgpucommandbuffer command_buffer)
             return (new_engine,False)
         _->error "do_request: error 4"
@@ -193,8 +168,34 @@ update_article_a font character=case character of
     Character {unicode,font_id,size,left,down,right,up,red,green,blue,alpha}->case intmap_lookup unicode (intmap_lookup font_id font).glyph of
         Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,size=size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,red=red,green=green,blue=blue,alpha=alpha}
 
-do_render::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
+for_render::Window->FP.Ptr T.SDL_GPUCommandBuffer->(FP.Ptr T.SDL_GPURenderPass->IO ())->IO ()
+for_render window command_buffer next=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
+    value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
+    CM.when (FMU.toBool value) $ do
+        texture<-FS.peek ptr_texture
+        CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=C.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=C.sdl_gpu_loadop_clear,sdl_store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
+            render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
+            catch_null render_pass
+            next render_pass
+
+do_render::Engine a->Window->FP.Ptr T.SDL_GPUCommandBuffer->FP.Ptr T.SDL_GPURenderPass->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render engine window command_buffer render_pass draw_call=do
+    F.sdl_bindgpugraphicspipeline render_pass window.graphics_pipeline
+    FMU.with engine.parameter_buffer (\parameter_buffer->F.sdl_bindgpuvertexstoragebuffers render_pass 0 parameter_buffer 1)
+    let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
+        FMU.fillBytes ptr 0 size
+        FS.pokeElemOff ptr 0 window.adaptive_width
+        FS.pokeElemOff ptr 1 window.adaptive_height
+        FS.pokeElemOff ptr 2 engine.font_size
+        FS.pokeElemOff ptr 3 engine.pixel_range
+        F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
+    FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
+    FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
+    DF.mapM_ (do_render_a render_pass engine) draw_call
+    F.sdl_endgpurenderpass render_pass
+
+do_render_a::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_a render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
     Nothing->do
         FMU.with (C.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->F.sdl_bindgpufragmentsamplers render_pass 0 texture_sampler_binding 1)
         F.sdl_drawgpuindexedprimitives render_pass index_length 1 index_offset 0 0

@@ -55,9 +55,11 @@ create_widget this_widget_request engine=case this_widget_request of
     Visual_request {origin,matrix,maybe_clip,red,green,blue,alpha,visual_request}->do
         (new_engine,visual)<-create_visual visual_request engine
         return (new_engine,Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
-    Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting}->let charset=to_charset article in do
-        new_engine<-update_font charset engine
-        return (new_engine,let new_height=height/2 in let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
+    Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let new_height=height/2 in if load
+        then do
+            new_engine<-update_font charset engine
+            return (new_engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
 
 create_visual::Visual_request->Engine a->IO (Engine a,Visual)
 create_visual visual_request engine=case visual_request of
