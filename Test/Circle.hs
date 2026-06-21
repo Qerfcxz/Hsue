@@ -111,7 +111,7 @@ main=do
     let sentence=Sentence {sentence_core=DSeq.singleton phrase,path="arial"}
     let paragraph=DSeq.replicate 100 sentence
     let article=DSeq.singleton paragraph
-    let text_request=Text_request {origin=Point {x=0,y=0},matrix=identity_matrix 0 0,width=960,height=640,article=article,calculate_width=calculate_width 960,calculate_typesetting=calculate_typesetting,load=True}
+    let text_request=Text_request {origin=Point {x=0,y=0},matrix=identity_matrix,width=960,height=640,article=article,calculate_width=calculate_width 960,calculate_typesetting=calculate_typesetting,load=True}
     let main_widget_request=Widget_trigger_request {next=main_widget_next,widget_trigger=main_widget_transform,widget_request=Double_request {which=True,first_widget_request=text_request,second_widget_request=Store_request {store=Data_bool {bool=True}}}}
     let seq_request=DSeq.singleton (Create_window {window_id=window_id,title=DT.pack "Perfect Circle Dynamic Typesetting",width=1200,height=800,red=0.1,green=0.12,blue=0.15,alpha=1,window_flag=DSet.singleton Window_resizable}) 
           DSeq.|> Create_widget {leaf_id=adaptive_trigger_id,maybe_father_id=Nothing,widget_request=create_adaptive_window_trigger_request adaptive_next (DIS.singleton window_id)} 
