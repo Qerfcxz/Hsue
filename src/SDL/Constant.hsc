@@ -417,8 +417,8 @@ sdl_gpu_samplecount_1=(#const SDL_GPU_SAMPLECOUNT_1)
 sdl_gpu_filter_nearest::Word32
 sdl_gpu_filter_nearest=(#const SDL_GPU_FILTER_NEAREST)
 
-sdl_gpu_samplermipmapmode_linear::Word32
-sdl_gpu_samplermipmapmode_linear=(#const SDL_GPU_SAMPLERMIPMAPMODE_LINEAR)
+sdl_gpu_samplermipmapmode_nearest::Word32
+sdl_gpu_samplermipmapmode_nearest=(#const SDL_GPU_SAMPLERMIPMAPMODE_NEAREST)
 
 sdl_gpu_sampleraddressmode_clamp_to_edge::Word32
 sdl_gpu_sampleraddressmode_clamp_to_edge=(#const SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE)
