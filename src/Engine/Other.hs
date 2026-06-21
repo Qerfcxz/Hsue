@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Other where
 
@@ -118,8 +119,12 @@ point_addition first_point second_point=case first_point of
     Point {x=first_x,y=first_y}->case second_point of
         Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=first_y+second_y}
 
-identity_matrix::FCT.CFloat->FCT.CFloat->Matrix
-identity_matrix x y=Matrix {x=x,y=y,x_x=1,x_y=0,y_x=0,y_y=1}
+move_matrix::Point->Matrix->Matrix
+move_matrix point matrix=case matrix of
+    Matrix {x,y,x_x,x_y,y_x,y_y}->Matrix {x=point.x+x,y=point.y+y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
+
+identity_matrix::Matrix
+identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
 
 mebibyte::Num a=>a
 mebibyte=1048576
