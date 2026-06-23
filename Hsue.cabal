@@ -20,11 +20,12 @@ library
     exposed-modules:
         Engine.Atlas
         Engine.Collector
+        Engine.Container
+        Engine.Coroutine
         Engine.Engine
-        Engine.Instance
+        Engine.Helper
         Engine.Leaf
         Engine.Node
-        Engine.Other
         Engine.Projection
         Engine.Request
         Engine.Shader
