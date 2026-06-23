@@ -4,9 +4,9 @@
 
 module Engine.Collector where
 
-import Engine.Instance
+import Engine.Container
+import Engine.Helper
 import Engine.Leaf
-import Engine.Other
 import Engine.Projection
 import Engine.Type
 import qualified Data.Foldable as DF

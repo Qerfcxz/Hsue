@@ -5,7 +5,8 @@
 module Engine.Engine where
 
 import Engine.Atlas
-import Engine.Other
+import Engine.Container
+import Engine.Helper
 import Engine.Projection
 import Engine.Request
 import Engine.Shader

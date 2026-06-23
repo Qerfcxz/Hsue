@@ -3,8 +3,8 @@
 
 module Engine.Node where
 
+import Engine.Container
 import Engine.Leaf
-import Engine.Other
 import Engine.Projection
 import Engine.Type
 import qualified Data.IntSet as DIS

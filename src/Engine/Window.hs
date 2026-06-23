@@ -4,7 +4,8 @@
 
 module Engine.Window where
 
-import Engine.Other
+import Engine.Container
+import Engine.Helper
 import Engine.Type
 import qualified SDL.Function as F
 import qualified Data.IntSet as DIS

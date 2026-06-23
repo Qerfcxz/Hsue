@@ -1,11 +1,15 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoFieldSelectors #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
 module Engine.Type where
 
-import Engine.Instance
 import qualified SDL.Type as T
+import qualified Data.Aeson as DA
+import qualified Data.Aeson.Types as DAT
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
@@ -15,6 +19,43 @@ import qualified Data.Text as DT
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
+import qualified Foreign.Storable as FS
+
+newtype Dynamic_bool a=Dynamic_bool {dynamic_bool::Engine a->Widget a->Bool}
+
+newtype Dynamic_int a=Dynamic_int {dynamic_int::Engine a->Widget a->Int}
+
+instance Num (Dynamic_int a) where
+    (+)=dynamic_int_addition
+    (*)=dynamic_int_multiplication
+    abs=dynamic_int_abs
+    signum=dynamic_int_signum
+    fromInteger=dynamic_int_fromInteger
+    negate=dynamic_int_negate
+
+dynamic_int_addition::Dynamic_int a->Dynamic_int a->Dynamic_int a
+dynamic_int_addition first_dynamic_int second_dynamic_int=Dynamic_int {dynamic_int=dynamic_int_binary_operator (+) first_dynamic_int.dynamic_int second_dynamic_int.dynamic_int}
+
+dynamic_int_multiplication::Dynamic_int a->Dynamic_int a->Dynamic_int a
+dynamic_int_multiplication first_dynamic_int second_dynamic_int=Dynamic_int {dynamic_int=dynamic_int_binary_operator (*) first_dynamic_int.dynamic_int second_dynamic_int.dynamic_int}
+
+dynamic_int_abs::Dynamic_int a->Dynamic_int a
+dynamic_int_abs dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator abs dynamic_int.dynamic_int}
+
+dynamic_int_signum::Dynamic_int a->Dynamic_int a
+dynamic_int_signum dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator signum dynamic_int.dynamic_int}
+
+dynamic_int_fromInteger::Integer->Dynamic_int a
+dynamic_int_fromInteger integer=Dynamic_int {dynamic_int=const (const (fromInteger integer))}
+
+dynamic_int_negate::Dynamic_int a->Dynamic_int a
+dynamic_int_negate dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator negate dynamic_int.dynamic_int}
+
+dynamic_int_unary_operator::(Int->Int)->(Engine a->Widget a->Int)->Engine a->Widget a->Int
+dynamic_int_unary_operator operator dynamic_int engine widget=operator (dynamic_int engine widget)
+
+dynamic_int_binary_operator::(Int->Int->Int)->(Engine a->Widget a->Int)->(Engine a->Widget a->Int)->Engine a->Widget a->Int
+dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int engine widget=operator (first_dynamic_int engine widget) (second_dynamic_int engine widget)
 
 data Engine a=Engine {state::a,main_id::Engine a->Event->Maybe Int,projection_strategy::Engine a->Event->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,font::DIM.IntMap Font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,request::DSeq.Seq (Request a),key::DSet.Set Key,device::FP.Ptr T.SDL_GPUDevice,texture::FP.Ptr T.SDL_GPUTexture,sampler::FP.Ptr T.SDL_GPUSampler,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,index_buffer::FP.Ptr T.SDL_GPUBuffer,parameter_buffer::FP.Ptr T.SDL_GPUBuffer,transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,picture_size::FCT.CInt,vertex_size::Int,index_size::Int,parameter_size::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,width::DW.Word32,height::DW.Word32,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
@@ -27,6 +68,8 @@ data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
 data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {index::Int,group_widget_request::DIM.IntMap (Widget_request a)}|Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget_request::Widget_request a}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+
+data Coroutine a=Done|Wait (Dynamic_int a)|Forever (Coroutine a)|While (Dynamic_bool a) (Coroutine a)|Repeat (Dynamic_int a) (Coroutine a)|Then (Coroutine a) (Coroutine a)|Fork (Coroutine a) (Coroutine a)|If (Dynamic_bool a) (Coroutine a) (Coroutine a)|Emit (Engine a->Widget a->(Widget a,Engine a))
 
 data Extended a=Negative_infinity|Finite {number::a}|Positive_infinity deriving (Eq,Ord)
 
@@ -83,3 +126,115 @@ data Action=Close|Resize {width::FCT.CFloat,height::FCT.CFloat}|Press {press::Pr
 data Press=Press_up|Press_down
 
 data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z deriving (Eq,Ord)
+
+data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,parameter_id::FCT.CFloat,size::FCT.CFloat}
+
+instance FS.Storable Vertex where
+    sizeOf=vertex_size_of
+    alignment=vertex_alignment
+    peek=vertex_peek
+    poke=vertex_poke
+
+vertex_size_of::Num a=>Vertex->a
+vertex_size_of _=40
+
+vertex_alignment::Num a=>Vertex->a
+vertex_alignment _=4
+
+vertex_peek::FP.Ptr Vertex->IO Vertex
+vertex_peek _=error "vertex_peek: error 1"
+
+vertex_poke::FP.Ptr Vertex->Vertex->IO ()
+vertex_poke ptr vertex=case vertex of
+    (Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,size})->let new_ptr=FP.castPtr ptr in do
+        FS.pokeElemOff new_ptr 0 red
+        FS.pokeElemOff new_ptr 1 green
+        FS.pokeElemOff new_ptr 2 blue
+        FS.pokeElemOff new_ptr 3 alpha
+        FS.pokeElemOff new_ptr 4 x
+        FS.pokeElemOff new_ptr 5 y
+        FS.pokeElemOff new_ptr 6 u
+        FS.pokeElemOff new_ptr 7 v
+        FS.pokeElemOff new_ptr 8 parameter_id
+        FS.pokeElemOff new_ptr 9 size
+
+data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,clip_flag::FCT.CFloat,clip_left::FCT.CFloat,clip_down::FCT.CFloat,clip_right::FCT.CFloat,clip_up::FCT.CFloat}
+
+instance FS.Storable Parameter where
+    sizeOf=parameter_size_of
+    alignment=parameter_alignment
+    peek=parameter_peek
+    poke=parameter_poke
+
+parameter_size_of::Num a=>Parameter->a
+parameter_size_of _=48
+
+parameter_alignment::Num a=>Parameter->a
+parameter_alignment _=4
+
+parameter_peek::FP.Ptr Parameter->IO Parameter
+parameter_peek _=error "parameter_peek: error 1"
+
+parameter_poke::FP.Ptr Parameter->Parameter->IO ()
+parameter_poke ptr parameter=case parameter of
+    (Parameter {x,y,x_x,x_y,y_x,y_y,clip_flag,clip_left,clip_down,clip_right,clip_up})->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
+        FS.pokeElemOff new_ptr 0 x
+        FS.pokeElemOff new_ptr 1 y
+        FS.pokeElemOff new_ptr 2 x_x
+        FS.pokeElemOff new_ptr 3 x_y
+        FS.pokeElemOff new_ptr 4 y_x
+        FS.pokeElemOff new_ptr 5 y_y
+        FS.pokeElemOff new_ptr 6 0
+        FS.pokeElemOff new_ptr 7 clip_flag
+        FS.pokeElemOff new_ptr 8 clip_left
+        FS.pokeElemOff new_ptr 9 clip_down
+        FS.pokeElemOff new_ptr 10 clip_right
+        FS.pokeElemOff new_ptr 11 clip_up
+
+data MSDF_Metrics=MSDF_Metrics {msdf_ascender::FCT.CFloat,msdf_descender::FCT.CFloat}
+
+instance DA.FromJSON MSDF_Metrics where
+    parseJSON=msdf_metrics_parse_json
+
+msdf_metrics_parse_json::DAT.Value->DAT.Parser MSDF_Metrics
+msdf_metrics_parse_json=DA.withObject "MSDF_Metrics" $ \object->do
+    ascender<-object DA..: "ascender"::DAT.Parser Double
+    descender<-object DA..: "descender"::DAT.Parser Double
+    return (MSDF_Metrics {msdf_ascender=realToFrac ascender,msdf_descender=realToFrac descender})
+
+data MSDF_Bounds=MSDF_Bounds {msdf_left::FCT.CFloat,msdf_bottom::FCT.CFloat,msdf_right::FCT.CFloat,msdf_top::FCT.CFloat}
+
+instance DA.FromJSON MSDF_Bounds where
+    parseJSON=msdf_bounds_parse_json
+
+msdf_bounds_parse_json::DAT.Value->DAT.Parser MSDF_Bounds
+msdf_bounds_parse_json=DA.withObject "MSDF_Bounds" $ \object->do
+    left<-object DA..: "left"::DAT.Parser Double
+    bottom<-object DA..: "bottom"::DAT.Parser Double
+    right<-object DA..: "right"::DAT.Parser Double
+    top<-object DA..: "top"::DAT.Parser Double
+    return (MSDF_Bounds {msdf_left=realToFrac left,msdf_bottom=realToFrac bottom,msdf_right=realToFrac right,msdf_top=realToFrac top})
+
+data MSDF_Glyph=MSDF_Glyph {msdf_unicode::Int,msdf_advance::FCT.CFloat,msdf_plane_bounds::MSDF_Bounds,msdf_atlas_bounds::MSDF_Bounds}
+
+instance DA.FromJSON MSDF_Glyph where
+    parseJSON=msdf_glyph_parse_json
+
+msdf_glyph_parse_json::DAT.Value->DAT.Parser MSDF_Glyph
+msdf_glyph_parse_json=DA.withObject "MSDF_Glyph" $ \object->do
+    unicode<-object DA..: "unicode"
+    advance<-object DA..: "advance"::DAT.Parser Double
+    plane_bound<-(object DA..:? "planeBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}
+    atlas_bound<-(object DA..:? "atlasBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}
+    return (MSDF_Glyph {msdf_unicode=unicode,msdf_advance=realToFrac advance,msdf_plane_bounds=plane_bound,msdf_atlas_bounds=atlas_bound})
+
+data MSDF_Output=MSDF_Output {msdf_metrics::MSDF_Metrics,msdf_glyphs::DSeq.Seq MSDF_Glyph}
+
+instance DA.FromJSON MSDF_Output where
+    parseJSON=msdf_output_parse_json
+
+msdf_output_parse_json::DAT.Value->DAT.Parser MSDF_Output
+msdf_output_parse_json=DA.withObject "MSDF_Output" $ \object->do
+    metric<-object DA..: "metrics"
+    glyph<-object DA..: "glyphs"
+    return (MSDF_Output {msdf_metrics=metric,msdf_glyphs=glyph})

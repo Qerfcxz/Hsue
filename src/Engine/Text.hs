@@ -5,8 +5,8 @@
 module Engine.Text where
 
 import Engine.Atlas
-import Engine.Instance
-import Engine.Other
+import Engine.Container
+import Engine.Helper
 import Engine.Type
 import qualified SDL.Function as F
 import qualified Data.Aeson as DA

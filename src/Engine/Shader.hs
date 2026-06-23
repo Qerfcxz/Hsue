@@ -1,10 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NoFieldSelectors #-}
 
 module Engine.Shader where
 
-import Engine.Instance
-import Engine.Other
+import Engine.Helper
+import Engine.Type
 import qualified SDL.Function as F
 import qualified SDL.Include as I
 import qualified SDL.Type as T

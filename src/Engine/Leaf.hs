@@ -5,7 +5,8 @@
 module Engine.Leaf where
 
 import Engine.Atlas
-import Engine.Other
+import Engine.Container
+import Engine.Helper
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as F
@@ -36,7 +37,7 @@ create_widget this_widget_request engine=case this_widget_request of
         (new_new_engine,second_widget)<-create_widget second_widget_request new_engine
         return (new_new_engine,Double {which=which,first_widget=first_widget,second_widget=second_widget})
     Group_request {index,group_widget_request}->do
-        (new_engine,group_widget)<-DIM.foldlWithKey' (\accumulation key widget_request->intmap_engine_monad_fold key create_widget widget_request accumulation) (return (engine,DIM.empty)) group_widget_request
+        (new_engine,group_widget)<-DIM.foldlWithKey' (\accumulation key widget_request->widget_io_fold key create_widget widget_request accumulation) (return (engine,DIM.empty)) group_widget_request
         return (new_engine,Group {index=index,group_widget=group_widget})
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})

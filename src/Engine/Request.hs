@@ -6,9 +6,10 @@ module Engine.Request where
 
 import Engine.Atlas
 import Engine.Collector
+import Engine.Container
+import Engine.Helper
 import Engine.Leaf
 import Engine.Node
-import Engine.Other
 import Engine.Projection
 import Engine.Shader
 import Engine.Text
@@ -133,7 +134,7 @@ for_unlock this_widget engine=case this_widget of
         (new_new_engine,new_second_widget)<-for_unlock second_widget new_engine
         return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
     Group {index,group_widget}->do
-        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulation key widget->intmap_engine_monad_fold key for_unlock widget accumulation) (return (engine,DIM.empty)) group_widget
+        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulation key widget->widget_io_fold key for_unlock widget accumulation) (return (engine,DIM.empty)) group_widget
         return (new_engine,Group {index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine

@@ -4,7 +4,7 @@
 
 module Engine.Projection where
 
-import Engine.Other
+import Engine.Container
 import Engine.Type
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM

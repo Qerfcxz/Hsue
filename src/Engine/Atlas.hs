@@ -3,7 +3,7 @@
 
 module Engine.Atlas where
 
-import Engine.Other
+import Engine.Helper
 import Engine.Type
 import qualified SDL.Function as F
 import qualified SDL.Include as I
