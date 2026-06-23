@@ -6,7 +6,7 @@ module Main where
 
 import Engine.Collector
 import Engine.Engine
-import Engine.Other
+import Engine.Helper
 import Engine.Projection
 import Engine.Request
 import Engine.Type
