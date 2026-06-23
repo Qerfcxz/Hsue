@@ -21,6 +21,8 @@ library
         Engine.Atlas
         Engine.Collector
         Engine.Engine
+        Engine.Instance
+        Engine.Leaf
         Engine.Node
         Engine.Other
         Engine.Projection
@@ -28,10 +30,9 @@ library
         Engine.Shader
         Engine.Text
         Engine.Type
-        Engine.Widget
         Engine.Window
-        SDL.Constant
         SDL.Function
+        SDL.Include
         SDL.Type
     -- other-modules:
     -- other-extensions:
