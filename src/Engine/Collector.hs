@@ -4,6 +4,7 @@
 
 module Engine.Collector where
 
+import Engine.Instance
 import Engine.Leaf
 import Engine.Other
 import Engine.Projection

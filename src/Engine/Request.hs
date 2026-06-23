@@ -14,8 +14,8 @@ import Engine.Shader
 import Engine.Text
 import Engine.Type
 import Engine.Window
-import qualified SDL.Constant as C
 import qualified SDL.Function as F
+import qualified SDL.Include as I
 import qualified SDL.Type as T
 import qualified Control.Monad as CM
 import qualified Data.Bits as DB
@@ -40,24 +40,24 @@ do_request request engine=case request of
     Reset_timer {interval}->if 0<interval
         then case engine.timer of
             Off->do
-                timer_id<-F.sdl_addtimerns interval engine.callback FP.nullPtr
+                timer_id<-F.sdl_add_timer_ns interval engine.callback FP.nullPtr
                 catch_zero timer_id
                 return (engine {timer=On {timer_id=timer_id,interval=interval}},True)
             On {timer_id}->do
-                catch_false (F.sdl_removetimer timer_id)
-                new_timer_id<-F.sdl_addtimerns interval engine.callback FP.nullPtr
+                catch_false (F.sdl_remove_timer timer_id)
+                new_timer_id<-F.sdl_add_timer_ns interval engine.callback FP.nullPtr
                 catch_zero new_timer_id
                 return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
         else error "do_request: error 1"
     Stop_timer->case engine.timer of
         On {timer_id}->do
-            catch_false (F.sdl_removetimer timer_id)
+            catch_false (F.sdl_remove_timer timer_id)
             return (engine {timer=Off},True)
         _->error "do_request: error 2"
     Stop_timer_safe->case engine.timer of
         Off->return (engine,False)
         On {timer_id}->do
-            catch_false (F.sdl_removetimer timer_id)
+            catch_false (F.sdl_remove_timer timer_id)
             return (engine {timer=Off},True)
     Create_widget {leaf_id,maybe_father_id,widget_request}->do
         new_engine<-create_leaf leaf_id maybe_father_id widget_request engine
@@ -70,11 +70,11 @@ do_request request engine=case request of
         new_engine<-remove_node node_id engine
         return (new_engine,False)
     Create_window {window_id,title,width,height,red,green,blue,alpha,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
-        sdl_window<-F.sdl_createwindow this_title width height (DF.foldl' (\sdl_window_flag this_window_flag->sdl_window_flag DB..|. from_window_flag this_window_flag) 0 window_flag)
+        sdl_window<-F.sdl_create_window this_title width height (DF.foldl' (\sdl_window_flag this_window_flag->sdl_window_flag DB..|. from_window_flag this_window_flag) 0 window_flag)
         catch_null sdl_window
-        catch_false (F.sdl_claimwindowforgpudevice engine.device sdl_window)
-        catch_false (F.sdl_setgpuswapchainparameters engine.device sdl_window C.sdl_gpu_swapchaincomposition_sdr C.sdl_gpu_presentmode_mailbox)
-        sdl_window_id<-F.sdl_getwindowid sdl_window
+        catch_false (F.sdl_claim_window_for_gpu_device engine.device sdl_window)
+        catch_false (F.sdl_set_gpu_swapchain_parameters engine.device sdl_window I.sdl_gpu_swapchaincomposition_sdr I.sdl_gpu_presentmode_mailbox)
+        sdl_window_id<-F.sdl_get_window_id sdl_window
         catch_zero sdl_window_id
         graphics_pipeline<-create_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
         let new_width=fromIntegral width in let new_height=fromIntegral height in let (maybe_window,new_window)=DIM.insertLookupWithKey (\_ window _->window) window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,graphics_pipeline=graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in case maybe_window of
@@ -94,12 +94,12 @@ do_request request engine=case request of
         return (new_engine,False)
     Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=get_widget widget in case new_widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
-            command_buffer<-F.sdl_acquiregpucommandbuffer engine.device
+            command_buffer<-F.sdl_acquire_gpu_command_buffer engine.device
             catch_null command_buffer
             let (vertex,index,parameter,draw_call)=for_submit submit
             value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
-            for_render window command_buffer (if value then \render_pass->do_render engine window command_buffer render_pass draw_call else F.sdl_endgpurenderpass)
-            catch_false (F.sdl_submitgpucommandbuffer command_buffer)
+            for_render window command_buffer (if value then \render_pass->do_render engine window command_buffer render_pass draw_call else F.sdl_end_gpu_render_pass)
+            catch_false (F.sdl_submit_gpu_command_buffer command_buffer)
             return (new_engine,False)
         _->error "do_request: error 4"
     Io {io}->do
@@ -108,10 +108,10 @@ do_request request engine=case request of
 
 from_window_flag::Window_flag->DW.Word64
 from_window_flag window_flag=case window_flag of
-    Window_fullscreen->C.sdl_window_fullscreen
-    Window_hidden->C.sdl_window_hidden
-    Window_borderless->C.sdl_window_borderless
-    Window_resizable->C.sdl_window_resizable
+    Window_fullscreen->I.sdl_window_fullscreen
+    Window_hidden->I.sdl_window_hidden
+    Window_borderless->I.sdl_window_borderless
+    Window_resizable->I.sdl_window_resizable
 
 lock_widget::Widget a->Widget a
 lock_widget this_widget=case this_widget of
@@ -170,35 +170,35 @@ update_article_a font character=case character of
 
 for_render::Window->FP.Ptr T.SDL_GPUCommandBuffer->(FP.Ptr T.SDL_GPURenderPass->IO ())->IO ()
 for_render window command_buffer next=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-    value<-F.sdl_acquiregpuswapchaintexture command_buffer window.sdl_window ptr_texture width height
+    value<-F.sdl_acquire_gpu_swapchain_texture command_buffer window.sdl_window ptr_texture width height
     CM.when (FMU.toBool value) $ do
         texture<-FS.peek ptr_texture
-        CM.unless (texture==FP.nullPtr) $ FMU.with (C.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=C.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=C.sdl_gpu_loadop_clear,sdl_store_op=C.sdl_gpu_storeop_store}) $ \color_target_info->do
-            render_pass<-F.sdl_begingpurenderpass command_buffer color_target_info 1 FP.nullPtr
+        CM.unless (texture==FP.nullPtr) $ FMU.with (I.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=I.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=I.sdl_gpu_loadop_clear,sdl_store_op=I.sdl_gpu_storeop_store}) $ \color_target_info->do
+            render_pass<-F.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
             catch_null render_pass
             next render_pass
 
 do_render::Engine a->Window->FP.Ptr T.SDL_GPUCommandBuffer->FP.Ptr T.SDL_GPURenderPass->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render engine window command_buffer render_pass draw_call=do
-    F.sdl_bindgpugraphicspipeline render_pass window.graphics_pipeline
-    FMU.with engine.parameter_buffer (\parameter_buffer->F.sdl_bindgpuvertexstoragebuffers render_pass 0 parameter_buffer 1)
+    F.sdl_bind_gpu_graphics_pipeline render_pass window.graphics_pipeline
+    FMU.with engine.parameter_buffer (\parameter_buffer->F.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
     let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
         FMU.fillBytes ptr 0 size
         FS.pokeElemOff ptr 0 window.adaptive_width
         FS.pokeElemOff ptr 1 window.adaptive_height
         FS.pokeElemOff ptr 2 engine.font_size
         FS.pokeElemOff ptr 3 engine.pixel_range
-        F.sdl_pushgpuvertexuniformdata command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
-    FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuvertexbuffers render_pass 0 buffer_binding 1)
-    FMU.with (C.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bindgpuindexbuffer render_pass buffer_binding C.sdl_gpu_indexelementsize_32bit)
+        F.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
+    FMU.with (I.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
+    FMU.with (I.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->F.sdl_bind_gpu_index_buffer render_pass buffer_binding I.sdl_gpu_indexelementsize_32bit)
     DF.mapM_ (do_render_a render_pass engine) draw_call
-    F.sdl_endgpurenderpass render_pass
+    F.sdl_end_gpu_render_pass render_pass
 
 do_render_a::FP.Ptr T.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render_a render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
     Nothing->do
-        FMU.with (C.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->F.sdl_bindgpufragmentsamplers render_pass 0 texture_sampler_binding 1)
-        F.sdl_drawgpuindexedprimitives render_pass index_length 1 index_offset 0 0
+        FMU.with (I.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->F.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+        F.sdl_draw_gpu_indexed_primitives render_pass index_length 1 index_offset 0 0
     Just album_id->do
-        FMU.with (C.SDL_GPUTextureSamplerBinding {sdl_texture=(intmap_lookup album_id engine.album).texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->F.sdl_bindgpufragmentsamplers render_pass 0 texture_sampler_binding 1)
-        F.sdl_drawgpuindexedprimitives render_pass index_length 1 index_offset 0 0
+        FMU.with (I.SDL_GPUTextureSamplerBinding {sdl_texture=(intmap_lookup album_id engine.album).texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->F.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+        F.sdl_draw_gpu_indexed_primitives render_pass index_length 1 index_offset 0 0

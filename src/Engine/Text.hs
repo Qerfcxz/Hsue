@@ -5,6 +5,7 @@
 module Engine.Text where
 
 import Engine.Atlas
+import Engine.Instance
 import Engine.Other
 import Engine.Type
 import qualified SDL.Function as F
@@ -102,11 +103,11 @@ update_font_c font_id path charset_path imageout_path json_path engine=do
             (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size imageout_path
             let (atlas,left,down,_,_)=atlas_insert width height engine.padding engine.atlas
             copy_texture engine.device texture engine.texture left down width height
-            F.sdl_releasegputexture engine.device texture
+            F.sdl_release_gpu_texture engine.device texture
             SD.removeFile charset_path
             SD.removeFile imageout_path
             SD.removeFile json_path
-            return (engine {atlas=atlas,font=DIM.alter (from_maybe_font output.msdf_metric.msdf_ascender output.msdf_metric.msdf_descender output.msdf_glyph (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font})
+            return (engine {atlas=atlas,font=DIM.alter (from_maybe_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font})
 
 from_maybe_font::FCT.CFloat->FCT.CFloat->DSeq.Seq MSDF_Glyph->(MSDF_Glyph->(Glyph,Int))->Maybe Font->Maybe Font
 from_maybe_font ascent descent seq_msdf_glyph transform maybe_font=case maybe_font of
@@ -115,7 +116,7 @@ from_maybe_font ascent descent seq_msdf_glyph transform maybe_font=case maybe_fo
 
 from_msdf_glyph::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Glyph,Int)
 from_msdf_glyph x y reciprocal_width reciprocal_height msdf_glyph=case msdf_glyph of
-    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_bound,msdf_atlas_bound}->case msdf_plane_bound of
-        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlas_bound of
+    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_bounds,msdf_atlas_bounds}->case msdf_plane_bounds of
+        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlas_bounds of
             MSDF_Bounds {msdf_left=atlas_left,msdf_bottom=atlas_bottom,msdf_right=atlas_right,msdf_top=atlas_top}->
                 (Glyph {advance=msdf_advance,left=plane_left,down=negate plane_bottom,right=plane_right,up=negate plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height},msdf_unicode)

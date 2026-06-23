@@ -5,8 +5,8 @@ module Engine.Atlas where
 
 import Engine.Other
 import Engine.Type
-import qualified SDL.Constant as C
 import qualified SDL.Function as F
+import qualified SDL.Include as I
 import qualified SDL.Type as T
 import qualified Control.Monad as CM
 import qualified Data.Word as DW
@@ -37,37 +37,37 @@ load_texture::FP.Ptr T.SDL_GPUDevice->FP.Ptr T.SDL_GPUTransferBuffer->FCT.CInt->
 load_texture device picture_transfer_buffer picture_size path=FCS.withCString path $ \this_path->do
     surface<-F.img_load this_path
     catch_null surface
-    new_surface<-F.sdl_convertsurface surface C.sdl_pixelformat_rgba32
+    new_surface<-F.sdl_convert_surface surface I.sdl_pixelformat_rgba32
     catch_null new_surface
-    F.sdl_destroysurface surface
-    width<-C.sdl_surface_w new_surface
-    height<-C.sdl_surface_h new_surface
-    pixel<-C.sdl_surface_pixels new_surface
+    F.sdl_destroy_surface surface
+    width<-I.sdl_surface_w new_surface
+    height<-I.sdl_surface_h new_surface
+    pixel<-I.sdl_surface_pixels new_surface
     let new_width=fromIntegral width
     let new_height=fromIntegral height
     let size=4*width*height
     CM.when (picture_size<size) (error "load_texture: error 1")
-    texture<-FMU.with (C.SDL_GPUTextureCreateInfo {sdl_type=C.sdl_gpu_texturetype_2d,sdl_format=C.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=C.sdl_gpu_textureusage_sampler,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=C.sdl_gpu_samplecount_1}) (return_catch_null . F.sdl_creategputexture device)
-    map_transfer_buffer<-F.sdl_mapgputransferbuffer device picture_transfer_buffer (FMU.fromBool True)
+    texture<-FMU.with (I.SDL_GPUTextureCreateInfo {sdl_type=I.sdl_gpu_texturetype_2d,sdl_format=I.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=I.sdl_gpu_textureusage_sampler,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=I.sdl_gpu_samplecount_1}) (return_catch_null . F.sdl_create_gpu_texture device)
+    map_transfer_buffer<-F.sdl_map_gpu_transfer_buffer device picture_transfer_buffer (FMU.fromBool True)
     catch_null map_transfer_buffer
     FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size)
-    F.sdl_unmapgputransferbuffer device picture_transfer_buffer
-    command_buffer<-F.sdl_acquiregpucommandbuffer device
+    F.sdl_unmap_gpu_transfer_buffer device picture_transfer_buffer
+    command_buffer<-F.sdl_acquire_gpu_command_buffer device
     catch_null command_buffer
-    F.sdl_destroysurface new_surface
-    copy_pass<-F.sdl_begingpucopypass command_buffer
+    F.sdl_destroy_surface new_surface
+    copy_pass<-F.sdl_begin_gpu_copy_pass command_buffer
     catch_null copy_pass
-    FMU.with (C.SDL_GPUTextureTransferInfo {sdl_transfer_buffer=picture_transfer_buffer,sdl_offset=0,sdl_pixels_per_row=new_width,sdl_rows_per_layer=new_height}) $ \texture_transfer_info->FMU.with (C.SDL_GPUTextureRegion {sdl_texture=texture,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0,sdl_w=new_width,sdl_h=new_height,sdl_d=1}) $ \texture_region->F.sdl_uploadtogputexture copy_pass texture_transfer_info texture_region (FMU.fromBool False)
-    F.sdl_endgpucopypass copy_pass
-    catch_false (F.sdl_submitgpucommandbuffer command_buffer)
+    FMU.with (I.SDL_GPUTextureTransferInfo {sdl_transfer_buffer=picture_transfer_buffer,sdl_offset=0,sdl_pixels_per_row=new_width,sdl_rows_per_layer=new_height}) $ \texture_transfer_info->FMU.with (I.SDL_GPUTextureRegion {sdl_texture=texture,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0,sdl_w=new_width,sdl_h=new_height,sdl_d=1}) $ \texture_region->F.sdl_upload_to_gpu_texture copy_pass texture_transfer_info texture_region (FMU.fromBool False)
+    F.sdl_end_gpu_copy_pass copy_pass
+    catch_false (F.sdl_submit_gpu_command_buffer command_buffer)
     return (texture,new_width,new_height)
 
 copy_texture::FP.Ptr T.SDL_GPUDevice->FP.Ptr T.SDL_GPUTexture->FP.Ptr T.SDL_GPUTexture->DW.Word32->DW.Word32->DW.Word32->DW.Word32->IO ()
 copy_texture device texture_from texture_to x y width height=do
-    command_buffer<-F.sdl_acquiregpucommandbuffer device
+    command_buffer<-F.sdl_acquire_gpu_command_buffer device
     catch_null command_buffer
-    copy_pass<-F.sdl_begingpucopypass command_buffer
+    copy_pass<-F.sdl_begin_gpu_copy_pass command_buffer
     catch_null copy_pass
-    FMU.with (C.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) $ \texture_location_from->FMU.with (C.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->F.sdl_copygputexturetotexture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False)
-    F.sdl_endgpucopypass copy_pass
-    catch_false (F.sdl_submitgpucommandbuffer command_buffer)
+    FMU.with (I.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) $ \texture_location_from->FMU.with (I.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->F.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False)
+    F.sdl_end_gpu_copy_pass copy_pass
+    catch_false (F.sdl_submit_gpu_command_buffer command_buffer)

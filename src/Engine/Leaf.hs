@@ -76,7 +76,7 @@ create_picture path engine=do
     (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
     let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
     copy_texture engine.device texture engine.texture left down width height
-    F.sdl_releasegputexture engine.device texture
+    F.sdl_release_gpu_texture engine.device texture
     return (engine {atlas=atlas},Picture {width=fromIntegral width,height=fromIntegral height,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False})
 
 remove_leaf::Int->Engine a->IO (Engine a)
@@ -100,7 +100,7 @@ remove_widget this_widget engine=case this_widget of
     Widget_mix_trigger {widget}->remove_widget widget engine
     Visual {visual}->case visual of
         Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
-            F.sdl_releasegputexture engine.device single_album.texture
+            F.sdl_release_gpu_texture engine.device single_album.texture
             return (engine {album=album})
         _->return engine
     _->return engine

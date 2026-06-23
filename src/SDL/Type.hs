@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module SDL.Type where
 
 data SDL_Window
