@@ -71,13 +71,15 @@ data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_r
 
 data Coroutine a=Done|Emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Fork {multiple_coroutine::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|Then {first_coroutine::Coroutine a,second_coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}
 
-data Linear_coroutine a=Linear_end|Linear_emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Linear_wait {int_index::Int}|Linear_fork {code_index::Int,clone_number::Int}|Linear_jump {code_index::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_deregister {first_int_index::Int,second_int_index::Int,clone_number::Int}|Linear_register {first_int_index::Int,second_int_index::Int,int::Int}|Linear_clone {first_int_index::Int,second_int_index::Int,clone_number::Int,int::Int}
+data Linear_coroutine a=Linear_end|Linear_emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Linear_wait {int_index::Int}|Linear_fork_kill {int_index::Int}|Linear_fork {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_clone_kill {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_clone {int_index::Int,clone_number::Int,int::Int}
 
 data Extended a=Negative_infinity|Finite {number::a}|Positive_infinity deriving (Eq,Ord)
 
 data Data=Data_bool {bool::Bool}|Data_int {int::Int}
 
 data Submit=Submit {maybe_album_id::Maybe Int,vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32,parameter::Parameter,vertex_length::DW.Word32,index_length::DW.Word32}
+
+data Program_counter=Program_counter {code_index::Int,clone_index::Int}
 
 data Album=Album {width::DW.Word32,height::DW.Word32,texture::FP.Ptr T.SDL_GPUTexture}
 

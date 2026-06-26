@@ -100,8 +100,8 @@ remove_widget this_widget engine=case this_widget of
     Widget_io_trigger {widget}->remove_widget widget engine
     Widget_mix_trigger {widget}->remove_widget widget engine
     Visual {visual}->case visual of
-        Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
-            F.sdl_release_gpu_texture engine.device single_album.texture
-            return (engine {album=album})
+        Large_picture {album_id}->let (new_album,album)=intmap_delete_lookup album_id engine.album in do
+            F.sdl_release_gpu_texture engine.device album.texture
+            return (engine {album=new_album})
         _->return engine
     _->return engine
