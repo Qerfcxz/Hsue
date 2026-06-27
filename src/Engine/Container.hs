@@ -57,6 +57,12 @@ intmap_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
     _->error "intmap_functor_update_a: error 1"
 
+intmap_monad_accumulate::Monad b=>Int->(a->b (a,c))->b (a,DIM.IntMap c)->b (a,DIM.IntMap c)
+intmap_monad_accumulate key transform accumulate=do
+    (coproduct,intmap)<-accumulate
+    (new_coproduct,value)<-transform coproduct
+    return (new_coproduct,intmap_insert key value intmap)
+
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then error "intset_insert: error 1" else DIS.insert key intset
 

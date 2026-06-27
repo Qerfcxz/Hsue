@@ -57,23 +57,92 @@ dynamic_int_unary_operator operator dynamic_int engine widget=operator (dynamic_
 dynamic_int_binary_operator::(Int->Int->Int)->(Engine a->Widget a->Int)->(Engine a->Widget a->Int)->Engine a->Widget a->Int
 dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int engine widget=operator (first_dynamic_int engine widget) (second_dynamic_int engine widget)
 
+data Extended a=Negative_infinity|Finite {number::a}|Positive_infinity deriving (Eq,Ord)
+
 data Engine a=Engine {state::a,main_id::Engine a->Event->Maybe Int,projection_strategy::Engine a->Event->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,font::DIM.IntMap Font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,request::DSeq.Seq (Request a),key::DSet.Set Key,device::FP.Ptr T.SDL_GPUDevice,texture::FP.Ptr T.SDL_GPUTexture,sampler::FP.Ptr T.SDL_GPUSampler,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,index_buffer::FP.Ptr T.SDL_GPUBuffer,parameter_buffer::FP.Ptr T.SDL_GPUBuffer,transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,picture_size::FCT.CInt,vertex_size::Int,index_size::Int,parameter_size::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,width::DW.Word32,height::DW.Word32,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
 data Projection a=Without {ancestry_id::DSeq.Seq Int,object::Widget a}|With {ancestry_id::DSeq.Seq Int,object::Widget a,image::Widget a}
 
 data Node a=Node {ancestry_id::DSeq.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}
 
-data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a}|Group {index::Int,group_widget::DIM.IntMap (Widget a)}|Trigger {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget::Widget a}|Widget_io_trigger {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget::Widget a}|Widget_mix_trigger {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget::Widget a}|Store {store::Data}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}
+data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a}|Group {index::Int,group_widget::DIM.IntMap (Widget a)}|Trigger {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget::Widget a}|Widget_io_trigger {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget::Widget a}|Widget_mix_trigger {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget::Widget a}|Coroutine {index::Int,coroutine_state::DIM.IntMap (Coroutine_state a),linear_coroutine::DIM.IntMap (Linear_coroutine a)}|Store {store::Data}|Collector {initial_min_index::Int,initial_max_index::Int,min_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
-data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {index::Int,group_widget_request::DIM.IntMap (Widget_request a)}|Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget_request::Widget_request a}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {index::Int,group_widget_request::DIM.IntMap (Widget_request a)}|Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget_request::Widget_request a}|Coroutine_request {index::Int,serial_coroutine::Serial_coroutine a ()}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+
+data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DIM.IntMap Int,program_counter::DSeq.Seq Program_counter}
 
 data Coroutine a=Done|Emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Fork {multiple_coroutine::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|Then {first_coroutine::Coroutine a,second_coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}
 
 data Linear_coroutine a=Linear_end|Linear_emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Linear_wait {int_index::Int}|Linear_fork_kill {int_index::Int}|Linear_fork {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_clone_kill {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_clone {int_index::Int,clone_number::Int,int::Int}
 
-data Extended a=Negative_infinity|Finite {number::a}|Positive_infinity deriving (Eq,Ord)
+data Serial_coroutine a b=Serial_coroutine {coroutine::Coroutine a,value::b}
+
+combine_coroutine::Coroutine a->Coroutine a->Coroutine a
+combine_coroutine first_coroutine second_coroutine=case first_coroutine of
+    Done->second_coroutine
+    _->case second_coroutine of
+        Done->first_coroutine
+        _->Then {first_coroutine=first_coroutine,second_coroutine=second_coroutine}
+
+instance Functor (Serial_coroutine a) where
+    fmap=serial_coroutine_fmap
+
+serial_coroutine_fmap::(a->b)->Serial_coroutine c a->Serial_coroutine c b
+serial_coroutine_fmap function serial_coroutine=case serial_coroutine of
+    Serial_coroutine {coroutine,value}->Serial_coroutine {coroutine=coroutine,value=function value}
+
+instance Applicative (Serial_coroutine a) where
+    pure=serial_coroutine_pure
+    (<*>)=serial_coroutine_apply
+
+serial_coroutine_pure::a->Serial_coroutine b a
+serial_coroutine_pure value=Serial_coroutine {coroutine=Done,value=value}
+
+serial_coroutine_apply::Serial_coroutine a (b->c)->Serial_coroutine a b->Serial_coroutine a c
+serial_coroutine_apply first_serial_coroutine second_serial_coroutine=case first_serial_coroutine of
+    Serial_coroutine {coroutine=first_coroutine,value=function}->case second_serial_coroutine of
+        Serial_coroutine {coroutine=second_coroutine,value=value}->Serial_coroutine {coroutine=combine_coroutine first_coroutine second_coroutine,value=function value}
+
+instance Monad (Serial_coroutine a) where
+    return=pure
+    (>>=)=serial_coroutine_bind
+
+serial_coroutine_bind::Serial_coroutine a b->(b->Serial_coroutine a c)->Serial_coroutine a c
+serial_coroutine_bind serial_coroutine function=case serial_coroutine of
+    Serial_coroutine {coroutine,value}->case function value of
+        Serial_coroutine {coroutine=new_coroutine,value=new_value}->Serial_coroutine {coroutine=combine_coroutine coroutine new_coroutine,value=new_value}
+
+data Parallel_coroutine a b=Parallel_coroutine {multiple_coroutine::DSeq.Seq (Coroutine a),value::b}
+
+instance Functor (Parallel_coroutine a) where
+    fmap=parallel_coroutine_fmap
+
+parallel_coroutine_fmap::(a->b)->Parallel_coroutine c a->Parallel_coroutine c b
+parallel_coroutine_fmap function parallel_coroutine=case parallel_coroutine of
+    Parallel_coroutine {multiple_coroutine,value}->Parallel_coroutine {multiple_coroutine=multiple_coroutine,value=function value}
+
+instance Applicative (Parallel_coroutine a) where
+    pure=parallel_coroutine_pure
+    (<*>)=parallel_coroutine_apply
+
+parallel_coroutine_pure::a->Parallel_coroutine b a
+parallel_coroutine_pure value=Parallel_coroutine {multiple_coroutine=DSeq.empty,value=value}
+
+parallel_coroutine_apply::Parallel_coroutine a (b->c)->Parallel_coroutine a b->Parallel_coroutine a c
+parallel_coroutine_apply first_parallel_coroutine second_parallel_coroutine=case first_parallel_coroutine of
+    Parallel_coroutine {multiple_coroutine=first_multiple_coroutine,value=function}->case second_parallel_coroutine of
+        Parallel_coroutine {multiple_coroutine=second_multiple_coroutine,value=value}->Parallel_coroutine {multiple_coroutine=first_multiple_coroutine DSeq.>< second_multiple_coroutine,value=function value}
+
+instance Monad (Parallel_coroutine a) where
+    return=pure
+    (>>=)=parallel_coroutine_bind
+
+parallel_coroutine_bind::Parallel_coroutine a b->(b->Parallel_coroutine a c)->Parallel_coroutine a c
+parallel_coroutine_bind parallel_coroutine function=case parallel_coroutine of
+    Parallel_coroutine {multiple_coroutine,value}->case function value of
+        Parallel_coroutine {multiple_coroutine=new_multiple_coroutine,value=new_value}->Parallel_coroutine {multiple_coroutine=multiple_coroutine DSeq.>< new_multiple_coroutine,value=new_value}
 
 data Data=Data_bool {bool::Bool}|Data_int {int::Int}
 

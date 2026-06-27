@@ -84,14 +84,14 @@ do_request request engine=case request of
         return (new_engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {atlas=atlas,leaf=fmap (update_projection_object lock_widget) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
+        return (engine {atlas=atlas,leaf=fmap (update_projection_object (update_all_widget lock_widget)) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
     Unlock {leaf_id}->do
         (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_unlock widget engine})) engine.leaf)
         return (new_engine {leaf=leaf},False)
     Load_charset {charset}->do
         new_engine<-update_font charset engine
         return (new_engine,False)
-    Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=get_widget widget in case new_widget of
+    Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=lookup_widget widget in case new_widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-F.sdl_acquire_gpu_command_buffer engine.device
             catch_null command_buffer
@@ -113,17 +113,12 @@ from_window_flag window_flag=case window_flag of
     Window_resizable->I.sdl_window_resizable
 
 lock_widget::Widget a->Widget a
-lock_widget this_widget=case this_widget of
-    Double {which,first_widget,second_widget}->Double {which=which,first_widget=lock_widget first_widget,second_widget=lock_widget second_widget}
-    Group {index,group_widget}->Group {index=index,group_widget=fmap lock_widget group_widget}
-    Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=lock_widget widget}
-    Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=lock_widget widget}
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=lock_widget widget}
+lock_widget widget=case widget of
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
-        _->this_widget
+        _->widget
     Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
-    _->this_widget
+    _->widget
 
 for_unlock::Widget a->Engine a->IO (Engine a,Widget a)
 for_unlock this_widget engine=case this_widget of
@@ -132,7 +127,7 @@ for_unlock this_widget engine=case this_widget of
         (new_new_engine,new_second_widget)<-for_unlock second_widget new_engine
         return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
     Group {index,group_widget}->do
-        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulation key widget->widget_io_fold key for_unlock widget accumulation) (return (engine,DIM.empty)) group_widget
+        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulate key widget->intmap_monad_accumulate key (for_unlock widget) accumulate) (return (engine,DIM.empty)) group_widget
         return (new_engine,Group {index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
@@ -143,6 +138,9 @@ for_unlock this_widget engine=case this_widget of
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
+    Coroutine {index,coroutine_state,linear_coroutine}->do
+        (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate key this_coroutine_state->intmap_monad_accumulate key (`for_unlock_coroutine` this_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
+        return (new_engine,Coroutine {index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine})
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked
             then do
@@ -156,6 +154,12 @@ for_unlock this_widget engine=case this_widget of
             return (new_engine,Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,this_widget)
     _->return (engine,this_widget)
+
+for_unlock_coroutine::Engine a->Coroutine_state a->IO (Engine a,Coroutine_state a)
+for_unlock_coroutine engine coroutine_state=case coroutine_state of
+    Coroutine_state {widget,variable,program_counter}->do
+        (new_engine,new_widget)<-for_unlock widget engine
+        return (new_engine,Coroutine_state {widget=new_widget,variable=variable,program_counter=program_counter})
 
 update_article::DIM.IntMap Font->Row->Row
 update_article font row=case row of

@@ -10,6 +10,41 @@ import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 
+to_coroutine::Serial_coroutine a ()->Coroutine a
+to_coroutine serial_coroutine=serial_coroutine.coroutine
+
+lift_coroutine::Coroutine a->Serial_coroutine a ()
+lift_coroutine coroutine=Serial_coroutine {coroutine=coroutine,value=()}
+
+do_emit::(Engine a->Widget a->(Widget a,Engine a))->Serial_coroutine a ()
+do_emit emit=lift_coroutine (Emit {emit=emit})
+
+do_wait::Dynamic_int a->Serial_coroutine a ()
+do_wait dynamic_int=lift_coroutine (Wait {dynamic_int=dynamic_int})
+
+do_forever::Serial_coroutine a ()->Serial_coroutine a ()
+do_forever serial_coroutine=lift_coroutine (Forever {coroutine=serial_coroutine.coroutine})
+
+do_fork::Parallel_coroutine a ()->Serial_coroutine a ()
+do_fork parallel_coroutine=lift_coroutine (Fork {multiple_coroutine=parallel_coroutine.multiple_coroutine})
+
+do_while::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()
+do_while dynamic_bool serial_coroutine=lift_coroutine (While {dynamic_bool=dynamic_bool,coroutine=serial_coroutine.coroutine})
+
+do_repeat::Dynamic_int a->Serial_coroutine a ()->Serial_coroutine a ()
+do_repeat dynamic_int serial_coroutine=lift_coroutine (Repeat {dynamic_int=dynamic_int,coroutine=serial_coroutine.coroutine})
+
+do_clone::Int->Serial_coroutine a ()->Serial_coroutine a ()
+do_clone int serial_coroutine=lift_coroutine (Clone {int=int,coroutine=serial_coroutine.coroutine})
+
+do_if::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()->Serial_coroutine a ()
+do_if dynamic_bool first_serial_coroutine second_serial_coroutine=lift_coroutine (If {dynamic_bool=dynamic_bool,first_coroutine=first_serial_coroutine.coroutine,second_coroutine=second_serial_coroutine.coroutine})
+
+do_branch::Serial_coroutine a ()->Parallel_coroutine a ()
+do_branch serial_coroutine=case serial_coroutine.coroutine of
+    Done->Parallel_coroutine {multiple_coroutine=DS.empty,value=()}
+    _->Parallel_coroutine {multiple_coroutine=DS.singleton serial_coroutine.coroutine,value=()}
+
 from_coroutine::Coroutine a->(DIM.IntMap (Linear_coroutine a),Int)
 from_coroutine coroutine=let (linear_coroutine,int_index,code_index)=from_coroutine_a coroutine 1 0 0 DIM.empty in (DIM.insert code_index Linear_end linear_coroutine,int_index)
 

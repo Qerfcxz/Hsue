@@ -6,22 +6,13 @@ module Engine.Leaf where
 
 import Engine.Atlas
 import Engine.Container
-import Engine.Helper
+import Engine.Coroutine
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as F
 import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
-
-get_widget::Widget a->Widget a
-get_widget this_widget=case this_widget of
-    Double {which,first_widget,second_widget}->if which then get_widget first_widget else get_widget second_widget
-    Group {index,group_widget}->get_widget (intmap_lookup index group_widget)
-    Widget_trigger {widget}->get_widget widget
-    Widget_io_trigger {widget}->get_widget widget
-    Widget_mix_trigger {widget}->get_widget widget
-    _->this_widget
 
 create_leaf::Int->Maybe Int->Widget_request a->Engine a->IO (Engine a)
 create_leaf leaf_id maybe_father_id widget_request engine=do
@@ -37,7 +28,7 @@ create_widget this_widget_request engine=case this_widget_request of
         (new_new_engine,second_widget)<-create_widget second_widget_request new_engine
         return (new_new_engine,Double {which=which,first_widget=first_widget,second_widget=second_widget})
     Group_request {index,group_widget_request}->do
-        (new_engine,group_widget)<-DIM.foldlWithKey' (\accumulation key widget_request->widget_io_fold key create_widget widget_request accumulation) (return (engine,DIM.empty)) group_widget_request
+        (new_engine,group_widget)<-DIM.foldlWithKey' (\accumulate key widget_request->intmap_monad_accumulate key (create_widget widget_request) accumulate) (return (engine,DIM.empty)) group_widget_request
         return (new_engine,Group {index=index,group_widget=group_widget})
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})
@@ -51,6 +42,7 @@ create_widget this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
+    Coroutine_request {index,serial_coroutine}->return (engine,Coroutine {index=index,coroutine_state=DIM.empty,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine serial_coroutine) in linear_coroutine})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {origin,matrix,maybe_clip,red,green,blue,alpha,visual_request}->do
@@ -99,6 +91,7 @@ remove_widget this_widget engine=case this_widget of
     Widget_trigger {widget}->remove_widget widget engine
     Widget_io_trigger {widget}->remove_widget widget engine
     Widget_mix_trigger {widget}->remove_widget widget engine
+    Coroutine {coroutine_state}->CM.foldM (\this_engine this_coroutine_state->remove_widget this_coroutine_state.widget this_engine) engine coroutine_state
     Visual {visual}->case visual of
         Large_picture {album_id}->let (new_album,album)=intmap_delete_lookup album_id engine.album in do
             F.sdl_release_gpu_texture engine.device album.texture

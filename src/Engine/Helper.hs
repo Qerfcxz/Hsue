@@ -8,7 +8,6 @@ import Engine.Container
 import Engine.Type
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
-import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
@@ -33,11 +32,43 @@ return_catch_null io=do
     ptr<-io
     if ptr==FP.nullPtr then error "return_catch_null: error 1" else return ptr
 
-widget_io_fold::Int->(a->Engine b->IO (Engine b,Widget b))->a->IO (Engine b,DIM.IntMap (Widget b))->IO (Engine b,DIM.IntMap (Widget b))
-widget_io_fold key transform value accumulation=do
-    (engine,intmap)<-accumulation
-    (new_engine,new_value)<-transform value engine
-    return (new_engine,intmap_insert key new_value intmap)
+lookup_widget::Widget a->Widget a
+lookup_widget this_widget=case this_widget of
+    Double {which,first_widget,second_widget}->if which then lookup_widget first_widget else lookup_widget second_widget
+    Group {index,group_widget}->lookup_widget (intmap_lookup index group_widget)
+    Widget_trigger {widget}->lookup_widget widget
+    Widget_io_trigger {widget}->lookup_widget widget
+    Widget_mix_trigger {widget}->lookup_widget widget
+    Coroutine {index,coroutine_state}->lookup_widget (intmap_lookup index coroutine_state).widget
+    _->this_widget
+
+update_widget::(Widget a->Widget a)->Widget a->Widget a
+update_widget update this_widget=case this_widget of
+    Double {which,first_widget,second_widget}->if which then Double {which=which,first_widget=update_widget update first_widget,second_widget=second_widget} else Double {which=which,first_widget=first_widget,second_widget=update_widget update second_widget}
+    Group {index,group_widget}->Group {index=index,group_widget=intmap_update index (update_widget update) group_widget}
+    Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=update_widget update widget}
+    Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=update_widget update widget}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=update_widget update widget}
+    Coroutine {index,coroutine_state,linear_coroutine}->Coroutine {index=index,coroutine_state=intmap_update index (update_coroutine_state (update_widget update)) coroutine_state,linear_coroutine=linear_coroutine}
+    _->update this_widget
+
+update_all_widget::(Widget a->Widget a)->Widget a->Widget a
+update_all_widget update this_widget=case this_widget of
+    Double {which,first_widget,second_widget}->Double {which=which,first_widget=update_all_widget update first_widget,second_widget=update_all_widget update second_widget}
+    Group {index,group_widget}->Group {index=index,group_widget=fmap (update_all_widget update) group_widget}
+    Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=update_all_widget update widget}
+    Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=update_all_widget update widget}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=update_all_widget update widget}
+    Coroutine {index,coroutine_state,linear_coroutine}->Coroutine {index=index,coroutine_state=fmap (update_coroutine_state (update_all_widget update)) coroutine_state,linear_coroutine=linear_coroutine}
+    _->update this_widget
+
+update_coroutine_state::(Widget a->Widget a)->Coroutine_state a->Coroutine_state a
+update_coroutine_state update coroutine_state=case coroutine_state of
+    Coroutine_state {widget,variable,program_counter}->Coroutine_state {widget=update widget,variable=variable,program_counter=program_counter}
+
+functor_update_coroutine_state::Functor b=>(Widget a->b (Widget a))->Coroutine_state a->b (Coroutine_state a)
+functor_update_coroutine_state update coroutine_state=case coroutine_state of
+    Coroutine_state {widget,variable,program_counter}->fmap (\this_widget->Coroutine_state {widget=this_widget,variable=variable,program_counter=program_counter}) (update widget)
 
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)

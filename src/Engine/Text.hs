@@ -110,9 +110,9 @@ update_font_c font_id path charset_path imageout_path json_path engine=do
             return (engine {atlas=atlas,font=DIM.alter (from_maybe_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font})
 
 from_maybe_font::FCT.CFloat->FCT.CFloat->DSeq.Seq MSDF_Glyph->(MSDF_Glyph->(Glyph,Int))->Maybe Font->Maybe Font
-from_maybe_font ascent descent seq_msdf_glyph transform maybe_font=case maybe_font of
-    Nothing->Just (Font {descent=descent,ascent=ascent,glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (glyph,key)=transform msdf_glyph in intmap_insert key glyph intmap_glyph) DIM.empty seq_msdf_glyph})
-    Just font->Just (font {glyph=DF.foldl' (\intmap_glyph msdf_glyph->let (glyph,key)=transform msdf_glyph in intmap_insert key glyph intmap_glyph) font.glyph seq_msdf_glyph})
+from_maybe_font ascent descent msdf_glyph transform maybe_font=case maybe_font of
+    Nothing->Just (Font {descent=descent,ascent=ascent,glyph=DF.foldl' (\intmap_glyph this_msdf_glyph->let (glyph,key)=transform this_msdf_glyph in intmap_insert key glyph intmap_glyph) DIM.empty msdf_glyph})
+    Just font->Just (font {glyph=DF.foldl' (\intmap_glyph this_msdf_glyph->let (glyph,key)=transform this_msdf_glyph in intmap_insert key glyph intmap_glyph) font.glyph msdf_glyph})
 
 from_msdf_glyph::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Glyph,Int)
 from_msdf_glyph x y reciprocal_width reciprocal_height msdf_glyph=case msdf_glyph of
