@@ -6,6 +6,7 @@ module Engine.Coroutine where
 
 import Engine.Container
 import Engine.Type
+import qualified Data.Bits as DB
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
@@ -40,6 +41,23 @@ do_clone int serial_coroutine=lift_coroutine (Clone {int=int,coroutine=serial_co
 do_if::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()->Serial_coroutine a ()
 do_if dynamic_bool first_serial_coroutine second_serial_coroutine=lift_coroutine (If {dynamic_bool=dynamic_bool,first_coroutine=first_serial_coroutine.coroutine,second_coroutine=second_serial_coroutine.coroutine})
 
+do_pausable::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()
+do_pausable dynamic_bool serial_coroutine=lift_coroutine (do_pausable_a dynamic_bool serial_coroutine.coroutine)
+
+do_pausable_a::Dynamic_bool a->Coroutine a->Coroutine a
+do_pausable_a this_dynamic_bool this_coroutine=let wait=Wait {dynamic_int=dynamic_int_from_integer 1} in let while=While {dynamic_bool=DB.complement this_dynamic_bool,coroutine=wait} in case this_coroutine of
+    Done->Done
+    Emit {}->Then {first_coroutine=while,second_coroutine=this_coroutine}
+    Wait {dynamic_int}->Repeat {dynamic_int=dynamic_int,coroutine=Then {first_coroutine=while,second_coroutine=wait}}
+    Forever {coroutine}->Forever {coroutine=do_pausable_a this_dynamic_bool coroutine}
+    Fork {multiple_coroutine}->Fork {multiple_coroutine=fmap (do_pausable_a this_dynamic_bool) multiple_coroutine}
+    While {dynamic_bool,coroutine}->While {dynamic_bool=dynamic_bool,coroutine=do_pausable_a this_dynamic_bool coroutine}
+    Repeat {dynamic_int,coroutine}->Repeat {dynamic_int=dynamic_int,coroutine=do_pausable_a this_dynamic_bool coroutine}
+    Clone {int,coroutine}->Clone {int=int,coroutine=do_pausable_a this_dynamic_bool coroutine}
+    Then {first_coroutine,second_coroutine}->Then {first_coroutine=do_pausable_a this_dynamic_bool first_coroutine,second_coroutine=do_pausable_a this_dynamic_bool second_coroutine}
+    If {dynamic_bool,first_coroutine,second_coroutine}->Then {first_coroutine=while,second_coroutine=If {dynamic_bool=dynamic_bool,first_coroutine=do_pausable_a this_dynamic_bool first_coroutine,second_coroutine=do_pausable_a this_dynamic_bool second_coroutine}}
+    Dynamic_clone {dynamic_int,int,coroutine}->Dynamic_clone {dynamic_int=dynamic_int,int=int,coroutine=do_pausable_a this_dynamic_bool coroutine}
+
 do_branch::Serial_coroutine a ()->Parallel_coroutine a ()
 do_branch serial_coroutine=case serial_coroutine.coroutine of
     Done->Parallel_coroutine {multiple_coroutine=DS.empty,value=()}
@@ -62,6 +80,7 @@ from_coroutine_a this_coroutine clone_number code_index int_index linear_corouti
     Clone {int,coroutine}->let new_int=int-1 in if new_int<0 then (linear_coroutine,int_index,code_index) else let (new_linear_coroutine,new_int_index,new_code_index)=from_coroutine_a coroutine (int*clone_number) (code_index+1) (int_index+clone_number) linear_coroutine in (DIM.insert new_code_index (Linear_clone_kill {int_index=int_index,clone_number=clone_number}) (DIM.insert code_index (Linear_clone {int_index=int_index,clone_number=clone_number,int=new_int}) new_linear_coroutine),new_int_index,new_code_index+1)
     Then {first_coroutine,second_coroutine}->let (first_linear_coroutine,first_int_index,first_code_index)=from_coroutine_a first_coroutine clone_number code_index int_index linear_coroutine in let (second_linear_coroutine,second_int_index,second_code_index)=from_coroutine_a second_coroutine clone_number first_code_index int_index first_linear_coroutine in (second_linear_coroutine,max first_int_index second_int_index,second_code_index)
     If {dynamic_bool,first_coroutine,second_coroutine}->let (first_linear_coroutine,first_int_index,first_code_index)=from_coroutine_a first_coroutine clone_number (code_index+1) int_index linear_coroutine in let new_code_index=first_code_index+1 in let (second_linear_coroutine,second_int_index,second_code_index)=from_coroutine_a second_coroutine clone_number new_code_index int_index first_linear_coroutine in (DIM.insert first_code_index (Linear_jump {code_index=second_code_index}) (DIM.insert code_index (Linear_false_jump {code_index=new_code_index,dynamic_bool=dynamic_bool}) second_linear_coroutine),max first_int_index second_int_index,second_code_index)
+    Dynamic_clone {dynamic_int,int,coroutine}->let new_int=int-1 in if new_int<0 then (linear_coroutine,int_index,code_index) else let (new_linear_coroutine,new_int_index,new_code_index)=from_coroutine_a coroutine (int*clone_number) (code_index+1) (int_index+clone_number) linear_coroutine in (DIM.insert new_code_index (Linear_clone_kill {int_index=int_index,clone_number=clone_number}) (DIM.insert code_index (Linear_dynamic_clone {int_index=int_index,clone_number=clone_number,dynamic_int=dynamic_int,int=new_int}) new_linear_coroutine),new_int_index,new_code_index+1)
 
 fork_coroutine::DS.Seq (Coroutine a)->DIS.IntSet->Int->Int->Int->Int->DIM.IntMap (Linear_coroutine a)->(DIM.IntMap (Linear_coroutine a),Int,Int)
 fork_coroutine multiple_coroutine jump_code_index fork_code_index clone_number code_index int_index linear_coroutine=case multiple_coroutine of
@@ -84,11 +103,12 @@ run_coroutine_a linear_coroutine clone_index this_code_index survived_progress n
     Linear_jump {code_index}->run_coroutine_a linear_coroutine clone_index code_index survived_progress newborn_progress progress variable engine widget
     Linear_one_less_jump {int_index,code_index}->if intmap_lookup (int_index+clone_index) variable<1 then run_coroutine_a linear_coroutine clone_index code_index survived_progress newborn_progress progress variable engine widget else run_coroutine_a linear_coroutine clone_index (this_code_index+1) survived_progress newborn_progress progress variable engine widget
     Linear_one_more_jump {int_index,code_index}->let (new_variable,int)=intmap_update_lookup (int_index+clone_index) (\this_int->this_int-1) variable in if 1<int then run_coroutine_a linear_coroutine clone_index code_index survived_progress newborn_progress progress new_variable engine widget else run_coroutine_a linear_coroutine clone_index (this_code_index+1) survived_progress newborn_progress progress new_variable engine widget
-    Linear_clone_kill {int_index,clone_number}->let (new_variable,int)=intmap_update_lookup (int_index+mod clone_index clone_number) (\this_int->this_int-1) variable in if 0<int then run_coroutine_b linear_coroutine survived_progress newborn_progress progress new_variable engine widget else run_coroutine_a linear_coroutine clone_index (this_code_index+1) survived_progress newborn_progress progress new_variable engine widget
+    Linear_clone_kill {int_index,clone_number}->let new_clone_index=mod clone_index clone_number in let (new_variable,int)=intmap_update_lookup (int_index+new_clone_index) (\this_int->this_int-1) variable in if 0<int then run_coroutine_b linear_coroutine survived_progress newborn_progress progress new_variable engine widget else run_coroutine_a linear_coroutine new_clone_index (this_code_index+1) survived_progress newborn_progress progress new_variable engine widget
     Linear_dynamic_int {int_index,dynamic_int}->run_coroutine_a linear_coroutine clone_index (this_code_index+1) survived_progress newborn_progress progress (DIM.insert (int_index+clone_index) (dynamic_int.dynamic_int engine widget) variable) engine widget
     Linear_int {int_index,int}->run_coroutine_a linear_coroutine clone_index (this_code_index+1) survived_progress newborn_progress progress (DIM.insert (int_index+clone_index) int variable) engine widget
     Linear_false_jump {code_index,dynamic_bool}->if dynamic_bool.dynamic_bool engine widget then run_coroutine_a linear_coroutine clone_index (this_code_index+1) survived_progress newborn_progress progress variable engine widget else run_coroutine_a linear_coroutine clone_index code_index survived_progress newborn_progress progress variable engine widget
     Linear_clone {int_index,clone_number,int}->let new_code_index=this_code_index+1 in run_coroutine_a linear_coroutine clone_index new_code_index survived_progress (run_coroutine_c int clone_number (clone_index+clone_number) new_code_index newborn_progress) progress (DIM.insert (int_index+clone_index) int variable) engine widget
+    Linear_dynamic_clone {int_index,clone_number,dynamic_int,int}->let new_int=dynamic_int.dynamic_int engine widget-1 in if new_int<0||int<new_int then error "run_coroutine_a: error 1" else let new_code_index=this_code_index+1 in run_coroutine_a linear_coroutine clone_index new_code_index survived_progress (run_coroutine_c new_int clone_number (clone_index+clone_number) new_code_index newborn_progress) progress (DIM.insert (int_index+clone_index) new_int variable) engine widget
 
 run_coroutine_b::DIM.IntMap (Linear_coroutine a)->DS.Seq Program_counter->DS.Seq Program_counter->DS.Seq Program_counter->DIM.IntMap Int->Engine a->Widget a->(Widget a,Engine a,DIM.IntMap Int,DS.Seq Program_counter)
 run_coroutine_b linear_coroutine survived_progress newborn_progress progress variable engine widget=case newborn_progress of

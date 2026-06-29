@@ -10,6 +10,7 @@ module Engine.Type where
 import qualified SDL.Type as T
 import qualified Data.Aeson as DA
 import qualified Data.Aeson.Types as DAT
+import qualified Data.Bits as DB
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
@@ -23,6 +24,74 @@ import qualified Foreign.Storable as FS
 
 newtype Dynamic_bool a=Dynamic_bool {dynamic_bool::Engine a->Widget a->Bool}
 
+instance Eq (Dynamic_bool a) where
+    (==)=dynamic_bool_equal
+
+dynamic_bool_equal::Dynamic_bool a->Dynamic_bool a->Bool
+dynamic_bool_equal _ _=error "dynamic_bool_equal: error 1"
+
+instance DB.Bits (Dynamic_bool a) where
+    (.&.)=dynamic_bool_and
+    (.|.)=dynamic_bool_or
+    xor=dynamic_bool_xor
+    complement=dynamic_bool_complement
+    shift=dynamic_bool_shift
+    rotate=dynamic_bool_rotate
+    bitSize=dynamic_bool_bit_size
+    bitSizeMaybe=dynamic_bool_bit_size_maybe
+    isSigned=dynamic_bool_is_signed
+    testBit=dynamic_bool_test_bit
+    bit=dynamic_bool_bit
+    popCount=dynamic_bool_pop_count
+
+dynamic_bool_and::Dynamic_bool a->Dynamic_bool a->Dynamic_bool a
+dynamic_bool_and first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator (DB..&.) first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
+
+dynamic_bool_or::Dynamic_bool a->Dynamic_bool a->Dynamic_bool a
+dynamic_bool_or first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator (DB..|.) first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
+
+dynamic_bool_xor::Dynamic_bool a->Dynamic_bool a->Dynamic_bool a
+dynamic_bool_xor first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator DB.xor first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
+
+dynamic_bool_complement::Dynamic_bool a->Dynamic_bool a
+dynamic_bool_complement dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_unary_operator DB.complement dynamic_bool.dynamic_bool}
+
+dynamic_bool_shift::Dynamic_bool a->Int->Dynamic_bool a
+dynamic_bool_shift dynamic_bool int=if int==0 then dynamic_bool else Dynamic_bool {dynamic_bool=dynamic_bool_false}
+
+dynamic_bool_rotate::Dynamic_bool a->Int->Dynamic_bool a
+dynamic_bool_rotate dynamic_bool _=dynamic_bool
+
+dynamic_bool_bit_size::Dynamic_bool a->Int
+dynamic_bool_bit_size _=1
+
+dynamic_bool_bit_size_maybe::Dynamic_bool a->Maybe Int
+dynamic_bool_bit_size_maybe _=Just 1
+
+dynamic_bool_is_signed::Dynamic_bool a->Bool
+dynamic_bool_is_signed _=False
+
+dynamic_bool_test_bit::Dynamic_bool a->Int->Bool
+dynamic_bool_test_bit _ _=error "dynamic_bool_test_bit: error 1"
+
+dynamic_bool_bit::Int->Dynamic_bool a
+dynamic_bool_bit int=if int==0 then Dynamic_bool {dynamic_bool=dynamic_bool_true} else Dynamic_bool {dynamic_bool=dynamic_bool_false}
+
+dynamic_bool_pop_count::Dynamic_bool a->Int
+dynamic_bool_pop_count _=error "dynamic_bool_pop_count: error 1"
+
+dynamic_bool_true::Engine a->Widget a->Bool
+dynamic_bool_true _ _=True
+
+dynamic_bool_false::Engine a->Widget a->Bool
+dynamic_bool_false _ _=False
+
+dynamic_bool_unary_operator::(Bool->Bool)->(Engine a->Widget a->Bool)->Engine a->Widget a->Bool
+dynamic_bool_unary_operator operator dynamic_bool engine widget=operator (dynamic_bool engine widget)
+
+dynamic_bool_binary_operator::(Bool->Bool->Bool)->(Engine a->Widget a->Bool)->(Engine a->Widget a->Bool)->Engine a->Widget a->Bool
+dynamic_bool_binary_operator operator first_dynamic_bool second_dynamic_bool engine widget=operator (first_dynamic_bool engine widget) (second_dynamic_bool engine widget)
+
 newtype Dynamic_int a=Dynamic_int {dynamic_int::Engine a->Widget a->Int}
 
 instance Num (Dynamic_int a) where
@@ -30,7 +99,7 @@ instance Num (Dynamic_int a) where
     (*)=dynamic_int_multiplication
     abs=dynamic_int_abs
     signum=dynamic_int_signum
-    fromInteger=dynamic_int_fromInteger
+    fromInteger=dynamic_int_from_integer
     negate=dynamic_int_negate
 
 dynamic_int_addition::Dynamic_int a->Dynamic_int a->Dynamic_int a
@@ -45,8 +114,8 @@ dynamic_int_abs dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator 
 dynamic_int_signum::Dynamic_int a->Dynamic_int a
 dynamic_int_signum dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator signum dynamic_int.dynamic_int}
 
-dynamic_int_fromInteger::Integer->Dynamic_int a
-dynamic_int_fromInteger integer=Dynamic_int {dynamic_int=const (const (fromInteger integer))}
+dynamic_int_from_integer::Integer->Dynamic_int a
+dynamic_int_from_integer integer=Dynamic_int {dynamic_int=const (const (fromInteger integer))}
 
 dynamic_int_negate::Dynamic_int a->Dynamic_int a
 dynamic_int_negate dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator negate dynamic_int.dynamic_int}
@@ -73,9 +142,9 @@ data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_r
 
 data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DIM.IntMap Int,program_counter::DSeq.Seq Program_counter}
 
-data Coroutine a=Done|Emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Fork {multiple_coroutine::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|Then {first_coroutine::Coroutine a,second_coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}
+data Coroutine a=Done|Emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Fork {multiple_coroutine::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|Then {first_coroutine::Coroutine a,second_coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}|Dynamic_clone {dynamic_int::Dynamic_int a,int::Int,coroutine::Coroutine a}
 
-data Linear_coroutine a=Linear_end|Linear_emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Linear_wait {int_index::Int}|Linear_fork_kill {int_index::Int}|Linear_fork {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_clone_kill {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_clone {int_index::Int,clone_number::Int,int::Int}
+data Linear_coroutine a=Linear_end|Linear_emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Linear_wait {int_index::Int}|Linear_fork_kill {int_index::Int}|Linear_fork {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_clone_kill {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_dynamic_clone {int_index::Int,clone_number::Int,dynamic_int::Dynamic_int a,int::Int}
 
 data Serial_coroutine a b=Serial_coroutine {coroutine::Coroutine a,value::b}
 

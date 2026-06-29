@@ -25,12 +25,12 @@ clean_collect_a widget=case widget of
     _->widget
 
 maybe_update_collect::(Widget a->Maybe (Widget a))->Projection_path->Int->Collect_strategy->Engine a->Engine a
-maybe_update_collect update projection_path leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v this_widget,this_widget)) (update widget)}) engine) in case maybe_tuple of
+maybe_update_collect update projection_path leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v this_widget,this_widget)) (functor_update_widget update widget)}) engine) in case maybe_tuple of
     Nothing->engine
     Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton submit) collect_strategy)) new_engine.leaf}
 
 maybe_collect_update::(Widget a->Maybe (Widget a))->Projection_path->Int->Collect_strategy->Engine a->Engine a
-maybe_collect_update update projection_path leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v widget)) collect_strategy)),update widget)}) engine) in case maybe_engine of
+maybe_collect_update update projection_path leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v widget)) collect_strategy)),functor_update_widget update widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
