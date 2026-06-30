@@ -6,7 +6,6 @@ module Engine.Coroutine where
 
 import Engine.Container
 import Engine.Type
-import qualified Data.Bits as DB
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
@@ -19,6 +18,12 @@ to_coroutine serial_coroutine=serial_coroutine.coroutine
 
 lift_coroutine::Coroutine a->Serial_coroutine a ()
 lift_coroutine coroutine=Serial_coroutine {coroutine=coroutine,value=()}
+
+do_empty::Parallel_coroutine a ()
+do_empty=Parallel_coroutine {multiple_coroutine=DS.empty,value=()}
+
+do_done::Serial_coroutine a ()
+do_done=lift_coroutine Done
 
 do_emit::(Engine a->Widget a->(Widget a,Engine a))->Serial_coroutine a ()
 do_emit emit=lift_coroutine (Emit {emit=emit})
@@ -38,8 +43,8 @@ do_while dynamic_bool serial_coroutine=lift_coroutine (While {dynamic_bool=dynam
 do_repeat::Dynamic_int a->Serial_coroutine a ()->Serial_coroutine a ()
 do_repeat dynamic_int serial_coroutine=lift_coroutine (Repeat {dynamic_int=dynamic_int,coroutine=serial_coroutine.coroutine})
 
-do_case::Dynamic_int a->DS.Seq (Serial_coroutine a ())->Serial_coroutine a ()
-do_case dynamic_int multiple_coroutine=lift_coroutine (Case {dynamic_int=dynamic_int,multiple_coroutine=fmap (\this_serial_coroutine->this_serial_coroutine.coroutine) multiple_coroutine})
+do_case::Dynamic_int a->Parallel_coroutine a ()->Serial_coroutine a ()
+do_case dynamic_int parallel_coroutine=lift_coroutine (Case {dynamic_int=dynamic_int,multiple_coroutine=parallel_coroutine.multiple_coroutine})
 
 do_clone::Int->Serial_coroutine a ()->Serial_coroutine a ()
 do_clone int serial_coroutine=lift_coroutine (Clone {int=int,coroutine=serial_coroutine.coroutine})
@@ -47,23 +52,23 @@ do_clone int serial_coroutine=lift_coroutine (Clone {int=int,coroutine=serial_co
 do_if::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()->Serial_coroutine a ()
 do_if dynamic_bool first_serial_coroutine second_serial_coroutine=lift_coroutine (If {dynamic_bool=dynamic_bool,first_coroutine=first_serial_coroutine.coroutine,second_coroutine=second_serial_coroutine.coroutine})
 
-do_pausable::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()
-do_pausable dynamic_bool serial_coroutine=lift_coroutine (do_pausable_a dynamic_bool serial_coroutine.coroutine)
+do_pause::Dynamic_bool a->Serial_coroutine a ()->Serial_coroutine a ()
+do_pause dynamic_bool serial_coroutine=lift_coroutine (do_pause_a dynamic_bool serial_coroutine.coroutine)
 
-do_pausable_a::Dynamic_bool a->Coroutine a->Coroutine a
-do_pausable_a this_dynamic_bool this_coroutine=let wait=Wait {dynamic_int=dynamic_int_from_integer 1} in let while=While {dynamic_bool=DB.complement this_dynamic_bool,coroutine=wait} in case this_coroutine of
+do_pause_a::Dynamic_bool a->Coroutine a->Coroutine a
+do_pause_a this_dynamic_bool this_coroutine=let wait=Wait {dynamic_int=dynamic_int_from_integer 1} in let while=While {dynamic_bool=this_dynamic_bool,coroutine=wait} in case this_coroutine of
     Done->Done
     Emit {}->Then {first_coroutine=while,second_coroutine=this_coroutine}
     Wait {dynamic_int}->Repeat {dynamic_int=dynamic_int,coroutine=Then {first_coroutine=while,second_coroutine=wait}}
-    Forever {coroutine}->Forever {coroutine=do_pausable_a this_dynamic_bool coroutine}
-    Fork {multiple_coroutine}->Fork {multiple_coroutine=fmap (do_pausable_a this_dynamic_bool) multiple_coroutine}
-    While {dynamic_bool,coroutine}->Then {first_coroutine=while,second_coroutine=While {dynamic_bool=dynamic_bool,coroutine=Then {first_coroutine=do_pausable_a this_dynamic_bool coroutine,second_coroutine=while}}}
-    Repeat {dynamic_int,coroutine}->Then {first_coroutine=while,second_coroutine=Repeat {dynamic_int=dynamic_int,coroutine=do_pausable_a this_dynamic_bool coroutine}}
-    Case {dynamic_int,multiple_coroutine}->Then {first_coroutine=while,second_coroutine=Case {dynamic_int=dynamic_int,multiple_coroutine=fmap (do_pausable_a this_dynamic_bool) multiple_coroutine}}
-    Clone {int,coroutine}->Clone {int=int,coroutine=do_pausable_a this_dynamic_bool coroutine}
-    Then {first_coroutine,second_coroutine}->Then {first_coroutine=do_pausable_a this_dynamic_bool first_coroutine,second_coroutine=do_pausable_a this_dynamic_bool second_coroutine}
-    If {dynamic_bool,first_coroutine,second_coroutine}->Then {first_coroutine=while,second_coroutine=If {dynamic_bool=dynamic_bool,first_coroutine=do_pausable_a this_dynamic_bool first_coroutine,second_coroutine=do_pausable_a this_dynamic_bool second_coroutine}}
-    Dynamic_clone {dynamic_int,int,coroutine}->Then {first_coroutine=while,second_coroutine=Dynamic_clone {dynamic_int=dynamic_int,int=int,coroutine=do_pausable_a this_dynamic_bool coroutine}}
+    Forever {coroutine}->Forever {coroutine=do_pause_a this_dynamic_bool coroutine}
+    Fork {multiple_coroutine}->Fork {multiple_coroutine=fmap (do_pause_a this_dynamic_bool) multiple_coroutine}
+    While {dynamic_bool,coroutine}->Then {first_coroutine=while,second_coroutine=While {dynamic_bool=dynamic_bool,coroutine=Then {first_coroutine=do_pause_a this_dynamic_bool coroutine,second_coroutine=while}}}
+    Repeat {dynamic_int,coroutine}->Then {first_coroutine=while,second_coroutine=Repeat {dynamic_int=dynamic_int,coroutine=do_pause_a this_dynamic_bool coroutine}}
+    Case {dynamic_int,multiple_coroutine}->Then {first_coroutine=while,second_coroutine=Case {dynamic_int=dynamic_int,multiple_coroutine=fmap (do_pause_a this_dynamic_bool) multiple_coroutine}}
+    Clone {int,coroutine}->Clone {int=int,coroutine=do_pause_a this_dynamic_bool coroutine}
+    Then {first_coroutine,second_coroutine}->Then {first_coroutine=do_pause_a this_dynamic_bool first_coroutine,second_coroutine=do_pause_a this_dynamic_bool second_coroutine}
+    If {dynamic_bool,first_coroutine,second_coroutine}->Then {first_coroutine=while,second_coroutine=If {dynamic_bool=dynamic_bool,first_coroutine=do_pause_a this_dynamic_bool first_coroutine,second_coroutine=do_pause_a this_dynamic_bool second_coroutine}}
+    Dynamic_clone {dynamic_int,int,coroutine}->Then {first_coroutine=while,second_coroutine=Dynamic_clone {dynamic_int=dynamic_int,int=int,coroutine=do_pause_a this_dynamic_bool coroutine}}
 
 do_branch::Serial_coroutine a ()->Parallel_coroutine a ()
 do_branch serial_coroutine=case serial_coroutine.coroutine of
