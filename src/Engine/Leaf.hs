@@ -7,12 +7,48 @@ module Engine.Leaf where
 import Engine.Atlas
 import Engine.Container
 import Engine.Coroutine
+import Engine.Projection
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as F
 import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
+
+insert_same_multiple_insert::Int->DS.Seq Insert_strategy->Widget a->Engine a->Engine a
+insert_same_multiple_insert leaf_id multiple_insert_strategy widget engine=engine {leaf=intmap_update leaf_id (update_projection_object (insert_same_multiple_insert_a multiple_insert_strategy widget)) engine.leaf}
+
+insert_same_multiple_insert_a::DS.Seq Insert_strategy->Widget a->Widget a->Widget a
+insert_same_multiple_insert_a multiple_insert_strategy widget this_widget=case this_widget of
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=insert_same_multiple_insert_b min_index max_index multiple_insert_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->let (new_coroutine_state,new_max_index,new_min_index)=insert_same_multiple_insert_b min_index max_index multiple_insert_strategy (init_coroutine_state widget) coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine}
+    _->error "insert_same_multiple_insert_a: error 1"
+
+insert_same_multiple_insert_b::Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
+insert_same_multiple_insert_b min_index max_index multiple_insert_strategy value intmap=case multiple_insert_strategy of
+    DS.Empty->(intmap,max_index,min_index)
+    insert_strategy DS.:<| other_insert_strategy->case insert_strategy of
+        Min_strategy->insert_same_multiple_insert_b (min_index-1) max_index other_insert_strategy value (intmap_insert min_index value intmap)
+        Max_strategy->insert_same_multiple_insert_b min_index (max_index+1) other_insert_strategy value (intmap_insert max_index value intmap)
+        Index_strategy {seat}->if seat<=min_index then insert_same_multiple_insert_b (seat-1) max_index other_insert_strategy value (intmap_insert seat value intmap) else if max_index<=seat then insert_same_multiple_insert_b min_index (seat+1) other_insert_strategy value (intmap_insert seat value intmap) else insert_same_multiple_insert_b min_index max_index other_insert_strategy value (intmap_insert seat value intmap)
+
+insert_multiple_insert::Int->DS.Seq (Insert a (Widget a))->Engine a->Engine a
+insert_multiple_insert leaf_id multiple_insert engine=engine {leaf=intmap_update leaf_id (update_projection_object (insert_multiple_insert_a multiple_insert)) engine.leaf}
+
+insert_multiple_insert_a::DS.Seq (Insert a (Widget a))->Widget a->Widget a
+insert_multiple_insert_a multiple_insert widget=case widget of
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=insert_multiple_insert_b min_index max_index id multiple_insert group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->let (new_coroutine_state,new_max_index,new_min_index)=insert_multiple_insert_b min_index max_index init_coroutine_state multiple_insert coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine}
+    _->error "insert_multiple_insert_a: error 1"
+
+insert_multiple_insert_b::Int->Int->(Widget a->b)->DS.Seq (Insert a (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
+insert_multiple_insert_b min_index max_index transform multiple_insert intmap=case multiple_insert of
+    DS.Empty->(intmap,max_index,min_index)
+    insert DS.:<| other_insert->case insert of
+        Insert {insert_strategy,value}->case insert_strategy of
+            Min_strategy->insert_multiple_insert_b (min_index-1) max_index transform other_insert (intmap_insert min_index (transform value) intmap)
+            Max_strategy->insert_multiple_insert_b min_index (max_index+1) transform other_insert (intmap_insert max_index (transform value) intmap)
+            Index_strategy {seat}->if seat<=min_index then insert_multiple_insert_b (seat-1) max_index transform other_insert (intmap_insert seat (transform value) intmap) else if max_index<=seat then insert_multiple_insert_b min_index (seat+1) transform other_insert (intmap_insert seat (transform value) intmap) else insert_multiple_insert_b min_index max_index transform other_insert (intmap_insert seat (transform value) intmap)
 
 create_leaf::Int->Maybe Int->Widget_request a->Engine a->IO (Engine a)
 create_leaf leaf_id maybe_father_id widget_request engine=do
@@ -27,9 +63,9 @@ create_widget this_widget_request engine=case this_widget_request of
         (new_engine,first_widget)<-create_widget first_widget_request engine
         (new_new_engine,second_widget)<-create_widget second_widget_request new_engine
         return (new_new_engine,Double {which=which,first_widget=first_widget,second_widget=second_widget})
-    Group_request {index,group_widget_request}->do
-        (new_engine,group_widget)<-DIM.foldlWithKey' (\accumulate key widget_request->intmap_monad_accumulate key (create_widget widget_request) accumulate) (return (engine,DIM.empty)) group_widget_request
-        return (new_engine,Group {index=index,group_widget=group_widget})
+    Group_request {initial_min_index,initial_max_index,index,multiple_insert}->do
+        (group_widget,max_index,min_index,new_engine)<-init_multiple_insert engine initial_min_index initial_max_index id multiple_insert DIM.empty
+        return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=group_widget})
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})
     Mix_trigger_request {next,mix_trigger,order}->return (engine,Mix_trigger {next=next,mix_trigger=mix_trigger,order=order})
@@ -42,9 +78,11 @@ create_widget this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {index,serial_coroutine}->return (engine,Coroutine {index=index,coroutine_state=DIM.empty,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine serial_coroutine) in linear_coroutine})
+    Coroutine_request {initial_min_index,initial_max_index,index,multiple_insert,serial_coroutine}->do
+        (coroutine_state,max_index,min_index,new_engine)<-init_multiple_insert engine initial_min_index initial_max_index init_coroutine_state multiple_insert DIM.empty
+        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=coroutine_state,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine serial_coroutine) in linear_coroutine})
     Store_request {store}->return (engine,Store {store=store})
-    Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty})
+    Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {origin,matrix,maybe_clip,red,green,blue,alpha,visual_request}->do
         (new_engine,visual)<-create_visual visual_request engine
         return (new_engine,Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
@@ -53,6 +91,17 @@ create_widget this_widget_request engine=case this_widget_request of
             new_engine<-update_font charset engine
             return (new_engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
         else return (engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
+
+init_multiple_insert::Engine a->Int->Int->(Widget a->b)->DS.Seq (Insert a (Widget_request a))->DIM.IntMap b->IO (DIM.IntMap b,Int,Int,Engine a)
+init_multiple_insert engine min_index max_index transform multiple_insert intmap=case multiple_insert of
+    DS.Empty->return (intmap,max_index,min_index,engine)
+    insert DS.:<| other_insert->case insert of
+        Insert {insert_strategy,value}->do
+            (new_engine,widget)<-create_widget value engine
+            case insert_strategy of
+                Min_strategy->init_multiple_insert new_engine (min_index-1) max_index transform other_insert (intmap_insert min_index (transform widget) intmap)
+                Max_strategy->init_multiple_insert new_engine min_index (max_index+1) transform other_insert (intmap_insert max_index (transform widget) intmap)
+                Index_strategy {seat}->if seat<=min_index then init_multiple_insert new_engine (seat-1) max_index transform other_insert (intmap_insert seat (transform widget) intmap) else if max_index<=seat then init_multiple_insert new_engine min_index (seat+1) transform other_insert (intmap_insert seat (transform widget) intmap) else init_multiple_insert new_engine min_index max_index transform other_insert (intmap_insert seat (transform widget) intmap)
 
 create_visual::Visual_request->Engine a->IO (Engine a,Visual)
 create_visual visual_request engine=case visual_request of

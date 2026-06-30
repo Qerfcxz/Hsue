@@ -126,9 +126,9 @@ for_unlock this_widget engine=case this_widget of
         (new_engine,new_first_widget)<-for_unlock first_widget engine
         (new_new_engine,new_second_widget)<-for_unlock second_widget new_engine
         return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
-    Group {index,group_widget}->do
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->do
         (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulate key widget->intmap_monad_accumulate key (for_unlock widget) accumulate) (return (engine,DIM.empty)) group_widget
-        return (new_engine,Group {index=index,group_widget=new_group_widget})
+        return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget})
@@ -138,9 +138,9 @@ for_unlock this_widget engine=case this_widget of
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
-    Coroutine {index,coroutine_state,linear_coroutine}->do
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->do
         (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate key this_coroutine_state->intmap_monad_accumulate key (`for_unlock_coroutine` this_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
-        return (new_engine,Coroutine {index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine})
+        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine})
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked
             then do

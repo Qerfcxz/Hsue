@@ -21,28 +21,28 @@ clean_collect leaf_id engine=engine {leaf=intmap_update leaf_id (update_projecti
 
 clean_collect_a::Widget a->Widget a
 clean_collect_a widget=case widget of
-    Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty}
+    Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
     _->widget
 
-maybe_update_collect::(Widget a->Maybe (Widget a))->Projection_path->Int->Collect_strategy->Engine a->Engine a
-maybe_update_collect update projection_path leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v this_widget,this_widget)) (functor_update_widget update widget)}) engine) in case maybe_tuple of
+maybe_update_collect::(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Projection_path->Int->Insert_strategy->Engine a->Engine a
+maybe_update_collect update view projection_path leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v (view this_widget),this_widget)) (functor_update_widget update widget)}) engine) in case maybe_tuple of
     Nothing->engine
     Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton submit) collect_strategy)) new_engine.leaf}
 
-maybe_collect_update::(Widget a->Maybe (Widget a))->Projection_path->Int->Collect_strategy->Engine a->Engine a
-maybe_collect_update update projection_path leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v widget)) collect_strategy)),functor_update_widget update widget)}) engine) in case maybe_engine of
+maybe_collect_update::(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Projection_path->Int->Insert_strategy->Engine a->Engine a
+maybe_collect_update update view projection_path leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v (view widget))) collect_strategy)),functor_update_widget update widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
-collect::Projection_path->Int->Collect_strategy->Engine a->Engine a
-collect projection_path leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (update_widget (collect_a (DS.singleton (to_collect engine.u engine.v (lookup_projection_widget projection_path engine))) collect_strategy))) engine.leaf}
+collect::(Widget a->Widget a)->Projection_path->Int->Insert_strategy->Engine a->Engine a
+collect view projection_path leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (update_widget (collect_a (DS.singleton (to_collect engine.u engine.v (view (lookup_projection_widget projection_path engine)))) collect_strategy))) engine.leaf}
 
-collect_a::DS.Seq Submit->Collect_strategy->Widget a->Widget a
+collect_a::DS.Seq Submit->Insert_strategy->Widget a->Widget a
 collect_a this_submit collect_strategy widget=case widget of
-    Collector {initial_min_index,initial_max_index,min_index,max_index,submit}->case collect_strategy of
-        Min_strategy->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index-1,max_index=max_index,submit=intmap_insert min_index this_submit submit}
-        Max_strategy->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index+1,submit=intmap_insert max_index this_submit submit}
-        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=seat-1,max_index=max_index,submit=intmap_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=seat+1,submit=intmap_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=min_index,max_index=max_index,submit=intmap_insert seat this_submit submit}
+    Collector {initial_min_index,min_index,initial_max_index,max_index,submit}->case collect_strategy of
+        Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert min_index this_submit submit}
+        Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=intmap_insert max_index this_submit submit}
+        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=intmap_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert seat this_submit submit}
     _->error "collect_a: error 1"
 
 to_collect::FCT.CFloat->FCT.CFloat->Widget a->Submit
@@ -88,7 +88,7 @@ collect_character::Point->FCT.CFloat->FCT.CFloat->Character->(DS.Seq Vertex,DS.S
 collect_character origin x y character (vertex,index,index_offset)=case character of
     Character {size,left,down,right,up,min_u,min_v,max_u,max_v,red,green,blue,alpha}->let new_left=origin.x+x+left in let new_down=origin.y+y+down in let new_right=origin.x+x+right in let new_up=origin.y+y+up in (vertex DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_left,y=new_down,u=min_u,v=min_v,parameter_id=0,size=size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_right,y=new_down,u=max_u,v=min_v,parameter_id=0,size=size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_right,y=new_up,u=max_u,v=max_v,parameter_id=0,size=size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=new_left,y=new_up,u=min_u,v=max_v,parameter_id=0,size=size},index DS.|> index_offset DS.|> (index_offset+1) DS.|> (index_offset+2) DS.|> index_offset DS.|> (index_offset+2) DS.|> (index_offset+3),index_offset+4)
 
-move::Projection_move->Int->Collect_strategy->Engine a->Engine a
+move::Projection_move->Int->Insert_strategy->Engine a->Engine a
 move projection_move leaf_id collect_strategy engine=let (new_engine,widget)=move_lookup projection_move engine in new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (move_a widget) collect_strategy)) new_engine.leaf}
 
 move_a::Widget a->DS.Seq Submit
@@ -117,4 +117,4 @@ for_submit_a submit (this_vertex,this_index,this_parameter,draw_call,vertex_offs
 for_submit_b::Maybe Int->DW.Word32->DW.Word32->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->DS.Seq (Maybe Int,DW.Word32,DW.Word32)
 for_submit_b maybe_album_id index_length index_offset draw_call=case draw_call of
     DS.Empty->DS.singleton (maybe_album_id,index_length,index_offset)
-    new_draw_call DS.:|> (new_maybe_album_id,new_index_length,new_index_offset)->if maybe_album_id==new_maybe_album_id then new_draw_call DS.|> (maybe_album_id,index_length+new_index_length,new_index_offset) else draw_call DS.|> (maybe_album_id,index_length,index_offset)
+    other_draw_call DS.:|> (new_maybe_album_id,new_index_length,new_index_offset)->if maybe_album_id==new_maybe_album_id then other_draw_call DS.|> (maybe_album_id,index_length+new_index_length,new_index_offset) else draw_call DS.|> (maybe_album_id,index_length,index_offset)
