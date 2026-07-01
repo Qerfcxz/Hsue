@@ -138,80 +138,43 @@ data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
-data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,multiple_insert::DSeq.Seq (Insert a (Widget_request a))}|Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget_request::Widget_request a}|Coroutine_request {initial_min_index::Int,initial_max_index::Int,index::Int,multiple_insert::DSeq.Seq (Insert a (Widget_request a)),serial_coroutine::Serial_coroutine a ()}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,multiple_insert::DSeq.Seq (Insert a (Widget_request a))}|Trigger_request {next::Engine a->Event->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Engine a->Event->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Engine a->Event->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Engine a->Event->Maybe Int,widget_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Widget a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Engine a->Event->Maybe Int,widget_io_trigger::Widget a->Event->Engine a->(Engine a->IO (Engine a),Widget a),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Engine a->Event->Maybe Int,widget_mix_trigger::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->IO (Engine a),Widget a),order::Bool,widget_request::Widget_request a}|Coroutine_request {initial_min_index::Int,initial_max_index::Int,index::Int,multiple_insert::DSeq.Seq (Insert a (Widget_request a)),raw_coroutine::Raw_coroutine a ()}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
 
 data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DIM.IntMap Int,program_counter::DSeq.Seq Program_counter}
 
-data Coroutine a=Done|Emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Fork {multiple_coroutine::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Case {dynamic_int::Dynamic_int a,multiple_coroutine::DSeq.Seq (Coroutine a)}|Clone {int::Int,coroutine::Coroutine a}|Then {first_coroutine::Coroutine a,second_coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}|Dynamic_clone {dynamic_int::Dynamic_int a,int::Int,coroutine::Coroutine a}
+data Coroutine a=Done|Emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Then {multiple_coroutine::DSeq.Seq (Coroutine a)}|Fork {multiple_coroutine::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Case {dynamic_int::Dynamic_int a,multiple_coroutine::DSeq.Seq (Coroutine a)}|Clone {int::Int,coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}|Dynamic_clone {dynamic_int::Dynamic_int a,int::Int,coroutine::Coroutine a}
 
 data Linear_coroutine a=Linear_end|Linear_emit {emit::Engine a->Widget a->(Widget a,Engine a)}|Linear_wait {int_index::Int}|Linear_fork_kill {int_index::Int}|Linear_fork {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_clone_kill {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a,int::Int}
 
-data Serial_coroutine a b=Serial_coroutine {coroutine::Coroutine a,value::b}
+data Raw_coroutine a b=Raw_coroutine {multiple_coroutine::DSeq.Seq (Coroutine a),value::b}
 
-combine_coroutine::Coroutine a->Coroutine a->Coroutine a
-combine_coroutine first_coroutine second_coroutine=case first_coroutine of
-    Done->second_coroutine
-    _->case second_coroutine of
-        Done->first_coroutine
-        _->Then {first_coroutine=first_coroutine,second_coroutine=second_coroutine}
+instance Functor (Raw_coroutine a) where
+    fmap=raw_coroutine_fmap
 
-instance Functor (Serial_coroutine a) where
-    fmap=serial_coroutine_fmap
+raw_coroutine_fmap::(a->b)->Raw_coroutine c a->Raw_coroutine c b
+raw_coroutine_fmap function raw_coroutine=case raw_coroutine of
+    Raw_coroutine {multiple_coroutine,value}->Raw_coroutine {multiple_coroutine=multiple_coroutine,value=function value}
 
-serial_coroutine_fmap::(a->b)->Serial_coroutine c a->Serial_coroutine c b
-serial_coroutine_fmap function serial_coroutine=case serial_coroutine of
-    Serial_coroutine {coroutine,value}->Serial_coroutine {coroutine=coroutine,value=function value}
+instance Applicative (Raw_coroutine a) where
+    pure=raw_coroutine_pure
+    (<*>)=raw_coroutine_apply
 
-instance Applicative (Serial_coroutine a) where
-    pure=serial_coroutine_pure
-    (<*>)=serial_coroutine_apply
+raw_coroutine_pure::a->Raw_coroutine b a
+raw_coroutine_pure value=Raw_coroutine {multiple_coroutine=DSeq.empty,value=value}
 
-serial_coroutine_pure::a->Serial_coroutine b a
-serial_coroutine_pure value=Serial_coroutine {coroutine=Done,value=value}
+raw_coroutine_apply::Raw_coroutine a (b->c)->Raw_coroutine a b->Raw_coroutine a c
+raw_coroutine_apply first_raw_coroutine second_raw_coroutine=case first_raw_coroutine of
+    Raw_coroutine {multiple_coroutine=first_multiple_coroutine,value=function}->case second_raw_coroutine of
+        Raw_coroutine {multiple_coroutine=second_multiple_coroutine,value=value}->Raw_coroutine {multiple_coroutine=first_multiple_coroutine DSeq.>< second_multiple_coroutine,value=function value}
 
-serial_coroutine_apply::Serial_coroutine a (b->c)->Serial_coroutine a b->Serial_coroutine a c
-serial_coroutine_apply first_serial_coroutine second_serial_coroutine=case first_serial_coroutine of
-    Serial_coroutine {coroutine=first_coroutine,value=function}->case second_serial_coroutine of
-        Serial_coroutine {coroutine=second_coroutine,value=value}->Serial_coroutine {coroutine=combine_coroutine first_coroutine second_coroutine,value=function value}
-
-instance Monad (Serial_coroutine a) where
+instance Monad (Raw_coroutine a) where
     return=pure
-    (>>=)=serial_coroutine_bind
+    (>>=)=raw_coroutine_bind
 
-serial_coroutine_bind::Serial_coroutine a b->(b->Serial_coroutine a c)->Serial_coroutine a c
-serial_coroutine_bind serial_coroutine function=case serial_coroutine of
-    Serial_coroutine {coroutine,value}->case function value of
-        Serial_coroutine {coroutine=new_coroutine,value=new_value}->Serial_coroutine {coroutine=combine_coroutine coroutine new_coroutine,value=new_value}
-
-data Parallel_coroutine a b=Parallel_coroutine {multiple_coroutine::DSeq.Seq (Coroutine a),value::b}
-
-instance Functor (Parallel_coroutine a) where
-    fmap=parallel_coroutine_fmap
-
-parallel_coroutine_fmap::(a->b)->Parallel_coroutine c a->Parallel_coroutine c b
-parallel_coroutine_fmap function parallel_coroutine=case parallel_coroutine of
-    Parallel_coroutine {multiple_coroutine,value}->Parallel_coroutine {multiple_coroutine=multiple_coroutine,value=function value}
-
-instance Applicative (Parallel_coroutine a) where
-    pure=parallel_coroutine_pure
-    (<*>)=parallel_coroutine_apply
-
-parallel_coroutine_pure::a->Parallel_coroutine b a
-parallel_coroutine_pure value=Parallel_coroutine {multiple_coroutine=DSeq.empty,value=value}
-
-parallel_coroutine_apply::Parallel_coroutine a (b->c)->Parallel_coroutine a b->Parallel_coroutine a c
-parallel_coroutine_apply first_parallel_coroutine second_parallel_coroutine=case first_parallel_coroutine of
-    Parallel_coroutine {multiple_coroutine=first_multiple_coroutine,value=function}->case second_parallel_coroutine of
-        Parallel_coroutine {multiple_coroutine=second_multiple_coroutine,value=value}->Parallel_coroutine {multiple_coroutine=first_multiple_coroutine DSeq.>< second_multiple_coroutine,value=function value}
-
-instance Monad (Parallel_coroutine a) where
-    return=pure
-    (>>=)=parallel_coroutine_bind
-
-parallel_coroutine_bind::Parallel_coroutine a b->(b->Parallel_coroutine a c)->Parallel_coroutine a c
-parallel_coroutine_bind parallel_coroutine function=case parallel_coroutine of
-    Parallel_coroutine {multiple_coroutine,value}->case function value of
-        Parallel_coroutine {multiple_coroutine=new_multiple_coroutine,value=new_value}->Parallel_coroutine {multiple_coroutine=multiple_coroutine DSeq.>< new_multiple_coroutine,value=new_value}
+raw_coroutine_bind::Raw_coroutine a b->(b->Raw_coroutine a c)->Raw_coroutine a c
+raw_coroutine_bind raw_coroutine function=case raw_coroutine of
+    Raw_coroutine {multiple_coroutine,value}->case function value of
+        Raw_coroutine {multiple_coroutine=new_multiple_coroutine,value=new_value}->Raw_coroutine {multiple_coroutine=multiple_coroutine DSeq.>< new_multiple_coroutine,value=new_value}
 
 data Insert a b=Insert {insert_strategy::Insert_strategy,value::b}
 

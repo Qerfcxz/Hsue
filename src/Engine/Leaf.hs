@@ -78,9 +78,9 @@ create_widget this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {initial_min_index,initial_max_index,index,multiple_insert,serial_coroutine}->do
+    Coroutine_request {initial_min_index,initial_max_index,index,multiple_insert,raw_coroutine}->do
         (coroutine_state,max_index,min_index,new_engine)<-init_multiple_insert engine initial_min_index initial_max_index init_coroutine_state multiple_insert DIM.empty
-        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=coroutine_state,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine serial_coroutine) in linear_coroutine})
+        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=coroutine_state,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine raw_coroutine) in linear_coroutine})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {origin,matrix,maybe_clip,red,green,blue,alpha,visual_request}->do
