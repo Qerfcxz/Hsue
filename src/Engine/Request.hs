@@ -157,9 +157,9 @@ for_unlock this_widget engine=case this_widget of
 
 for_unlock_coroutine::Engine a->Coroutine_state a->IO (Engine a,Coroutine_state a)
 for_unlock_coroutine engine coroutine_state=case coroutine_state of
-    Coroutine_state {widget,variable,program_counter}->do
+    Coroutine_state {widget,variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->do
         (new_engine,new_widget)<-for_unlock widget engine
-        return (new_engine,Coroutine_state {widget=new_widget,variable=variable,program_counter=program_counter})
+        return (new_engine,Coroutine_state {widget=new_widget,variable=variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index})
 
 update_article::DIM.IntMap Font->Row->Row
 update_article font row=case row of

@@ -74,11 +74,11 @@ update_all_widget update this_widget=case this_widget of
 
 update_coroutine_state::(Widget a->Widget a)->Coroutine_state a->Coroutine_state a
 update_coroutine_state update coroutine_state=case coroutine_state of
-    Coroutine_state {widget,variable,program_counter}->Coroutine_state {widget=update widget,variable=variable,program_counter=program_counter}
+    Coroutine_state {widget,variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->Coroutine_state {widget=update widget,variable=variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index}
 
 functor_update_coroutine_state::Functor b=>(Widget a->b (Widget a))->Coroutine_state a->b (Coroutine_state a)
 functor_update_coroutine_state update coroutine_state=case coroutine_state of
-    Coroutine_state {widget,variable,program_counter}->fmap (\this_widget->Coroutine_state {widget=this_widget,variable=variable,program_counter=program_counter}) (update widget)
+    Coroutine_state {widget,variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->fmap (\this_widget->Coroutine_state {widget=this_widget,variable=variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index}) (update widget)
 
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr this_value->FS.poke this_ptr this_value>>return (FP.plusPtr this_ptr size)) ptr value)

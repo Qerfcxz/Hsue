@@ -12,13 +12,13 @@ import qualified Data.IntSet as DIS
 import qualified Foreign.C.Types as FCT
 
 remove_window::Int->Engine a->IO (Engine a)
-remove_window window_id engine=let (new_window,window)=intmap_delete_lookup window_id engine.window in case window of
+remove_window window_id engine=let (window,single_window)=intmap_delete_lookup window_id engine.window in case single_window of
     Window {sdl_window_id,sdl_window,graphics_pipeline}->do
         catch_false (F.sdl_wait_for_gpu_idle engine.device)
         F.sdl_release_window_from_gpu_device engine.device sdl_window
         F.sdl_release_gpu_graphics_pipeline engine.device graphics_pipeline
         F.sdl_destroy_window sdl_window
-        return (engine {window=new_window,window_map=map_delete sdl_window_id engine.window_map})
+        return (engine {window=window,window_map=map_delete sdl_window_id engine.window_map})
 
 adaptive_window::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(FCT.CFloat,FCT.CFloat)
 adaptive_window design_width design_height width height=if design_width*height<design_height*width then (design_height/height*width,design_height) else (design_width,design_width/width*height)
