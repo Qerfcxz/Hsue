@@ -29,4 +29,4 @@ remove_node_leaf::Int->Engine a->IO (Engine a)
 remove_node_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
 
 remove_node_node::Int->Engine a->IO (Engine a)
-remove_node_node node_id engine=let node=intmap_lookup node_id engine.node in remove_node_a node.leaf_child node.node_child (engine {node=intmap_delete node_id engine.node})
+remove_node_node node_id engine=let (node,single_node)=intmap_delete_lookup node_id engine.node in remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})

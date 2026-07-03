@@ -136,7 +136,7 @@ loop_engine_on sdl_event engine=do
     if FMU.toBool value
         then do
             event_type<-I.sdl_event_type sdl_event
-            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+get_interval engine.timer in loop_event_b (not switch) (Time {tick=count,time=time,interval=get_interval engine.timer}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
+            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
         else error "loop_engine_on: error 1"
 
 loop_engine_on_a::FP.Ptr ()->Engine a->IO ()
@@ -145,7 +145,7 @@ loop_engine_on_a sdl_event engine=do
     if FMU.toBool value
         then do
             event_type<-I.sdl_event_type sdl_event
-            if event_type==engine.event_number then let count=engine.count+1 in let time=engine.time+get_interval engine.timer in loop_event_b True (Time {tick=count,time=time,interval=get_interval engine.timer}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
+            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
         else error "loop_engine_on_a: error 1"
 
 get_interval::Timer->DW.Word64
@@ -171,15 +171,15 @@ loop_event on event_type sdl_event engine=case event_type of
     I.SDL_EVENT_KEY_UP->do
         sdl_window_id<-I.sdl_keyboardevent_windowid sdl_event
         sdl_keycode<-I.sdl_keyboardevent_key sdl_event
-        let change=to_key sdl_keycode in let maintain=DSet.delete change engine.key in let new_engine=engine {key=maintain} in case DM.lookup sdl_window_id engine.window_map of
+        let change=to_key sdl_keycode in let maintain=DSet.delete change engine.key in case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
-            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event new_engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
     I.SDL_EVENT_KEY_DOWN->do
         sdl_window_id<-I.sdl_keyboardevent_windowid sdl_event
         sdl_keycode<-I.sdl_keyboardevent_key sdl_event
-        let change=to_key sdl_keycode in let maintain=DSet.insert change engine.key in let new_engine=engine {key=maintain} in case DM.lookup sdl_window_id engine.window_map of
+        let change=to_key sdl_keycode in let maintain=DSet.insert change engine.key in case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
-            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event new_engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
     _->loop_event_a on sdl_event engine
 
 loop_event_a::Bool->FP.Ptr ()->Engine a->IO ()

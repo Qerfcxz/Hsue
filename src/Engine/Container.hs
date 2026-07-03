@@ -3,6 +3,7 @@ module Engine.Container where
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
+import qualified Data.Tuple as DT
 
 map_lookup::Ord a=>a->DM.Map a b->b
 map_lookup key this_map=case DM.lookup key this_map of
@@ -38,6 +39,9 @@ intmap_delete_lookup::Int->DIM.IntMap a->(DIM.IntMap a,a)
 intmap_delete_lookup key intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ _->Nothing) key intmap in case maybe_value of
     Just value->(new_intmap,value)
     _->error "intmap_delete_lookup: error 1"
+
+intmap_delete_maybe_lookup::Int->DIM.IntMap a->(DIM.IntMap a,Maybe a)
+intmap_delete_maybe_lookup key intmap=DT.swap (DIM.updateLookupWithKey (\_ _->Nothing) key intmap)
 
 intmap_update::Int->(a->a)->DIM.IntMap a->DIM.IntMap a
 intmap_update key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of

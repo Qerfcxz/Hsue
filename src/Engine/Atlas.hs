@@ -20,7 +20,7 @@ init_atlas width height=Leaf_atlas {rectangle=Rectangle {left=0,down=0,right=wid
 
 atlas_insert::DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas of
-    Just (new_atlas,left,down,right,up)->let new_left=left+padding in let new_down=down+padding in let new_right=right-padding in let new_up=up-padding in (new_atlas,new_left,new_down,new_right,new_up)
+    Just (new_atlas,left,down,right,up)->(new_atlas,left+padding,down+padding,right-padding,up-padding)
     _->error "atlas_insert: error 1"
 
 atlas_insert_a::DW.Word32->DW.Word32->Atlas->Maybe (Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
