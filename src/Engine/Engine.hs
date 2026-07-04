@@ -36,7 +36,7 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=F.sdl_quit
 
-create_engine::a->(Engine a->Event->Maybe Int)->(Engine a->Event->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a)
+create_engine::a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a)
 create_engine state main_id projection_strategy picture_size vertex_size index_size parameter_size initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range=do
     device<-F.sdl_create_gpu_device I.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
@@ -226,29 +226,29 @@ run_request switch engine=case engine.request of
         run_request (switch/=new_switch) new_engine
 
 run_event::Event->Engine a->Engine a
-run_event event engine=case engine.main_id engine event of
+run_event event engine=case engine.main_id event engine of
     Nothing->engine
     Just leaf_id->run_event_a leaf_id event engine
 
 run_event_a::Int->Event->Engine a->Engine a
-run_event_a leaf_id event engine=let (next,update,leaf)=intmap_functor_update leaf_id (\projection->run_event_b projection event engine) engine.leaf in let new_engine=update (engine {leaf=leaf}) in case next new_engine of
+run_event_a leaf_id event engine=let (next,update,leaf)=intmap_functor_update leaf_id (\projection->let (new_projection,new_update,new_next)=run_event_b event engine projection in (new_next,new_update,new_projection)) engine.leaf in let new_engine=update (engine {leaf=leaf}) in case next new_engine of
     Nothing->new_engine
     Just new_leaf_id->run_event_a new_leaf_id event new_engine
 
-run_event_b::Projection a->Event->Engine a->(Engine a->Maybe Int,Engine a->Engine a,Projection a)
-run_event_b projection event engine=case projection of
-    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (update,next,widget)=run_widget (lookup_projection_object projection) new_event engine in ((`next` new_event),update,insert_projection_object widget projection)
-    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (update,next,widget)=run_widget (lookup_projection_object projection) new_event engine in ((`next` new_event),update,insert_projection_object widget projection)
+run_event_b::Event->Engine a->Projection a->(Projection a,Engine a->Engine a,Engine a->Maybe Int)
+run_event_b event engine projection=case projection of
+    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (widget,update,next)=run_widget new_event engine (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
+    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (widget,update,next)=run_widget new_event engine (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
 
-run_widget::Widget a->Event->Engine a->(Engine a->Engine a,Engine a->Event->Maybe Int,Widget a)
-run_widget this_widget event engine=case this_widget of
-    Double {which,first_widget,second_widget}->if which then let (update,next,new_first_widget)=run_widget first_widget event engine in (update,next,Double {which=which,first_widget=new_first_widget,second_widget=second_widget}) else let (update,next,new_second_widget)=run_widget second_widget event engine in (update,next,Double {which=which,first_widget=first_widget,second_widget=new_second_widget})
-    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (update,next,new_group_widget)=intmap_functor_update index (\widget->run_widget widget event engine) group_widget in (update,next,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget})
-    Trigger {next,trigger}->(trigger event,next,this_widget)
-    Io_trigger {next,io_trigger}->(create_request (Io {io=io_trigger event}),next,this_widget)
-    Mix_trigger {next,mix_trigger,order}->(let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next,this_widget)
-    Widget_trigger {next,widget_trigger,widget}->let (update,new_widget)=widget_trigger widget event engine in (update,next,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget})
-    Widget_io_trigger {next,widget_io_trigger,widget}->let (update,new_widget)=widget_io_trigger widget event engine in (create_request (Io {io=update}),next,Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget})
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (update,io_update,new_widget)=widget_mix_trigger widget event engine in (if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
-    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->let (update,next,new_coroutine_state)=intmap_functor_update index (functor_update_coroutine_state (\widget->run_widget widget event engine)) coroutine_state in (update,next,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine})
+run_widget::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Event->Engine a->Maybe Int)
+run_widget event engine this_widget=case this_widget of
+    Double {which,first_widget,second_widget}->if which then let (new_first_widget,update,next)=run_widget event engine first_widget in (Double {which=which,first_widget=new_first_widget,second_widget=second_widget},update,next) else let (new_second_widget,update,next)=run_widget event engine second_widget in (Double {which=which,first_widget=first_widget,second_widget=new_second_widget},update,next)
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (next,update,new_group_widget)=intmap_functor_update index (\widget->let (new_widget,new_update,new_next)=run_widget event engine widget in (new_next,new_update,new_widget)) group_widget in (Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget},update,next)
+    Trigger {next,trigger}->(this_widget,trigger event,next)
+    Io_trigger {next,io_trigger}->(this_widget,create_request (Io {io=io_trigger event}),next)
+    Mix_trigger {next,mix_trigger,order}->(this_widget,let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
+    Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in (Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget},update,next)
+    Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in (Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget},create_request (Io {io=update}),next)
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget},if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->let (next,update,new_coroutine_state)=intmap_functor_update index (functor_update_coroutine_state (\widget->let (new_widget,new_update,new_next)=run_widget event engine widget in (new_next,new_update,new_widget))) coroutine_state in (Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine},update,next)
     _->error "run_widget: error 1"

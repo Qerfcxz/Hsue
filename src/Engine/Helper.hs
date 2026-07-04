@@ -52,6 +52,16 @@ update_widget update this_widget=case this_widget of
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=intmap_update index (update_coroutine_state (update_widget update)) coroutine_state,linear_coroutine=linear_coroutine}
     _->update this_widget
 
+limited_update_widget::Int->(Widget a->Widget a)->Widget a->Widget a
+limited_update_widget depth update this_widget=if depth<=0 then update this_widget else case this_widget of
+    Double {which,first_widget,second_widget}->if which then Double {which=which,first_widget=limited_update_widget (depth-1) update first_widget,second_widget=second_widget} else Double {which=which,first_widget=first_widget,second_widget=limited_update_widget (depth-1) update second_widget}
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=intmap_update index (limited_update_widget (depth-1) update) group_widget}
+    Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=limited_update_widget (depth-1) update widget}
+    Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=limited_update_widget (depth-1) update widget}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=limited_update_widget (depth-1) update widget}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=intmap_update index (update_coroutine_state (limited_update_widget (depth-1) update)) coroutine_state,linear_coroutine=linear_coroutine}
+    _->update this_widget
+
 functor_update_widget::Functor b=>(Widget a->b (Widget a))->Widget a->b (Widget a)
 functor_update_widget update this_widget=case this_widget of
     Double {which,first_widget,second_widget}->if which then fmap (\this_first_widget->Double {which=which,first_widget=this_first_widget,second_widget=second_widget}) (functor_update_widget update first_widget) else fmap (\this_second_widget->Double {which=which,first_widget=first_widget,second_widget=this_second_widget}) (functor_update_widget update second_widget)
@@ -60,6 +70,16 @@ functor_update_widget update this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->fmap (\this_this_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=this_this_widget}) (functor_update_widget update widget)
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->fmap (\this_this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_this_widget}) (functor_update_widget update widget)
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->fmap (\this_coroutine_state->Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=this_coroutine_state,linear_coroutine=linear_coroutine}) (intmap_functor_update index (functor_update_coroutine_state (functor_update_widget update)) coroutine_state)
+    _->update this_widget
+
+functor_limited_update_widget::Functor b=>Int->(Widget a->b (Widget a))->Widget a->b (Widget a)
+functor_limited_update_widget depth update this_widget=if depth<=0 then update this_widget else case this_widget of
+    Double {which,first_widget,second_widget}->if which then fmap (\this_first_widget->Double {which=which,first_widget=this_first_widget,second_widget=second_widget}) (functor_limited_update_widget (depth-1) update first_widget) else fmap (\this_second_widget->Double {which=which,first_widget=first_widget,second_widget=this_second_widget}) (functor_limited_update_widget (depth-1) update second_widget)
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->fmap (\this_group_widget->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=this_group_widget}) (intmap_functor_update index (functor_limited_update_widget (depth-1) update) group_widget)
+    Widget_trigger {next,widget_trigger,widget}->fmap (\this_this_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=this_this_widget}) (functor_limited_update_widget (depth-1) update widget)
+    Widget_io_trigger {next,widget_io_trigger,widget}->fmap (\this_this_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=this_this_widget}) (functor_limited_update_widget (depth-1) update widget)
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->fmap (\this_this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_this_widget}) (functor_limited_update_widget (depth-1) update widget)
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->fmap (\this_coroutine_state->Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=this_coroutine_state,linear_coroutine=linear_coroutine}) (intmap_functor_update index (functor_update_coroutine_state (functor_limited_update_widget (depth-1) update)) coroutine_state)
     _->update this_widget
 
 update_all_widget::(Widget a->Widget a)->Widget a->Widget a

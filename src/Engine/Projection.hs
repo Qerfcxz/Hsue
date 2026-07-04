@@ -11,11 +11,11 @@ import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Tuple as DT
 
-create_image::Int->Engine a->Engine a
-create_image leaf_id engine=engine {leaf=intmap_update leaf_id (create_projection_image engine) engine.leaf}
+create_image::Int->Event->Engine a->Engine a
+create_image leaf_id event engine=engine {leaf=intmap_update leaf_id (create_projection_image event engine) engine.leaf}
 
-create_image_safe::Int->Engine a->Engine a
-create_image_safe leaf_id engine=engine {leaf=DIM.adjust (create_projection_image_safe engine) leaf_id engine.leaf}
+create_image_safe::Int->Event->Engine a->Engine a
+create_image_safe leaf_id event engine=engine {leaf=DIM.adjust (create_projection_image_safe event engine) leaf_id engine.leaf}
 
 remove_image::Int->Engine a->Engine a
 remove_image leaf_id engine=engine {leaf=intmap_update leaf_id remove_projection_image engine.leaf}
@@ -23,18 +23,18 @@ remove_image leaf_id engine=engine {leaf=intmap_update leaf_id remove_projection
 remove_image_safe::Int->Engine a->Engine a
 remove_image_safe leaf_id engine=engine {leaf=DIM.adjust remove_projection_image_safe leaf_id engine.leaf}
 
-do_widget_transform::DS.Seq Int->Engine a->Widget a->Widget a
-do_widget_transform ancestry_id engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform engine) widget ancestry_id
+do_widget_transform::DS.Seq Int->Event->Engine a->Widget a->Widget a
+do_widget_transform ancestry_id event engine widget=DF.foldr (\node_id->(intmap_lookup node_id engine.node).widget_transform event engine) widget ancestry_id
 
-create_projection_image::Engine a->Projection a->Projection a
-create_projection_image engine projection=case projection of
-    Without {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id engine object}
+create_projection_image::Event->Engine a->Projection a->Projection a
+create_projection_image event engine projection=case projection of
+    Without {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id event engine object}
     _->error "create_projection_image: error 1"
 
-create_projection_image_safe::Engine a->Projection a->Projection a
-create_projection_image_safe engine projection=case projection of
-    Without {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id engine object}
-    With {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id engine object}
+create_projection_image_safe::Event->Engine a->Projection a->Projection a
+create_projection_image_safe event engine projection=case projection of
+    Without {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id event engine object}
+    With {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id event engine object}
 
 remove_projection_image::Projection a->Projection a
 remove_projection_image projection=case projection of

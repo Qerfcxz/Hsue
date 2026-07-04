@@ -10,7 +10,7 @@ import Engine.Type
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 
-create_node::Int->Maybe Int->(Engine a->Event->Event)->(Engine a->Widget a->Widget a)->Engine a->Engine a
+create_node::Int->Maybe Int->(Engine a->Event->Event)->(Event->Engine a->Widget a->Widget a)->Engine a->Engine a
 create_node node_id maybe_father_id event_transform widget_transform engine=case maybe_father_id of
     Nothing->engine {node=intmap_insert node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
     Just father_id->let (node,single_node)=intmap_update_lookup father_id (\this_node->this_node {node_child=intset_insert node_id this_node.node_child}) engine.node in engine {node=intmap_insert node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
