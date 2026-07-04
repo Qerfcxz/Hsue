@@ -93,7 +93,7 @@ collect_convex_polygon index=let (quotient,remainder)=divMod index 3 in let new_
     _->error "collect_convex_polygon: error 1"
 
 collect_text::Point->FCT.CFloat->Row->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)
-collect_text origin this_y this_row primitive=case this_row of
+collect_text origin this_y row primitive=case row of
     Blank->primitive
     Row {row_core,x,y}->DF.foldl' (flip (collect_character origin x (this_y-y))) primitive row_core
 

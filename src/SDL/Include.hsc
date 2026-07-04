@@ -721,6 +721,9 @@ sdl_surface_w ptr=(#peek SDL_Surface,w) ptr
 sdl_surface_h::Ptr SDL_Surface->IO CInt
 sdl_surface_h ptr=(#peek SDL_Surface,h) ptr
 
+sdl_surface_pitch::Ptr SDL_Surface->IO CInt
+sdl_surface_pitch ptr=(#peek SDL_Surface,pitch) ptr
+
 sdl_surface_pixels::Ptr SDL_Surface->IO (Ptr ())
 sdl_surface_pixels ptr=(#peek SDL_Surface,pixels) ptr
 

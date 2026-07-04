@@ -42,15 +42,17 @@ load_texture device picture_transfer_buffer picture_size path=FCS.withCString pa
     F.sdl_destroy_surface surface
     width<-I.sdl_surface_w new_surface
     height<-I.sdl_surface_h new_surface
+    pitch<-I.sdl_surface_pitch new_surface
     pixel<-I.sdl_surface_pixels new_surface
     let new_width=fromIntegral width
     let new_height=fromIntegral height
-    let size=4*width*height
+    let new_pitch=4*width
+    let size=new_pitch*height
     CM.when (picture_size<size) (error "load_texture: error 1")
     texture<-FMU.with (I.SDL_GPUTextureCreateInfo {sdl_type=I.sdl_gpu_texturetype_2d,sdl_format=I.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=I.sdl_gpu_textureusage_sampler,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=I.sdl_gpu_samplecount_1}) (return_catch_null . F.sdl_create_gpu_texture device)
     map_transfer_buffer<-F.sdl_map_gpu_transfer_buffer device picture_transfer_buffer (FMU.fromBool True)
     catch_null map_transfer_buffer
-    FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size)
+    if pitch==new_pitch then FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size) else CM.forM_ [0..height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (fromIntegral (y*new_pitch))) (FP.plusPtr pixel (fromIntegral (y*pitch))) (fromIntegral new_pitch)
     F.sdl_unmap_gpu_transfer_buffer device picture_transfer_buffer
     command_buffer<-F.sdl_acquire_gpu_command_buffer device
     catch_null command_buffer
