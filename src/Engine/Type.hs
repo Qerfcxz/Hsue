@@ -226,7 +226,7 @@ data Projection_move=Object_move {leaf_id::Int,consume::Bool}|Image_move {leaf_i
 
 data Insert_strategy=Min_strategy|Max_strategy|Index_strategy {seat::Int}
 
-data Event=Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}
+data Event=Empty|Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}
 
 data Action=Close|Resize {width::FCT.CFloat,height::FCT.CFloat}|Press {press::Press,change::Key,maintain::DSet.Set Key}
 
