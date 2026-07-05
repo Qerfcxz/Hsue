@@ -21,7 +21,7 @@ from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {lea
 from_same_insert_widget_a::DS.Seq Insert_strategy->Widget a->Widget a->Widget a
 from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state widget) coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state widget) coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine,iterative=iterative}
     _->error "from_same_insert_widget_a: error 1"
 
 from_same_insert_widget_b::Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
@@ -38,7 +38,7 @@ from_insert_widget leaf_id insert_widget engine=engine {leaf=intmap_update leaf_
 from_insert_widget_a::DS.Seq (Insert a (Widget a))->Widget a->Widget a
 from_insert_widget_a insert_widget widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_insert_widget_b min_index max_index id insert_widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index init_coroutine_state insert_widget coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,coroutine_state,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index init_coroutine_state insert_widget coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine,iterative=iterative}
     _->error "from_insert_widget_a: error 1"
 
 from_insert_widget_b::Int->Int->(Widget a->b)->DS.Seq (Insert a (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
@@ -78,9 +78,9 @@ create_widget this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {initial_min_index,initial_max_index,index,insert_widget_request,raw_coroutine}->do
+    Coroutine_request {initial_min_index,initial_max_index,index,insert_widget_request,raw_coroutine,iterative}->do
         (coroutine_state,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index init_coroutine_state insert_widget_request DIM.empty
-        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=coroutine_state,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine raw_coroutine) in linear_coroutine})
+        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,coroutine_state=coroutine_state,linear_coroutine=let (linear_coroutine,_)=from_coroutine (to_coroutine raw_coroutine) in linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {origin,matrix,maybe_clip,red,green,blue,alpha,visual_request}->do
