@@ -117,7 +117,7 @@ move_lookup projection_move engine=case projection_move of
 
 consume_widget::Widget a->Widget a
 consume_widget widget=case widget of
-    Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,initial_max_index=initial_max_index,min_index=initial_min_index,max_index=initial_max_index,submit=DIM.empty}
+    Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
     _->error "consume_widget: error 1"
 
 for_submit::DIM.IntMap (DS.Seq Submit)->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Maybe Int,DW.Word32,DW.Word32))
