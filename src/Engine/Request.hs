@@ -138,9 +138,9 @@ for_unlock this_widget engine=case this_widget of
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
-    Coroutine {initial_min_index,min_index,initial_max_index,max_index,variable_length,index,coroutine_state,linear_coroutine,iterative}->do
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->do
         (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate key this_coroutine_state->intmap_monad_accumulate key (`for_unlock_coroutine` this_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
-        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,index=index,coroutine_state=new_coroutine_state,linear_coroutine=linear_coroutine,iterative=iterative})
+        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked
             then do
@@ -157,9 +157,9 @@ for_unlock this_widget engine=case this_widget of
 
 for_unlock_coroutine::Engine a->Coroutine_state a->IO (Engine a,Coroutine_state a)
 for_unlock_coroutine engine coroutine_state=case coroutine_state of
-    Coroutine_state {widget,variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->do
+    Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->do
         (new_engine,new_widget)<-for_unlock widget engine
-        return (new_engine,Coroutine_state {widget=new_widget,variable=variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index})
+        return (new_engine,Coroutine_state {widget=new_widget,variable=variable,user_variable=user_variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index})
 
 update_article::DIM.IntMap Font->Row->Row
 update_article font row=case row of

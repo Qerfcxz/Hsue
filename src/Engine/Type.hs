@@ -23,7 +23,7 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-newtype Dynamic_bool a=Dynamic_bool {dynamic_bool::Event->Engine a->Widget a->Bool}
+newtype Dynamic_bool a=Dynamic_bool {dynamic_bool::(Int->Int)->Event->Engine a->Widget a->Bool}
 
 instance Eq (Dynamic_bool a) where
     (==)=dynamic_bool_equal
@@ -81,19 +81,19 @@ dynamic_bool_bit int=if int==0 then Dynamic_bool {dynamic_bool=dynamic_bool_true
 dynamic_bool_pop_count::Dynamic_bool a->Int
 dynamic_bool_pop_count _=error "dynamic_bool_pop_count: error 1"
 
-dynamic_bool_true::Event->Engine a->Widget a->Bool
-dynamic_bool_true _ _ _=True
+dynamic_bool_true::(Int->Int)->Event->Engine a->Widget a->Bool
+dynamic_bool_true _ _ _ _=True
 
-dynamic_bool_false::Event->Engine a->Widget a->Bool
-dynamic_bool_false _ _ _=False
+dynamic_bool_false::(Int->Int)->Event->Engine a->Widget a->Bool
+dynamic_bool_false _ _ _ _=False
 
-dynamic_bool_unary_operator::(Bool->Bool)->(Event->Engine a->Widget a->Bool)->Event->Engine a->Widget a->Bool
-dynamic_bool_unary_operator operator dynamic_bool event engine widget=operator (dynamic_bool event engine widget)
+dynamic_bool_unary_operator::(Bool->Bool)->((Int->Int)->Event->Engine a->Widget a->Bool)->(Int->Int)->Event->Engine a->Widget a->Bool
+dynamic_bool_unary_operator operator dynamic_bool getter event engine widget=operator (dynamic_bool getter event engine widget)
 
-dynamic_bool_binary_operator::(Bool->Bool->Bool)->(Event->Engine a->Widget a->Bool)->(Event->Engine a->Widget a->Bool)->Event->Engine a->Widget a->Bool
-dynamic_bool_binary_operator operator first_dynamic_bool second_dynamic_bool event engine widget=operator (first_dynamic_bool event engine widget) (second_dynamic_bool event engine widget)
+dynamic_bool_binary_operator::(Bool->Bool->Bool)->((Int->Int)->Event->Engine a->Widget a->Bool)->((Int->Int)->Event->Engine a->Widget a->Bool)->(Int->Int)->Event->Engine a->Widget a->Bool
+dynamic_bool_binary_operator operator first_dynamic_bool second_dynamic_bool getter event engine widget=operator (first_dynamic_bool getter event engine widget) (second_dynamic_bool getter event engine widget)
 
-newtype Dynamic_int a=Dynamic_int {dynamic_int::Event->Engine a->Widget a->Int}
+newtype Dynamic_int a=Dynamic_int {dynamic_int::(Int->Int)->Event->Engine a->Widget a->Int}
 
 instance Num (Dynamic_int a) where
     (+)=dynamic_int_addition
@@ -116,16 +116,54 @@ dynamic_int_signum::Dynamic_int a->Dynamic_int a
 dynamic_int_signum dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator signum dynamic_int.dynamic_int}
 
 dynamic_int_from_integer::Integer->Dynamic_int a
-dynamic_int_from_integer integer=Dynamic_int {dynamic_int=const (const (const (fromInteger integer)))}
+dynamic_int_from_integer integer=Dynamic_int {dynamic_int=const (const (const (const (fromInteger integer))))}
 
 dynamic_int_negate::Dynamic_int a->Dynamic_int a
 dynamic_int_negate dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator negate dynamic_int.dynamic_int}
 
-dynamic_int_unary_operator::(Int->Int)->(Event->Engine a->Widget a->Int)->Event->Engine a->Widget a->Int
-dynamic_int_unary_operator operator dynamic_int event engine widget=operator (dynamic_int event engine widget)
+dynamic_int_unary_operator::(Int->Int)->((Int->Int)->Event->Engine a->Widget a->Int)->(Int->Int)->Event->Engine a->Widget a->Int
+dynamic_int_unary_operator operator dynamic_int getter event engine widget=operator (dynamic_int getter event engine widget)
 
-dynamic_int_binary_operator::(Int->Int->Int)->(Event->Engine a->Widget a->Int)->(Event->Engine a->Widget a->Int)->Event->Engine a->Widget a->Int
-dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int event engine widget=operator (first_dynamic_int event engine widget) (second_dynamic_int event engine widget)
+dynamic_int_binary_operator::(Int->Int->Int)->((Int->Int)->Event->Engine a->Widget a->Int)->((Int->Int)->Event->Engine a->Widget a->Int)->(Int->Int)->Event->Engine a->Widget a->Int
+dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int getter event engine widget=operator (first_dynamic_int getter event engine widget) (second_dynamic_int getter event engine widget)
+
+newtype Raw_coroutine a b=Raw_coroutine {iterator::Int->(Int,DSeq.Seq (Coroutine a),b)}
+
+instance Functor (Raw_coroutine a) where
+    fmap=raw_coroutine_fmap
+
+raw_coroutine_fmap::(a->b)->Raw_coroutine c a->Raw_coroutine c b
+raw_coroutine_fmap function raw_coroutine=Raw_coroutine {iterator=raw_coroutine_fmap_a function raw_coroutine.iterator}
+
+raw_coroutine_fmap_a::(a->b)->(Int->(Int,DSeq.Seq (Coroutine c),a))->Int->(Int,DSeq.Seq (Coroutine c),b)
+raw_coroutine_fmap_a function iterator int=let (new_int,coroutine_sequence,value)=iterator int in (new_int,coroutine_sequence,function value)
+
+instance Applicative (Raw_coroutine a) where
+    pure=raw_coroutine_pure
+    (<*>)=raw_coroutine_apply
+
+raw_coroutine_pure::a->Raw_coroutine b a
+raw_coroutine_pure value=Raw_coroutine {iterator=raw_coroutine_pure_a value}
+
+raw_coroutine_pure_a::a->Int->(Int,DSeq.Seq (Coroutine b),a)
+raw_coroutine_pure_a value int=(int,DSeq.empty,value)
+
+raw_coroutine_apply::Raw_coroutine a (b->c)->Raw_coroutine a b->Raw_coroutine a c
+raw_coroutine_apply first_raw_coroutine second_raw_coroutine=Raw_coroutine {iterator=raw_coroutine_apply_a first_raw_coroutine.iterator second_raw_coroutine.iterator}
+
+raw_coroutine_apply_a::(Int->(Int,DSeq.Seq (Coroutine a),b->c))->(Int->(Int,DSeq.Seq (Coroutine a),b))->Int->(Int,DSeq.Seq (Coroutine a),c)
+raw_coroutine_apply_a function_iterator value_iterator int=let (function_int,function_coroutine_sequence,function)=function_iterator int in
+    let (value_int,value_coroutine_sequence,value)=value_iterator function_int in (value_int,function_coroutine_sequence DSeq.>< value_coroutine_sequence,function value)
+
+instance Monad (Raw_coroutine a) where
+    return=pure
+    (>>=)=raw_coroutine_bind
+
+raw_coroutine_bind::Raw_coroutine a b->(b->Raw_coroutine a c)->Raw_coroutine a c
+raw_coroutine_bind raw_coroutine function=Raw_coroutine {iterator=raw_coroutine_bind_a raw_coroutine.iterator function}
+
+raw_coroutine_bind_a::(Int->(Int,DSeq.Seq (Coroutine a),b))->(b->Raw_coroutine a c)->Int->(Int,DSeq.Seq (Coroutine a),c)
+raw_coroutine_bind_a iterator function int=let (new_int,coroutine_sequence,value)=iterator int in let (new_new_int,new_coroutine_sequence,new_value)=(function value).iterator new_int in (new_new_int,coroutine_sequence DSeq.>< new_coroutine_sequence,new_value)
 
 data Extended a=Negative_infinity|Finite {number::a}|Positive_infinity deriving (Eq,Ord)
 
@@ -135,47 +173,17 @@ data Projection a=Without {ancestry_id::DSeq.Seq Int,object::Widget a}|With {anc
 
 data Node a=Node {ancestry_id::DSeq.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event->Event,widget_transform::Event->Engine a->Widget a->Widget a}
 
-data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a}|Group {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,index::Int,group_widget::DIM.IntMap (Widget a)}|Trigger {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget::Widget a}|Widget_io_trigger {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget::Widget a}|Widget_mix_trigger {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget::Widget a}|Coroutine {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,variable_length::Int,index::Int,coroutine_state::DIM.IntMap (Coroutine_state a),linear_coroutine::DIM.IntMap (Linear_coroutine a),iterative::Bool}|Store {store::Data}|Collector {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}
+data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a}|Group {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,index::Int,group_widget::DIM.IntMap (Widget a)}|Trigger {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget::Widget a}|Widget_io_trigger {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget::Widget a}|Widget_mix_trigger {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget::Widget a}|Coroutine {index::Int,initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,variable_length::Int,user_variable_length::Int,coroutine_state::DIM.IntMap (Coroutine_state a),layout::DVU.Vector (Int,Int),linear_coroutine::DIM.IntMap (Linear_coroutine a),iterative::Bool}|Store {store::Data}|Collector {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Event->Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
-data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a))}|Trigger_request {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget_request::Widget_request a}|Coroutine_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a)),raw_coroutine::Raw_coroutine a (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a))}|Trigger_request {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget_request::Widget_request a}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a)),raw_coroutine::Raw_coroutine a (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
 
-data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DSeq.Seq Int),main_index_group::DSeq.Seq Int,index_group_index::Int,program_counter_index::Int}
+data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DSeq.Seq Int),main_index_group::DSeq.Seq Int,index_group_index::Int,program_counter_index::Int}
 
-data Coroutine a=Done|Emit {emit::Event->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Then {coroutine_sequence::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Pause {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Skip {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}|Dynamic_clone {dynamic_int::Dynamic_int a,int::Int,coroutine::Coroutine a}|Case {dynamic_int::Dynamic_int a,int::Int,coroutine_sequence::DSeq.Seq (Coroutine a)}|Fork {int::Int,coroutine::Coroutine a,coroutine_sequence::DSeq.Seq (Coroutine a)}|Race {dynamic_int::Dynamic_int a,first_int::Int,second_int::Int,coroutine_sequence::DSeq.Seq (Coroutine a)}
+data Coroutine a=Done|Emit {emit::Event->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Then {coroutine_sequence::DSeq.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Pause {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Skip {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Assign {dynamic_int::Dynamic_int a,int::Int}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}|Dynamic_clone {dynamic_int::Dynamic_int a,int::Int,coroutine::Coroutine a}|Case {dynamic_int::Dynamic_int a,int::Int,coroutine_sequence::DSeq.Seq (Coroutine a)}|Fork {int::Int,coroutine::Coroutine a,coroutine_sequence::DSeq.Seq (Coroutine a)}|Race {dynamic_int::Dynamic_int a,first_int::Int,second_int::Int,coroutine_sequence::DSeq.Seq (Coroutine a)}
 
-data Linear_coroutine a=Linear_end|Linear_emit {emit::Event->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Linear_wait {int_index::Int}|Linear_kill_fork {int_index::Int}|Linear_countdown {int_index::Int}|Linear_wake {int_index::Int}|Linear_fork {code_index::Int}|Linear_yield {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_kill_clone {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_kill_group {int_index::Int,int::Int}|Linear_true_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_wake_group {int_index::Int,dynamic_int::Dynamic_int a,int::Int}|Linear_create_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a,int::Int}
-
-data Raw_coroutine a b=Raw_coroutine {coroutine_sequence::DSeq.Seq (Coroutine a),value::b}
-
-instance Functor (Raw_coroutine a) where
-    fmap=raw_coroutine_fmap
-
-raw_coroutine_fmap::(a->b)->Raw_coroutine c a->Raw_coroutine c b
-raw_coroutine_fmap function raw_coroutine=case raw_coroutine of
-    Raw_coroutine {coroutine_sequence,value}->Raw_coroutine {coroutine_sequence=coroutine_sequence,value=function value}
-
-instance Applicative (Raw_coroutine a) where
-    pure=raw_coroutine_pure
-    (<*>)=raw_coroutine_apply
-
-raw_coroutine_pure::a->Raw_coroutine b a
-raw_coroutine_pure value=Raw_coroutine {coroutine_sequence=DSeq.empty,value=value}
-
-raw_coroutine_apply::Raw_coroutine a (b->c)->Raw_coroutine a b->Raw_coroutine a c
-raw_coroutine_apply first_raw_coroutine second_raw_coroutine=case first_raw_coroutine of
-    Raw_coroutine {coroutine_sequence=first_coroutine_sequence,value=function}->case second_raw_coroutine of
-        Raw_coroutine {coroutine_sequence=second_coroutine_sequence,value=value}->Raw_coroutine {coroutine_sequence=first_coroutine_sequence DSeq.>< second_coroutine_sequence,value=function value}
-
-instance Monad (Raw_coroutine a) where
-    return=pure
-    (>>=)=raw_coroutine_bind
-
-raw_coroutine_bind::Raw_coroutine a b->(b->Raw_coroutine a c)->Raw_coroutine a c
-raw_coroutine_bind raw_coroutine function=case raw_coroutine of
-    Raw_coroutine {coroutine_sequence,value}->case function value of
-        Raw_coroutine {coroutine_sequence=new_coroutine_sequence,value=new_value}->Raw_coroutine {coroutine_sequence=coroutine_sequence DSeq.>< new_coroutine_sequence,value=new_value}
+data Linear_coroutine a=Linear_end|Linear_emit {emit::Event->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Linear_wait {int_index::Int}|Linear_kill_fork {int_index::Int}|Linear_countdown {int_index::Int}|Linear_wake {int_index::Int}|Linear_fork {code_index::Int}|Linear_yield {code_index::Int}|Linear_jump {code_index::Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_kill_clone {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_int {int_index::Int,int::Int}|Linear_kill_group {int_index::Int,int::Int}|Linear_true_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_wake_group {int_index::Int,dynamic_int::Dynamic_int a,int::Int}|Linear_assign {user_int_index::Int,clone_number::Int,dynamic_int::Dynamic_int a}|Linear_create_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a,int::Int}
 
 data Insert a b=Insert {insert_strategy::Insert_strategy,value::b}
 

@@ -30,6 +30,9 @@ intmap_insert key value intmap=let (maybe_value,new_intmap)=DIM.insertLookupWith
     Nothing->new_intmap
     _->error "intmap_insert: error 1"
 
+intmap_insert_maybe_lookup::Int->a->DIM.IntMap a->(DIM.IntMap a,Maybe a)
+intmap_insert_maybe_lookup key value intmap=DT.swap (DIM.insertLookupWithKey (\_ _ this_value->this_value) key value intmap)
+
 intmap_delete::Int->DIM.IntMap a->DIM.IntMap a
 intmap_delete key intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ _->Nothing) key intmap in case maybe_value of
     Nothing->error "intmap_delete: error 1"
