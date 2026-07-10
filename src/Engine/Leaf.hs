@@ -78,7 +78,7 @@ create_widget this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (linear_coroutine,address,size,variable_length,user_variable_length)=let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in from_coroutine (to_coroutine coroutine_sequence) int in do
+    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (linear_coroutine,size,address,variable_length,user_variable_length)=let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in from_coroutine (to_coroutine coroutine_sequence) int in do
         (coroutine_state,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index (init_coroutine_state variable_length user_variable_length) insert_widget_request DIM.empty
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
