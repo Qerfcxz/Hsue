@@ -32,6 +32,8 @@ library
         Engine.Text
         Engine.Type
         Engine.Window
+        MSDF.Function
+        MSDF.Type
         SDL.Function
         SDL.Include
         SDL.Type
@@ -39,11 +41,8 @@ library
     -- other-extensions:
     build-depends:
         base ^>=4.18.3.0,
-        aeson ==2.3.0.0,
         bytestring ==0.12.2.0,
         containers ==0.8,
-        directory ==1.3.11.0,
-        process ==1.6.30.0,
         text ==2.1.4,
         vector ==0.13.2.0
     hs-source-dirs:   src
@@ -59,15 +58,16 @@ executable Hsue
     -- other-extensions:
     build-depends:
         base ^>=4.18.3.0,
-        aeson ==2.3.0.0,
         bytestring ==0.12.2.0,
         containers ==0.8,
-        directory ==1.3.11.0,
-        process ==1.6.30.0,
         text ==2.1.4,
         vector ==0.13.2.0,
         Hsue
     extra-libraries:
+        msdf
+        msdf-atlas-gen
+        msdfgen-ext
+        msdfgen-core
         SDL3
         SDL3_image
     include-dirs:
@@ -75,5 +75,7 @@ executable Hsue
         C:\D\MSYS2\mingw64\include\SDL3_image
     extra-lib-dirs:
         C:\D\MSYS2\mingw64\lib
+        C:\D\msdf-atlas-gen-master\build
+        C:\D\msdf-atlas-gen-master\build\msdfgen
     hs-source-dirs:   app
     default-language: Haskell2010
