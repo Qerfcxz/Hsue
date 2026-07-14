@@ -121,9 +121,9 @@ to_extended number=Finite {number=number}
 
 from_extended::Num a=>Extended a->a
 from_extended extended=case extended of
-    Positive_infinity->0
-    Finite {number}->number
     Negative_infinity->0
+    Finite {number}->number
+    Positive_infinity->0
 
 quick_create_engine::(a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a))->a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a)
 quick_create_engine create_engine state main_id projection_strategy picture_size vertex_size index_size parameter_size maybe_interval padding width height font_size pixel_range=case maybe_interval of
