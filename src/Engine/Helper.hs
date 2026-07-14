@@ -9,6 +9,7 @@ import Engine.Type
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
+import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -120,9 +121,14 @@ to_extended number=Finite {number=number}
 
 from_extended::Num a=>Extended a->a
 from_extended extended=case extended of
-    Negative_infinity->0
-    Finite {number}->number
     Positive_infinity->0
+    Finite {number}->number
+    Negative_infinity->0
+
+quick_create_engine::(a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a))->a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a)
+quick_create_engine create_engine state main_id projection_strategy picture_size vertex_size index_size parameter_size maybe_interval padding width height font_size pixel_range=case maybe_interval of
+    Nothing->create_engine state main_id projection_strategy (picture_size*mebibyte) (vertex_size*mebibyte) (index_size*mebibyte) (parameter_size*mebibyte) 0 0 0 Nothing 0 padding width height font_size pixel_range
+    Just interval->create_engine state main_id projection_strategy (picture_size*mebibyte) (vertex_size*mebibyte) (index_size*mebibyte) (parameter_size*mebibyte) 0 0 0 (Just (div nanosecond interval)) 0 padding width height font_size pixel_range
 
 mebibyte::Num a=>a
 mebibyte=1048576
