@@ -8,11 +8,9 @@ import Engine.Atlas
 import Engine.Container
 import Engine.Helper
 import Engine.Type
-import qualified SDL.Function as F
-import qualified Data.Aeson as DA
-import qualified Data.ByteString as DBS
-import qualified Data.ByteString.Builder as DBSB
-import qualified Data.ByteString.Lazy as DBSL
+import qualified MSDF.Function as MSDFF
+import qualified MSDF.Type as MSDFT
+import qualified SDL.Function as SDLF
 import qualified Data.Char as DC
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
@@ -21,9 +19,12 @@ import qualified Data.Map as DM
 import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
 import qualified Data.Text as DT
+import qualified Data.Word as DW
+import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
-import qualified System.Directory as SD
-import qualified System.Process as SP
+import qualified Foreign.Marshal.Array as FMA
+import qualified Foreign.Ptr as FP
+import qualified Foreign.Storable as FS
 
 do_typesetting::FCT.CFloat->(Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat))->DSeq.Seq (DSeq.Seq Row)->(DSeq.Seq (DSeq.Seq Row),FCT.CFloat)
 do_typesetting height calculate_typesetting article=do_typesetting_a (-height) (`calculate_typesetting` article) 1 article DSeq.empty
@@ -80,43 +81,39 @@ update_font::DM.Map String (DSet.Set Char)->Engine a->IO (Engine a)
 update_font charset engine=DM.foldlWithKey' (\io_engine path char->io_engine>>=update_font_a path char) (return engine) charset
 
 update_font_a::String->DSet.Set Char->Engine a->IO (Engine a)
-update_font_a path char engine=let charset_path=path++"_charset_temporary" in let imageout_path=path++"_imageout_temporary" in let json_path=path++"_json_temporary" in case DM.lookup path engine.font_map of
-    Nothing->do
-        DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\unicode->DBSB.stringUtf8 (show unicode++" ")) (DIS.toAscList (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))))))
-        update_font_c engine.font_id path charset_path imageout_path json_path (engine {font_map=map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
+update_font_a path char engine=let charset=DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char)) in case DM.lookup path engine.font_map of
+    Nothing->update_font_b engine.font_id path charset (engine {font_map=map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->case DIM.lookup font_id engine.font of
-        Nothing->update_font_b font_id (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))) path charset_path imageout_path json_path engine
-        Just font->update_font_b font_id (DIS.difference (DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char))) (DIM.keysSet font.glyph)) path charset_path imageout_path json_path engine
+        Nothing->update_font_b font_id path charset engine
+        Just font->update_font_b font_id path (DIS.difference charset (DIM.keysSet font.glyph)) engine
 
-update_font_b::Int->DIS.IntSet->String->String->String->String->Engine a->IO (Engine a)
-update_font_b font_id codeset path charset_path imageout_path json_path engine=if DIS.null codeset then return engine else do
-    DBSL.writeFile charset_path (DBSB.toLazyByteString (DF.foldMap' (\unicode->DBSB.stringUtf8 (show unicode++" ")) (DIS.toAscList codeset)))
-    update_font_c font_id path charset_path imageout_path json_path engine
+update_font_b::Int->String->DIS.IntSet->Engine a->IO (Engine a)
+update_font_b font_id path charset engine=if DIS.null charset then return engine else FCS.withCString path $ \this_path->let size=DIS.size charset in FMA.allocaArray size $ \ptr_charset->do
+    update_font_c ptr_charset (DIS.toAscList charset)
+    ptr_msdf_output<-MSDFF.msdf_generator this_path ptr_charset (fromIntegral size) engine.font_size engine.pixel_range
+    catch_null ptr_msdf_output
+    msdf_output<-FS.peek ptr_msdf_output
+    case msdf_output of
+        MSDFT.MSDF_Output {msdf_pixel,msdf_width,msdf_height,msdf_descent,msdf_ascent,msdf_glyph,msdf_count}->let new_msdf_width=fromIntegral msdf_width in let new_msdf_height=fromIntegral msdf_height in do
+            texture<-from_pixel engine.device engine.picture_transfer_buffer engine.picture_size msdf_pixel new_msdf_width new_msdf_height
+            let (atlas,left,down,_,_)=atlas_insert new_msdf_width new_msdf_height engine.padding engine.atlas
+            copy_texture engine.device texture engine.texture left down new_msdf_width new_msdf_height
+            SDLF.sdl_release_gpu_texture engine.device texture
+            glyph<-update_font_d (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height msdf_glyph (fromIntegral msdf_count) 0 DIM.empty
+            MSDFF.msdf_cleaner ptr_msdf_output
+            case DIM.lookup font_id engine.font of
+                Nothing->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=glyph}) engine.font})
+                Just font->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=DIM.union glyph font.glyph}) engine.font})
 
-update_font_c::Int->String->String->String->String->Engine a->IO (Engine a)
-update_font_c font_id path charset_path imageout_path json_path engine=do
-    SP.callProcess "msdf-atlas-gen.exe" ["-font",path,"-charset",charset_path,"-format","png","-imageout",imageout_path,"-json",json_path,"-size",show engine.font_size,"-pxrange",show engine.pixel_range,"-yorigin","top"]
-    json<-DBS.readFile json_path
-    case DA.decodeStrict json::Maybe MSDF_Output of
-        Nothing->error "update_font_c: error 1"
-        Just output->do
-            (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size imageout_path
-            let (atlas,left,down,_,_)=atlas_insert width height engine.padding engine.atlas
-            copy_texture engine.device texture engine.texture left down width height
-            F.sdl_release_gpu_texture engine.device texture
-            SD.removeFile charset_path
-            SD.removeFile imageout_path
-            SD.removeFile json_path
-            return (engine {atlas=atlas,font=DIM.alter (from_maybe_font output.msdf_metrics.msdf_ascender output.msdf_metrics.msdf_descender output.msdf_glyphs (from_msdf_glyph (fromIntegral left) (fromIntegral down) engine.reciprocal_width engine.reciprocal_height)) font_id engine.font})
+update_font_c::FP.Ptr DW.Word32->[Int]->IO ()
+update_font_c ptr charset=case charset of
+    []->return ()
+    (char:other_char)->do
+        FS.poke ptr (fromIntegral char)
+        update_font_c (FP.plusPtr ptr 4) other_char
 
-from_maybe_font::FCT.CFloat->FCT.CFloat->DSeq.Seq MSDF_Glyph->(MSDF_Glyph->(Glyph,Int))->Maybe Font->Maybe Font
-from_maybe_font ascent descent msdf_glyph transform maybe_font=case maybe_font of
-    Nothing->Just (Font {descent=descent,ascent=ascent,glyph=DF.foldl' (\this_glyph this_msdf_glyph->let (glyph,key)=transform this_msdf_glyph in intmap_insert key glyph this_glyph) DIM.empty msdf_glyph})
-    Just font->Just (font {glyph=DF.foldl' (\this_glyph this_msdf_glyph->let (glyph,key)=transform this_msdf_glyph in intmap_insert key glyph this_glyph) font.glyph msdf_glyph})
-
-from_msdf_glyph::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->MSDF_Glyph->(Glyph,Int)
-from_msdf_glyph x y reciprocal_width reciprocal_height msdf_glyph=case msdf_glyph of
-    MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_bounds,msdf_atlas_bounds}->case msdf_plane_bounds of
-        MSDF_Bounds {msdf_left=plane_left,msdf_bottom=plane_bottom,msdf_right=plane_right,msdf_top=plane_top}->case msdf_atlas_bounds of
-            MSDF_Bounds {msdf_left=atlas_left,msdf_bottom=atlas_bottom,msdf_right=atlas_right,msdf_top=atlas_top}->
-                (Glyph {advance=msdf_advance,left=plane_left,down=negate plane_bottom,right=plane_right,up=negate plane_top,min_u=(x+atlas_left)*reciprocal_width,min_v=(y+atlas_bottom)*reciprocal_height,max_u=(x+atlas_right)*reciprocal_width,max_v=(y+atlas_top)*reciprocal_height},msdf_unicode)
+update_font_d::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FP.Ptr MSDFT.MSDF_Glyph->Int->Int->DIM.IntMap Glyph->IO (DIM.IntMap Glyph)
+update_font_d x y reciprocal_width reciprocal_height msdf_glyph msdf_count index glyph=if msdf_count<=index then return glyph else do
+    single_msdf_glyph<-FS.peekElemOff msdf_glyph index
+    case single_msdf_glyph of
+        MSDFT.MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_left,msdf_plane_down,msdf_plane_right,msdf_plane_up,msdf_atlas_left,msdf_atlas_down,msdf_atlas_right,msdf_atlas_up}->update_font_d x y reciprocal_width reciprocal_height msdf_glyph msdf_count (index+1) (DIM.insert (fromIntegral msdf_unicode) (Glyph {advance=msdf_advance,left=msdf_plane_left,down=msdf_plane_down,right=msdf_plane_right,up=msdf_plane_up,min_u=(x+msdf_atlas_left)*reciprocal_width,min_v=(y+msdf_atlas_down)*reciprocal_height,max_u=(x+msdf_atlas_right)*reciprocal_width,max_v=(y+msdf_atlas_up)*reciprocal_height}) glyph)

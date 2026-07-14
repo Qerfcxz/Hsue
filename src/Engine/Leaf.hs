@@ -10,7 +10,7 @@ import Engine.Coroutine
 import Engine.Projection
 import Engine.Text
 import Engine.Type
-import qualified SDL.Function as F
+import qualified SDL.Function as SDLF
 import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
@@ -110,15 +110,15 @@ create_visual visual_request engine=case visual_request of
     Regular_polygon_request {number,radius,angle}->return (engine,Regular_polygon {number=number,radius=radius,angle=angle})
     Picture_request {path}->create_picture path engine
     Large_picture_request {path}->do
-        (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
+        (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {width=fromIntegral width,height=fromIntegral height,album_id=engine.album_id})
 
 create_picture::String->Engine a->IO (Engine a,Visual)
 create_picture path engine=do
-    (texture,width,height)<-load_texture engine.device engine.picture_transfer_buffer engine.picture_size path
+    (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
     let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
     copy_texture engine.device texture engine.texture left down width height
-    F.sdl_release_gpu_texture engine.device texture
+    SDLF.sdl_release_gpu_texture engine.device texture
     return (engine {atlas=atlas},Picture {width=fromIntegral width,height=fromIntegral height,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False})
 
 remove_leaf::Int->Engine a->IO (Engine a)
@@ -143,7 +143,7 @@ remove_widget this_widget engine=case this_widget of
     Coroutine {coroutine_state}->CM.foldM (\this_engine this_coroutine_state->remove_widget this_coroutine_state.widget this_engine) engine coroutine_state
     Visual {visual}->case visual of
         Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
-            F.sdl_release_gpu_texture engine.device single_album.texture
+            SDLF.sdl_release_gpu_texture engine.device single_album.texture
             return (engine {album=album})
         _->return engine
     _->return engine

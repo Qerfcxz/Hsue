@@ -7,9 +7,7 @@
 
 module Engine.Type where
 
-import qualified SDL.Type as T
-import qualified Data.Aeson as DA
-import qualified Data.Aeson.Types as DAT
+import qualified SDL.Type as SDLT
 import qualified Data.Bits as DB
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
@@ -168,7 +166,7 @@ raw_coroutine_bind_a iterator function int=let (new_int,coroutine_sequence,value
 
 data Extended a=Negative_infinity|Finite {number::a}|Positive_infinity deriving (Eq,Ord)
 
-data Engine a=Engine {state::a,main_id::Event->Engine a->Maybe Int,projection_strategy::Event->Engine a->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,font::DIM.IntMap Font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,request::DSeq.Seq (Request a),key::DSet.Set Key,device::FP.Ptr T.SDL_GPUDevice,texture::FP.Ptr T.SDL_GPUTexture,sampler::FP.Ptr T.SDL_GPUSampler,vertex_shader::FP.Ptr T.SDL_GPUShader,fragment_shader::FP.Ptr T.SDL_GPUShader,vertex_buffer::FP.Ptr T.SDL_GPUBuffer,index_buffer::FP.Ptr T.SDL_GPUBuffer,parameter_buffer::FP.Ptr T.SDL_GPUBuffer,transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr T.SDL_GPUTransferBuffer,picture_size::FCT.CInt,vertex_size::Int,index_size::Int,parameter_size::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,width::DW.Word32,height::DW.Word32,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
+data Engine a=Engine {state::a,main_id::Event->Engine a->Maybe Int,projection_strategy::Event->Engine a->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,font::DIM.IntMap Font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,request::DSeq.Seq (Request a),key::DSet.Set Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::FP.Ptr SDLT.SDL_GPUSampler,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_size::FCT.CInt,vertex_size::Int,index_size::Int,parameter_size::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,width::DW.Word32,height::DW.Word32,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
 data Projection a=Without {ancestry_id::DSeq.Seq Int,object::Widget a}|With {ancestry_id::DSeq.Seq Int,object::Widget a,image::Widget a}
 
@@ -194,11 +192,11 @@ data Submit=Submit {maybe_album_id::Maybe Int,vertex::DSeq.Seq Vertex,index::DSe
 
 data Program_counter=Program_counter {code_index::Int,clone_index::Int}
 
-data Album=Album {width::DW.Word32,height::DW.Word32,texture::FP.Ptr T.SDL_GPUTexture}
+data Album=Album {width::DW.Word32,height::DW.Word32,texture::FP.Ptr SDLT.SDL_GPUTexture}
 
 data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
-data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr T.SDL_Window,graphics_pipeline::FP.Ptr T.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr SDLT.SDL_Window,graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
 data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable
 
@@ -307,51 +305,3 @@ parameter_poke ptr parameter=case parameter of
         FS.pokeElemOff new_ptr 9 clip_down
         FS.pokeElemOff new_ptr 10 clip_right
         FS.pokeElemOff new_ptr 11 clip_up
-
-data MSDF_Metrics=MSDF_Metrics {msdf_ascender::FCT.CFloat,msdf_descender::FCT.CFloat}
-
-instance DA.FromJSON MSDF_Metrics where
-    parseJSON=msdf_metrics_parse_json
-
-msdf_metrics_parse_json::DAT.Value->DAT.Parser MSDF_Metrics
-msdf_metrics_parse_json=DA.withObject "MSDF_Metrics" $ \object->do
-    ascender<-object DA..: "ascender"::DAT.Parser Double
-    descender<-object DA..: "descender"::DAT.Parser Double
-    return (MSDF_Metrics {msdf_ascender=realToFrac ascender,msdf_descender=realToFrac descender})
-
-data MSDF_Bounds=MSDF_Bounds {msdf_left::FCT.CFloat,msdf_bottom::FCT.CFloat,msdf_right::FCT.CFloat,msdf_top::FCT.CFloat}
-
-instance DA.FromJSON MSDF_Bounds where
-    parseJSON=msdf_bounds_parse_json
-
-msdf_bounds_parse_json::DAT.Value->DAT.Parser MSDF_Bounds
-msdf_bounds_parse_json=DA.withObject "MSDF_Bounds" $ \object->do
-    left<-object DA..: "left"::DAT.Parser Double
-    bottom<-object DA..: "bottom"::DAT.Parser Double
-    right<-object DA..: "right"::DAT.Parser Double
-    top<-object DA..: "top"::DAT.Parser Double
-    return (MSDF_Bounds {msdf_left=realToFrac left,msdf_bottom=realToFrac bottom,msdf_right=realToFrac right,msdf_top=realToFrac top})
-
-data MSDF_Glyph=MSDF_Glyph {msdf_unicode::Int,msdf_advance::FCT.CFloat,msdf_plane_bounds::MSDF_Bounds,msdf_atlas_bounds::MSDF_Bounds}
-
-instance DA.FromJSON MSDF_Glyph where
-    parseJSON=msdf_glyph_parse_json
-
-msdf_glyph_parse_json::DAT.Value->DAT.Parser MSDF_Glyph
-msdf_glyph_parse_json=DA.withObject "MSDF_Glyph" $ \object->do
-    unicode<-object DA..: "unicode"
-    advance<-object DA..: "advance"::DAT.Parser Double
-    plane_bound<-(object DA..:? "planeBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}
-    atlas_bound<-(object DA..:? "atlasBounds") DA..!= MSDF_Bounds {msdf_left=0,msdf_bottom=0,msdf_right=0,msdf_top=0}
-    return (MSDF_Glyph {msdf_unicode=unicode,msdf_advance=realToFrac advance,msdf_plane_bounds=plane_bound,msdf_atlas_bounds=atlas_bound})
-
-data MSDF_Output=MSDF_Output {msdf_metrics::MSDF_Metrics,msdf_glyphs::DSeq.Seq MSDF_Glyph}
-
-instance DA.FromJSON MSDF_Output where
-    parseJSON=msdf_output_parse_json
-
-msdf_output_parse_json::DAT.Value->DAT.Parser MSDF_Output
-msdf_output_parse_json=DA.withObject "MSDF_Output" $ \object->do
-    metric<-object DA..: "metrics"
-    glyph<-object DA..: "glyphs"
-    return (MSDF_Output {msdf_metrics=metric,msdf_glyphs=glyph})
