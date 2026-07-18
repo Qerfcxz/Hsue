@@ -8,6 +8,7 @@ import Engine.Type
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
+import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
@@ -16,22 +17,22 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 
 init_atlas::DW.Word32->DW.Word32->Atlas
-init_atlas width height=Leaf_atlas {rectangle=Rectangle {left=0,down=0,right=width,up=height},used=False}
+init_atlas width height=Leaf_atlas {border=Border {left=0,down=0,right=width,up=height},used=False}
 
 atlas_insert::DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas of
     Just (new_atlas,left,down,right,up)->(new_atlas,left+padding,down+padding,right-padding,up-padding)
-    _->error "atlas_insert: error 1"
+    _->EE.quick_error "atlas_insert" 0
 
 atlas_insert_a::DW.Word32->DW.Word32->Atlas->Maybe (Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert_a width height atlas=case atlas of
-    Leaf_atlas {rectangle,used}->case rectangle of
-        Rectangle {left,down,right,up}->let new_right=left+width in let new_up=down+height in if used||right<new_right||up<new_up then Nothing else if right==new_right&&up==new_up then Just (Leaf_atlas {rectangle=rectangle,used=True},left,down,right,up) else let (unused_rectangle,left_rectangle,right_rectangle)=if right+new_up<up+new_right then (Rectangle {left=new_right,down=down,right=right,up=new_up},Rectangle {left=left,down=down,right=right,up=new_up},Rectangle {left=left,down=new_up,right=right,up=up}) else (Rectangle {left=left,down=new_up,right=new_right,up=up},Rectangle {left=left,down=down,right=new_right,up=up},Rectangle {left=new_right,down=down,right=right,up=up}) in Just (Node_atlas {rectangle=rectangle,left_atlas=Node_atlas {rectangle=left_rectangle,left_atlas=Leaf_atlas {rectangle=Rectangle {left=left,down=down,right=new_right,up=new_up},used=True},right_atlas=Leaf_atlas {rectangle=unused_rectangle,used=False}},right_atlas=Leaf_atlas {rectangle=right_rectangle,used=False}},left,down,new_right,new_up)
-    Node_atlas {rectangle,left_atlas,right_atlas}->case atlas_insert_a width height left_atlas of
+    Leaf_atlas {border,used}->case border of
+        Border {left,down,right,up}->let new_right=left+width in let new_up=down+height in if used||right<new_right||up<new_up then Nothing else if right==new_right&&up==new_up then Just (Leaf_atlas {border=border,used=True},left,down,right,up) else let (unused_border,left_border,right_border)=if right+new_up<up+new_right then (Border {left=new_right,down=down,right=right,up=new_up},Border {left=left,down=down,right=right,up=new_up},Border {left=left,down=new_up,right=right,up=up}) else (Border {left=left,down=new_up,right=new_right,up=up},Border {left=left,down=down,right=new_right,up=up},Border {left=new_right,down=down,right=right,up=up}) in Just (Node_atlas {border=border,left_atlas=Node_atlas {border=left_border,left_atlas=Leaf_atlas {border=Border {left=left,down=down,right=new_right,up=new_up},used=True},right_atlas=Leaf_atlas {border=unused_border,used=False}},right_atlas=Leaf_atlas {border=right_border,used=False}},left,down,new_right,new_up)
+    Node_atlas {border,left_atlas,right_atlas}->case atlas_insert_a width height left_atlas of
         Nothing->case atlas_insert_a width height right_atlas of
             Nothing->Nothing
-            Just (new_right_atlas,left,down,right,up)->Just (Node_atlas {rectangle=rectangle,left_atlas=left_atlas,right_atlas=new_right_atlas},left,down,right,up)
-        Just (new_left_atlas,left,down,right,up)->Just (Node_atlas {rectangle=rectangle,left_atlas=new_left_atlas,right_atlas=right_atlas},left,down,right,up)
+            Just (new_right_atlas,left,down,right,up)->Just (Node_atlas {border=border,left_atlas=left_atlas,right_atlas=new_right_atlas},left,down,right,up)
+        Just (new_left_atlas,left,down,right,up)->Just (Node_atlas {border=border,left_atlas=new_left_atlas,right_atlas=right_atlas},left,down,right,up)
 
 from_image::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->String->IO (FP.Ptr SDLT.SDL_GPUTexture,DW.Word32,DW.Word32)
 from_image device picture_transfer_buffer picture_size path=FCS.withCString path $ \this_path->do
@@ -48,14 +49,14 @@ from_image device picture_transfer_buffer picture_size path=FCS.withCString path
     let new_height=fromIntegral height
     let new_pitch=4*width
     let size=new_pitch*height
-    CM.when (picture_size<size) (error "from_image: error 1")
+    CM.when (picture_size<size) (EE.quick_error "from_image" 0)
     texture<-upload_texture device picture_transfer_buffer new_width new_height (\map_transfer_buffer->if pitch==new_pitch then FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size) else CM.forM_ [0..height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (fromIntegral (y*new_pitch))) (FP.plusPtr pixel (fromIntegral (y*pitch))) (fromIntegral new_pitch))
     SDLF.sdl_destroy_surface new_surface
     return (texture,new_width,new_height)
 
 from_pixel::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->FP.Ptr DW.Word8->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
 from_pixel device picture_transfer_buffer picture_size pixel width height=let size=fromIntegral (4*width*height) in do
-    CM.when (picture_size<size) (error "from_pixel: error 1")
+    CM.when (picture_size<size) (EE.quick_error "from_pixel" 0)
     upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size))
 
 upload_texture::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->DW.Word32->DW.Word32->(FP.Ptr ()->IO ())->IO (FP.Ptr SDLT.SDL_GPUTexture)

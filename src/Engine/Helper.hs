@@ -6,6 +6,7 @@ module Engine.Helper where
 
 import Engine.Container
 import Engine.Type
+import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
@@ -18,20 +19,20 @@ import qualified Foreign.Storable as FS
 catch_false::IO FCT.CBool->IO ()
 catch_false io=do
     value<-io
-    CM.unless (FMU.toBool value) (error "catch_false: error 1")
+    CM.unless (FMU.toBool value) (EE.quick_error "catch_false" 0)
 
 catch_zero::(Eq a,Num a)=>a->IO ()
 catch_zero number=case number of
-    0->error "catch_zero: error 1"
+    0->EE.quick_error "catch_zero" 0
     _->return ()
 
 catch_null::FP.Ptr a->IO ()
-catch_null ptr=CM.when (ptr==FP.nullPtr) (error "catch_null: error 1")
+catch_null ptr=CM.when (ptr==FP.nullPtr) (EE.quick_error "catch_null" 0)
 
 return_catch_null::IO (FP.Ptr a)->IO (FP.Ptr a)
 return_catch_null io=do
     ptr<-io
-    if ptr==FP.nullPtr then error "return_catch_null: error 1" else return ptr
+    if ptr==FP.nullPtr then EE.quick_error "return_catch_null" 0 else return ptr
 
 lookup_widget::Widget a->Widget a
 lookup_widget this_widget=case this_widget of
@@ -108,10 +109,6 @@ point_addition::Point->Point->Point
 point_addition first_point second_point=case first_point of
     Point {x=first_x,y=first_y}->case second_point of
         Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=first_y+second_y}
-
-move_matrix::Point->Matrix->Matrix
-move_matrix point matrix=case matrix of
-    Matrix {x,y,x_x,x_y,y_x,y_y}->Matrix {x=point.x+x,y=point.y+y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
 
 identity_matrix::Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}

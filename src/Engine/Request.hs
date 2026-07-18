@@ -18,6 +18,7 @@ import Engine.Window
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
+import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
@@ -49,12 +50,12 @@ do_request request engine=case request of
                 new_timer_id<-SDLF.sdl_add_timer_ns interval engine.callback FP.nullPtr
                 catch_zero new_timer_id
                 return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
-        else error "do_request: error 1"
+        else EE.quick_error "do_request" 0
     Stop_timer->case engine.timer of
         On {timer_id}->do
             catch_false (SDLF.sdl_remove_timer timer_id)
             return (engine {timer=Off},True)
-        _->error "do_request: error 2"
+        _->EE.quick_error "do_request" 1
     Stop_timer_safe->case engine.timer of
         Off->return (engine,False)
         On {timer_id}->do
@@ -100,7 +101,7 @@ do_request request engine=case request of
             for_render window command_buffer (if value then \render_pass->do_render engine window command_buffer render_pass draw_call else SDLF.sdl_end_gpu_render_pass)
             catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
             return (new_engine,False)
-        _->error "do_request: error 3"
+        _->EE.quick_error "do_request" 2
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
@@ -114,8 +115,8 @@ from_window_flag window_flag=case window_flag of
 
 lock_widget::Widget a->Widget a
 lock_widget widget=case widget of
-    Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
-        Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
+    Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
+        Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
         _->widget
     Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
     _->widget
@@ -141,11 +142,11 @@ for_unlock this_widget engine=case this_widget of
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->do
         (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate key this_coroutine_state->intmap_monad_accumulate key (`for_unlock_coroutine` this_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative})
-    Visual {origin,matrix,maybe_clip,red,green,blue,alpha,visual}->case visual of
+    Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked
             then do
                 (new_engine,new_visual)<-create_picture path engine
-                return (new_engine,Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
+                return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
             else return (engine,this_widget)
         _->return (engine,this_widget)
     Text {origin,matrix,width,height,y,max_y,article,charset,locked}->if locked

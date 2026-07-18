@@ -6,6 +6,7 @@ module Engine.Projection where
 
 import Engine.Container
 import Engine.Type
+import qualified Error.Error as EE
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
@@ -29,7 +30,7 @@ do_widget_transform ancestry_id event engine widget=DF.foldr (\node_id->(intmap_
 create_projection_image::Event->Engine a->Projection a->Projection a
 create_projection_image event engine projection=case projection of
     Without {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id event engine object}
-    _->error "create_projection_image: error 1"
+    _->EE.quick_error "create_projection_image" 0
 
 create_projection_image_safe::Event->Engine a->Projection a->Projection a
 create_projection_image_safe event engine projection=case projection of
@@ -39,7 +40,7 @@ create_projection_image_safe event engine projection=case projection of
 remove_projection_image::Projection a->Projection a
 remove_projection_image projection=case projection of
     With {ancestry_id,object}->Without {ancestry_id=ancestry_id,object=object}
-    _->error "remove_projection_image: error 1"
+    _->EE.quick_error "remove_projection_image" 0
 
 remove_projection_image_safe::Projection a->Projection a
 remove_projection_image_safe projection=case projection of
@@ -75,7 +76,7 @@ lookup_projection_object projection=case projection of
 lookup_projection_image::Projection a->Widget a
 lookup_projection_image projection=case projection of
     With {image}->image
-    _->error "lookup_projection_image: error 1"
+    _->EE.quick_error "lookup_projection_image" 0
 
 lookup_projection_image_safe::Projection a->Widget a
 lookup_projection_image_safe projection=case projection of

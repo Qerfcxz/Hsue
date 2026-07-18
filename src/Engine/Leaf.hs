@@ -11,6 +11,7 @@ import Engine.Projection
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as SDLF
+import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
@@ -22,7 +23,7 @@ from_same_insert_widget_a::DS.Seq Insert_strategy->Widget a->Widget a->Widget a
 from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_length user_variable_length widget) coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
-    _->error "from_same_insert_widget_a: error 1"
+    _->EE.quick_error "from_same_insert_widget_a" 0
 
 from_same_insert_widget_b::Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
 from_same_insert_widget_b min_index max_index insert_widget_strategy value intmap=case insert_widget_strategy of
@@ -39,7 +40,7 @@ from_insert_widget_a::DS.Seq (Insert a (Widget a))->Widget a->Widget a
 from_insert_widget_a insert_widget widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_insert_widget_b min_index max_index id insert_widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_length user_variable_length) insert_widget coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
-    _->error "from_insert_widget_a: error 1"
+    _->EE.quick_error "from_insert_widget_a" 0
 
 from_insert_widget_b::Int->Int->(Widget a->b)->DS.Seq (Insert a (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
 from_insert_widget_b min_index max_index transform insert_widget intmap=case insert_widget of
@@ -83,9 +84,9 @@ create_widget this_widget_request engine=case this_widget_request of
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
-    Visual_request {origin,matrix,maybe_clip,red,green,blue,alpha,visual_request}->do
+    Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
         (new_engine,visual)<-create_visual visual_request engine
-        return (new_engine,Visual {origin=origin,matrix=matrix,maybe_clip=maybe_clip,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
+        return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
     Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let new_height=height/2 in if load
         then do
             new_engine<-update_font charset engine

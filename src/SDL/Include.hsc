@@ -9,6 +9,7 @@ module SDL.Include where
 #include <SDL3/SDL.h>
 
 import SDL.Type
+import Error.Error
 import Data.Word
 import Foreign.C.String
 import Foreign.C.Types
@@ -31,7 +32,7 @@ sdl_f_color_alignment::Num a=>SDL_FColor->a
 sdl_f_color_alignment _=(#alignment SDL_FColor)
 
 sdl_f_color_peek::Ptr SDL_FColor->IO SDL_FColor
-sdl_f_color_peek _=error "sdl_f_color_peek: error 1"
+sdl_f_color_peek _=quick_error "sdl_f_color_peek" 0
 
 sdl_f_color_poke::Ptr SDL_FColor->SDL_FColor->IO ()
 sdl_f_color_poke ptr f_color=case f_color of
@@ -57,7 +58,7 @@ sdl_gpu_buffer_binding_alignment::Num a=>SDL_GPUBufferBinding->a
 sdl_gpu_buffer_binding_alignment _=(#alignment SDL_GPUBufferBinding)
 
 sdl_gpu_buffer_binding_peek::Ptr SDL_GPUBufferBinding->IO SDL_GPUBufferBinding
-sdl_gpu_buffer_binding_peek _=error "sdl_gpu_buffer_binding_peek: error 1"
+sdl_gpu_buffer_binding_peek _=quick_error "sdl_gpu_buffer_binding_peek" 0
 
 sdl_gpu_buffer_binding_poke::Ptr SDL_GPUBufferBinding->SDL_GPUBufferBinding->IO ()
 sdl_gpu_buffer_binding_poke ptr buffer_binding=case buffer_binding of
@@ -81,7 +82,7 @@ sdl_gpu_color_target_info_alignment::Num a=>SDL_GPUColorTargetInfo->a
 sdl_gpu_color_target_info_alignment _=(#alignment SDL_GPUColorTargetInfo)
 
 sdl_gpu_color_target_info_peek::Ptr SDL_GPUColorTargetInfo->IO SDL_GPUColorTargetInfo
-sdl_gpu_color_target_info_peek _=error "sdl_gpu_color_target_info_peek: error 1"
+sdl_gpu_color_target_info_peek _=quick_error "sdl_gpu_color_target_info_peek" 0
 
 sdl_gpu_color_target_info_poke::Ptr SDL_GPUColorTargetInfo->SDL_GPUColorTargetInfo->IO ()
 sdl_gpu_color_target_info_poke ptr color_target_info=case color_target_info of
@@ -107,7 +108,7 @@ sdl_gpu_vertex_attribute_alignment::Num a=>SDL_GPUVertexAttribute->a
 sdl_gpu_vertex_attribute_alignment _=(#alignment SDL_GPUVertexAttribute)
 
 sdl_gpu_vertex_attribute_peek::Ptr SDL_GPUVertexAttribute->IO SDL_GPUVertexAttribute
-sdl_gpu_vertex_attribute_peek _=error "sdl_gpu_vertex_attribute_peek: error 1"
+sdl_gpu_vertex_attribute_peek _=quick_error "sdl_gpu_vertex_attribute_peek" 0
 
 sdl_gpu_vertex_attribute_poke::Ptr SDL_GPUVertexAttribute->SDL_GPUVertexAttribute->IO ()
 sdl_gpu_vertex_attribute_poke ptr vertex_attribute=case vertex_attribute of
@@ -133,7 +134,7 @@ sdl_gpu_color_target_description_alignment::Num a=>SDL_GPUColorTargetDescription
 sdl_gpu_color_target_description_alignment _=(#alignment SDL_GPUColorTargetDescription)
 
 sdl_gpu_color_target_description_peek::Ptr SDL_GPUColorTargetDescription->IO SDL_GPUColorTargetDescription
-sdl_gpu_color_target_description_peek _=error "sdl_gpu_color_target_description_peek: error 1"
+sdl_gpu_color_target_description_peek _=quick_error "sdl_gpu_color_target_description_peek" 0
 
 sdl_gpu_color_target_description_poke::Ptr SDL_GPUColorTargetDescription->SDL_GPUColorTargetDescription->IO ()
 sdl_gpu_color_target_description_poke ptr color_target_description=case color_target_description of
@@ -157,7 +158,7 @@ sdl_gpu_color_target_blend_state_alignment::Num a=>SDL_GPUColorTargetBlendState-
 sdl_gpu_color_target_blend_state_alignment _=(#alignment SDL_GPUColorTargetBlendState)
 
 sdl_gpu_color_target_blend_state_peek::Ptr SDL_GPUColorTargetBlendState->IO SDL_GPUColorTargetBlendState
-sdl_gpu_color_target_blend_state_peek _=error "sdl_gpu_color_target_blend_state_peek: error 1"
+sdl_gpu_color_target_blend_state_peek _=quick_error "sdl_gpu_color_target_blend_state_peek" 0
 
 sdl_gpu_color_target_blend_state_poke::Ptr SDL_GPUColorTargetBlendState->SDL_GPUColorTargetBlendState->IO ()
 sdl_gpu_color_target_blend_state_poke ptr color_target_blend_state=case color_target_blend_state of
@@ -188,7 +189,7 @@ sdl_gpu_shader_create_info_alignment::Num a=>SDL_GPUShaderCreateInfo->a
 sdl_gpu_shader_create_info_alignment _=(#alignment SDL_GPUShaderCreateInfo)
 
 sdl_gpu_shader_create_info_peek::Ptr SDL_GPUShaderCreateInfo->IO SDL_GPUShaderCreateInfo
-sdl_gpu_shader_create_info_peek _=error "sdl_gpu_shader_create_info_peek: error 1"
+sdl_gpu_shader_create_info_peek _=quick_error "sdl_gpu_shader_create_info_peek" 0
 
 sdl_gpu_shader_create_info_poke::Ptr SDL_GPUShaderCreateInfo->SDL_GPUShaderCreateInfo->IO ()
 sdl_gpu_shader_create_info_poke ptr shader_create_info=case shader_create_info of
@@ -219,7 +220,7 @@ sdl_gpu_vertex_input_state_alignment::Num a=>SDL_GPUVertexInputState->a
 sdl_gpu_vertex_input_state_alignment _=(#alignment SDL_GPUVertexInputState)
 
 sdl_gpu_vertex_input_state_peek::Ptr SDL_GPUVertexInputState->IO SDL_GPUVertexInputState
-sdl_gpu_vertex_input_state_peek _=error "sdl_gpu_vertex_input_state_peek: error 1"
+sdl_gpu_vertex_input_state_peek _=quick_error "sdl_gpu_vertex_input_state_peek" 0
 
 sdl_gpu_vertex_input_state_poke::Ptr SDL_GPUVertexInputState->SDL_GPUVertexInputState->IO ()
 sdl_gpu_vertex_input_state_poke ptr vertex_input_state=case vertex_input_state of
@@ -245,7 +246,7 @@ sdl_gpu_buffer_create_info_alignment::Num a=>SDL_GPUBufferCreateInfo->a
 sdl_gpu_buffer_create_info_alignment _=(#alignment SDL_GPUBufferCreateInfo)
 
 sdl_gpu_buffer_create_info_peek::Ptr SDL_GPUBufferCreateInfo->IO SDL_GPUBufferCreateInfo
-sdl_gpu_buffer_create_info_peek _=error "sdl_gpu_buffer_create_info_peek: error 1"
+sdl_gpu_buffer_create_info_peek _=quick_error "sdl_gpu_buffer_create_info_peek" 0
 
 sdl_gpu_buffer_create_info_poke::Ptr SDL_GPUBufferCreateInfo->SDL_GPUBufferCreateInfo->IO ()
 sdl_gpu_buffer_create_info_poke ptr buffer_create_info=case buffer_create_info of
@@ -269,7 +270,7 @@ sdl_gpu_transfer_buffer_create_info_alignment::Num a=>SDL_GPUTransferBufferCreat
 sdl_gpu_transfer_buffer_create_info_alignment _=(#alignment SDL_GPUTransferBufferCreateInfo)
 
 sdl_gpu_transfer_buffer_create_info_peek::Ptr SDL_GPUTransferBufferCreateInfo->IO SDL_GPUTransferBufferCreateInfo
-sdl_gpu_transfer_buffer_create_info_peek _=error "sdl_gpu_transfer_buffer_create_info_peek: error 1"
+sdl_gpu_transfer_buffer_create_info_peek _=quick_error "sdl_gpu_transfer_buffer_create_info_peek" 0
 
 sdl_gpu_transfer_buffer_create_info_poke::Ptr SDL_GPUTransferBufferCreateInfo->SDL_GPUTransferBufferCreateInfo->IO ()
 sdl_gpu_transfer_buffer_create_info_poke ptr transfer_buffer_create_info=case transfer_buffer_create_info of
@@ -293,7 +294,7 @@ sdl_gpu_transfer_buffer_location_alignment::Num a=>SDL_GPUTransferBufferLocation
 sdl_gpu_transfer_buffer_location_alignment _=(#alignment SDL_GPUTransferBufferLocation)
 
 sdl_gpu_transfer_buffer_location_peek::Ptr SDL_GPUTransferBufferLocation->IO SDL_GPUTransferBufferLocation
-sdl_gpu_transfer_buffer_location_peek _=error "sdl_gpu_transfer_buffer_location_peek: error 1"
+sdl_gpu_transfer_buffer_location_peek _=quick_error "sdl_gpu_transfer_buffer_location_peek" 0
 
 sdl_gpu_transfer_buffer_location_poke::Ptr SDL_GPUTransferBufferLocation->SDL_GPUTransferBufferLocation->IO ()
 sdl_gpu_transfer_buffer_location_poke ptr transfer_buffer_location=case transfer_buffer_location of
@@ -317,7 +318,7 @@ sdl_gpu_buffer_region_alignment::Num a=>SDL_GPUBufferRegion->a
 sdl_gpu_buffer_region_alignment _=(#alignment SDL_GPUBufferRegion)
 
 sdl_gpu_buffer_region_peek::Ptr SDL_GPUBufferRegion->IO SDL_GPUBufferRegion
-sdl_gpu_buffer_region_peek _=error "sdl_gpu_buffer_region_peek: error 1"
+sdl_gpu_buffer_region_peek _=quick_error "sdl_gpu_buffer_region_peek" 0
 
 sdl_gpu_buffer_region_poke::Ptr SDL_GPUBufferRegion->SDL_GPUBufferRegion->IO ()
 sdl_gpu_buffer_region_poke ptr buffer_region=case buffer_region of
@@ -342,7 +343,7 @@ sdl_gpu_vertex_buffer_description_alignment::Num a=>SDL_GPUVertexBufferDescripti
 sdl_gpu_vertex_buffer_description_alignment _=(#alignment SDL_GPUVertexBufferDescription)
 
 sdl_gpu_vertex_buffer_description_peek::Ptr SDL_GPUVertexBufferDescription->IO SDL_GPUVertexBufferDescription
-sdl_gpu_vertex_buffer_description_peek _=error "sdl_gpu_vertex_buffer_description_peek: error 1"
+sdl_gpu_vertex_buffer_description_peek _=quick_error "sdl_gpu_vertex_buffer_description_peek" 0
 
 sdl_gpu_vertex_buffer_description_poke::Ptr SDL_GPUVertexBufferDescription->SDL_GPUVertexBufferDescription->IO ()
 sdl_gpu_vertex_buffer_description_poke ptr vertex_buffer_description=case vertex_buffer_description of
@@ -368,7 +369,7 @@ sdl_gpu_graphics_pipeline_target_info_alignment::Num a=>SDL_GPUGraphicsPipelineT
 sdl_gpu_graphics_pipeline_target_info_alignment _=(#alignment SDL_GPUGraphicsPipelineTargetInfo)
 
 sdl_gpu_graphics_pipeline_target_info_peek::Ptr SDL_GPUGraphicsPipelineTargetInfo->IO SDL_GPUGraphicsPipelineTargetInfo
-sdl_gpu_graphics_pipeline_target_info_peek _=error "sdl_gpu_graphics_pipeline_target_info_peek: error 1"
+sdl_gpu_graphics_pipeline_target_info_peek _=quick_error "sdl_gpu_graphics_pipeline_target_info_peek" 0
 
 sdl_gpu_graphics_pipeline_target_info_poke::Ptr SDL_GPUGraphicsPipelineTargetInfo->SDL_GPUGraphicsPipelineTargetInfo->IO ()
 sdl_gpu_graphics_pipeline_target_info_poke ptr graphics_pipeline_target_info=case graphics_pipeline_target_info of
@@ -393,7 +394,7 @@ sdl_gpu_graphics_pipeline_create_info_alignment::Num a=>SDL_GPUGraphicsPipelineC
 sdl_gpu_graphics_pipeline_create_info_alignment _=(#alignment SDL_GPUGraphicsPipelineCreateInfo)
 
 sdl_gpu_graphics_pipeline_create_info_peek::Ptr SDL_GPUGraphicsPipelineCreateInfo->IO SDL_GPUGraphicsPipelineCreateInfo
-sdl_gpu_graphics_pipeline_create_info_peek _=error "sdl_gpu_graphics_pipeline_create_info_peek: error 1"
+sdl_gpu_graphics_pipeline_create_info_peek _=quick_error "sdl_gpu_graphics_pipeline_create_info_peek" 0
 
 sdl_gpu_graphics_pipeline_create_info_poke::Ptr SDL_GPUGraphicsPipelineCreateInfo->SDL_GPUGraphicsPipelineCreateInfo->IO ()
 sdl_gpu_graphics_pipeline_create_info_poke ptr graphics_pipeline_create_info=case graphics_pipeline_create_info of
@@ -420,7 +421,7 @@ sdl_gpu_texture_create_info_alignment::Num a=>SDL_GPUTextureCreateInfo->a
 sdl_gpu_texture_create_info_alignment _=(#alignment SDL_GPUTextureCreateInfo)
 
 sdl_gpu_texture_create_info_peek::Ptr SDL_GPUTextureCreateInfo->IO SDL_GPUTextureCreateInfo
-sdl_gpu_texture_create_info_peek _=error "sdl_gpu_texture_create_info_peek: error 1"
+sdl_gpu_texture_create_info_peek _=quick_error "sdl_gpu_texture_create_info_peek" 0
 
 sdl_gpu_texture_create_info_poke::Ptr SDL_GPUTextureCreateInfo->SDL_GPUTextureCreateInfo->IO ()
 sdl_gpu_texture_create_info_poke ptr texture_create_info=case texture_create_info of
@@ -450,7 +451,7 @@ sdl_gpu_sampler_create_info_alignment::Num a=>SDL_GPUSamplerCreateInfo->a
 sdl_gpu_sampler_create_info_alignment _=(#alignment SDL_GPUSamplerCreateInfo)
 
 sdl_gpu_sampler_create_info_peek::Ptr SDL_GPUSamplerCreateInfo->IO SDL_GPUSamplerCreateInfo
-sdl_gpu_sampler_create_info_peek _=error "sdl_gpu_sampler_create_info_peek: error 1"
+sdl_gpu_sampler_create_info_peek _=quick_error "sdl_gpu_sampler_create_info_peek" 0
 
 sdl_gpu_sampler_create_info_poke::Ptr SDL_GPUSamplerCreateInfo->SDL_GPUSamplerCreateInfo->IO ()
 sdl_gpu_sampler_create_info_poke ptr sampler_create_info=case sampler_create_info of
@@ -478,7 +479,7 @@ sdl_gpu_texture_sampler_binding_alignment::Num a=>SDL_GPUTextureSamplerBinding->
 sdl_gpu_texture_sampler_binding_alignment _=(#alignment SDL_GPUTextureSamplerBinding)
 
 sdl_gpu_texture_sampler_binding_peek::Ptr SDL_GPUTextureSamplerBinding->IO SDL_GPUTextureSamplerBinding
-sdl_gpu_texture_sampler_binding_peek _=error "sdl_gpu_texture_sampler_binding_peek: error 1"
+sdl_gpu_texture_sampler_binding_peek _=quick_error "sdl_gpu_texture_sampler_binding_peek" 0
 
 sdl_gpu_texture_sampler_binding_poke::Ptr SDL_GPUTextureSamplerBinding->SDL_GPUTextureSamplerBinding->IO ()
 sdl_gpu_texture_sampler_binding_poke ptr texture_sampler_binding=case texture_sampler_binding of
@@ -502,7 +503,7 @@ sdl_gpu_texture_transfer_info_alignment::Num a=>SDL_GPUTextureTransferInfo->a
 sdl_gpu_texture_transfer_info_alignment _=(#alignment SDL_GPUTextureTransferInfo)
 
 sdl_gpu_texture_transfer_info_peek::Ptr SDL_GPUTextureTransferInfo->IO SDL_GPUTextureTransferInfo
-sdl_gpu_texture_transfer_info_peek _=error "sdl_gpu_texture_transfer_info_peek: error 1"
+sdl_gpu_texture_transfer_info_peek _=quick_error "sdl_gpu_texture_transfer_info_peek" 0
 
 sdl_gpu_texture_transfer_info_poke::Ptr SDL_GPUTextureTransferInfo->SDL_GPUTextureTransferInfo->IO ()
 sdl_gpu_texture_transfer_info_poke ptr texture_transfer_info=case texture_transfer_info of
@@ -528,7 +529,7 @@ sdl_gpu_texture_region_alignment::Num a=>SDL_GPUTextureRegion->a
 sdl_gpu_texture_region_alignment _=(#alignment SDL_GPUTextureRegion)
 
 sdl_gpu_texture_region_peek::Ptr SDL_GPUTextureRegion->IO SDL_GPUTextureRegion
-sdl_gpu_texture_region_peek _=error "sdl_gpu_texture_region_peek: error 1"
+sdl_gpu_texture_region_peek _=quick_error "sdl_gpu_texture_region_peek" 0
 
 sdl_gpu_texture_region_poke::Ptr SDL_GPUTextureRegion->SDL_GPUTextureRegion->IO ()
 sdl_gpu_texture_region_poke ptr texture_region=case texture_region of
@@ -559,7 +560,7 @@ sdl_gpu_texture_location_alignment::Num a=>SDL_GPUTextureLocation->a
 sdl_gpu_texture_location_alignment _=(#alignment SDL_GPUTextureLocation)
 
 sdl_gpu_texture_location_peek::Ptr SDL_GPUTextureLocation->IO SDL_GPUTextureLocation
-sdl_gpu_texture_location_peek _=error "sdl_gpu_texture_location_peek: error 1"
+sdl_gpu_texture_location_peek _=quick_error "sdl_gpu_texture_location_peek" 0
 
 sdl_gpu_texture_location_poke::Ptr SDL_GPUTextureLocation->SDL_GPUTextureLocation->IO ()
 sdl_gpu_texture_location_poke ptr texture_location=case texture_location of

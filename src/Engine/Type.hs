@@ -2,12 +2,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
 module Engine.Type where
 
 import qualified SDL.Type as SDLT
+import qualified Error.Error as EE
 import qualified Data.Bits as DB
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
@@ -28,7 +28,7 @@ instance Eq (Dynamic_bool a) where
     (==)=dynamic_bool_equal
 
 dynamic_bool_equal::Dynamic_bool a->Dynamic_bool a->Bool
-dynamic_bool_equal _ _=error "dynamic_bool_equal: error 1"
+dynamic_bool_equal _ _=EE.quick_error "dynamic_bool_equal" 0
 
 instance DB.Bits (Dynamic_bool a) where
     (.&.)=dynamic_bool_and
@@ -72,13 +72,13 @@ dynamic_bool_is_signed::Dynamic_bool a->Bool
 dynamic_bool_is_signed _=False
 
 dynamic_bool_test_bit::Dynamic_bool a->Int->Bool
-dynamic_bool_test_bit _ _=error "dynamic_bool_test_bit: error 1"
+dynamic_bool_test_bit _ _=EE.quick_error "dynamic_bool_test_bit" 0
 
 dynamic_bool_bit::Int->Dynamic_bool a
 dynamic_bool_bit int=if int==0 then Dynamic_bool {dynamic_bool=dynamic_bool_true} else Dynamic_bool {dynamic_bool=dynamic_bool_false}
 
 dynamic_bool_pop_count::Dynamic_bool a->Int
-dynamic_bool_pop_count _=error "dynamic_bool_pop_count: error 1"
+dynamic_bool_pop_count _=EE.quick_error "dynamic_bool_pop_count" 0
 
 dynamic_bool_true::(Int->Int)->Event->Engine a->Widget a->Bool
 dynamic_bool_true _ _ _ _=True
@@ -172,11 +172,13 @@ data Projection a=Without {ancestry_id::DSeq.Seq Int,object::Widget a}|With {anc
 
 data Node a=Node {ancestry_id::DSeq.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event->Event,widget_transform::Event->Engine a->Widget a->Widget a}
 
-data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a}|Group {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,index::Int,group_widget::DIM.IntMap (Widget a)}|Trigger {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget::Widget a}|Widget_io_trigger {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget::Widget a}|Widget_mix_trigger {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget::Widget a}|Coroutine {index::Int,initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,variable_length::Int,user_variable_length::Int,coroutine_state::DIM.IntMap (Coroutine_state a),address::DVU.Vector Int,size::DVU.Vector Int,linear_coroutine::DV.Vector (Linear_coroutine a),iterative::Bool}|Store {store::Data}|Collector {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}
+data Widget a=Double {which::Bool,first_widget::Widget a,second_widget::Widget a}|Group {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,index::Int,group_widget::DIM.IntMap (Widget a)}|Trigger {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget::Widget a}|Widget_io_trigger {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget::Widget a}|Widget_mix_trigger {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget::Widget a}|Coroutine {index::Int,initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,variable_length::Int,user_variable_length::Int,coroutine_state::DIM.IntMap (Coroutine_state a),address::DVU.Vector Int,size::DVU.Vector Int,linear_coroutine::DV.Vector (Linear_coroutine a),iterative::Bool}|Store {store::Data}|Collector {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,submit::DIM.IntMap (DSeq.Seq Submit)}|Visual {origin::Point,matrix::Matrix,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual::Visual}|Text {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event->Event,widget_transform::Event->Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,width::FCT.CInt,height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag}|Remove_window {window_id::Int}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,projection_move::Projection_move}|Io {io::Engine a->IO (Engine a)}
 
-data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a))}|Trigger_request {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget_request::Widget_request a}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a)),raw_coroutine::Raw_coroutine a (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,maybe_clip::Maybe Clip,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+data Widget_request a=Double_request {which::Bool,first_widget_request::Widget_request a,second_widget_request::Widget_request a}|Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a))}|Trigger_request {next::Event->Engine a->Maybe Int,trigger::Event->Engine a->Engine a}|Io_trigger_request {next::Event->Engine a->Maybe Int,io_trigger::Event->Engine a->IO (Engine a)}|Mix_trigger_request {next::Event->Engine a->Maybe Int,mix_trigger::Event->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Event->Engine a->Maybe Int,widget_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Event->Engine a->Maybe Int,widget_io_trigger::Event->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Event->Engine a->Maybe Int,widget_mix_trigger::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget_request::Widget_request a}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DSeq.Seq (Insert a (Widget_request a)),raw_coroutine::Raw_coroutine a (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {origin::Point,matrix::Matrix,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,visual_request::Visual_request}|Text_request {origin::Point,matrix::Matrix,width::FCT.CFloat,height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}
+
+data Border a=Border {left::a,down::a,right::a,up::a}
 
 data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DSeq.Seq Int),main_index_group::DSeq.Seq Int,index_group_index::Int,program_counter_index::Int}
 
@@ -212,15 +214,11 @@ data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}
 
 data Visual_request=Triangle_request {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {point::DSeq.Seq Point}|Regular_polygon_request {number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {path::String}|Large_picture_request {path::String}
 
-data Clip=Clip {left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat}
-
 data Matrix=Matrix {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat}
 
 data Point=Point {x::FCT.CFloat,y::FCT.CFloat}
 
-data Rectangle=Rectangle {left::DW.Word32,down::DW.Word32,right::DW.Word32,up::DW.Word32}
-
-data Atlas=Leaf_atlas {rectangle::Rectangle,used::Bool}|Node_atlas {rectangle::Rectangle,left_atlas::Atlas,right_atlas::Atlas}
+data Atlas=Leaf_atlas {border::Border DW.Word32,used::Bool}|Node_atlas {border::Border DW.Word32,left_atlas::Atlas,right_atlas::Atlas}
 
 data Glyph=Glyph {advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -257,7 +255,7 @@ vertex_alignment::Num a=>Vertex->a
 vertex_alignment _=4
 
 vertex_peek::FP.Ptr Vertex->IO Vertex
-vertex_peek _=error "vertex_peek: error 1"
+vertex_peek _=EE.quick_error "vertex_peek" 0
 
 vertex_poke::FP.Ptr Vertex->Vertex->IO ()
 vertex_poke ptr vertex=case vertex of
@@ -273,7 +271,7 @@ vertex_poke ptr vertex=case vertex of
         FS.pokeElemOff new_ptr 8 parameter_id
         FS.pokeElemOff new_ptr 9 size
 
-data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,clip_flag::FCT.CFloat,clip_left::FCT.CFloat,clip_down::FCT.CFloat,clip_right::FCT.CFloat,clip_up::FCT.CFloat}
+data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,border_flag::FCT.CFloat,border_left::FCT.CFloat,border_down::FCT.CFloat,border_right::FCT.CFloat,border_up::FCT.CFloat}
 
 instance FS.Storable Parameter where
     sizeOf=parameter_size_of
@@ -288,11 +286,11 @@ parameter_alignment::Num a=>Parameter->a
 parameter_alignment _=4
 
 parameter_peek::FP.Ptr Parameter->IO Parameter
-parameter_peek _=error "parameter_peek: error 1"
+parameter_peek _=EE.quick_error "parameter_peek" 0
 
 parameter_poke::FP.Ptr Parameter->Parameter->IO ()
 parameter_poke ptr parameter=case parameter of
-    (Parameter {x,y,x_x,x_y,y_x,y_y,clip_flag,clip_left,clip_down,clip_right,clip_up})->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
+    (Parameter {x,y,x_x,x_y,y_x,y_y,border_flag,border_left,border_down,border_right,border_up})->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
         FS.pokeElemOff new_ptr 0 x
         FS.pokeElemOff new_ptr 1 y
         FS.pokeElemOff new_ptr 2 x_x
@@ -300,8 +298,8 @@ parameter_poke ptr parameter=case parameter of
         FS.pokeElemOff new_ptr 4 y_x
         FS.pokeElemOff new_ptr 5 y_y
         FS.pokeElemOff new_ptr 6 0
-        FS.pokeElemOff new_ptr 7 clip_flag
-        FS.pokeElemOff new_ptr 8 clip_left
-        FS.pokeElemOff new_ptr 9 clip_down
-        FS.pokeElemOff new_ptr 10 clip_right
-        FS.pokeElemOff new_ptr 11 clip_up
+        FS.pokeElemOff new_ptr 7 border_flag
+        FS.pokeElemOff new_ptr 8 border_left
+        FS.pokeElemOff new_ptr 9 border_down
+        FS.pokeElemOff new_ptr 10 border_right
+        FS.pokeElemOff new_ptr 11 border_up

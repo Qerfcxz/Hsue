@@ -14,6 +14,7 @@ import Engine.Type
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
+import qualified Error.Error as EE
 import qualified Data.Bits as DB
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
@@ -77,7 +78,7 @@ create_engine state main_id projection_strategy picture_size vertex_size index_s
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
                 catch_zero timer_id
                 let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=new_atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
-            else error "create_engine: error 1"
+            else EE.quick_error "create_engine" 0
 
 clean_engine::Engine a->IO ()
 clean_engine engine=do
@@ -118,7 +119,7 @@ loop_engine_off sdl_event engine=do
         then do
             event_type<-SDLI.sdl_event_type sdl_event
             loop_event switch event_type sdl_event new_engine
-        else error "loop_engine_off: error 1"
+        else EE.quick_error "loop_engine_off" 0
 
 loop_engine_off_a::FP.Ptr ()->Engine a->IO ()
 loop_engine_off_a sdl_event engine=do
@@ -127,7 +128,7 @@ loop_engine_off_a sdl_event engine=do
         then do
             event_type<-SDLI.sdl_event_type sdl_event
             loop_event False event_type sdl_event engine
-        else error "loop_engine_off_a: error 1"
+        else EE.quick_error "loop_engine_off_a" 0
 
 loop_engine_on::FP.Ptr ()->Engine a->IO ()
 loop_engine_on sdl_event engine=do
@@ -137,7 +138,7 @@ loop_engine_on sdl_event engine=do
         then do
             event_type<-SDLI.sdl_event_type sdl_event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
-        else error "loop_engine_on: error 1"
+        else EE.quick_error "loop_engine_on" 0
 
 loop_engine_on_a::FP.Ptr ()->Engine a->IO ()
 loop_engine_on_a sdl_event engine=do
@@ -146,12 +147,12 @@ loop_engine_on_a sdl_event engine=do
         then do
             event_type<-SDLI.sdl_event_type sdl_event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
-        else error "loop_engine_on_a: error 1"
+        else EE.quick_error "loop_engine_on_a" 0
 
 get_interval::Timer->DW.Word64
 get_interval timer=case timer of
     On {interval}->interval
-    _->error "get_interval: error 1"
+    _->EE.quick_error "get_interval" 0
 
 loop_event::Bool->DW.Word32->FP.Ptr ()->Engine a->IO ()
 loop_event on event_type sdl_event engine=case event_type of
@@ -251,4 +252,4 @@ run_widget event engine this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in (Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget},create_request (Io {io=update}),next)
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget},if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->let (next,update,new_coroutine_state)=intmap_functor_update index (functor_update_coroutine_state (\widget->let (new_widget,new_update,new_next)=run_widget event engine widget in (new_next,new_update,new_widget))) coroutine_state in (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative},update,next)
-    _->error "run_widget: error 1"
+    _->EE.quick_error "run_widget" 0

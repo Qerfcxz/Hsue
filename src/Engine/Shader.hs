@@ -7,6 +7,7 @@ import Engine.Type
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
+import qualified Error.Error as EE
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Sequence as DS
@@ -35,7 +36,7 @@ create_graphics_pipeline sdl_window device vertex_shader fragment_shader=FMA.all
         FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=format,sdl_blend_state=standard_blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader,sdl_fragment_shader=fragment_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=vertex_buffer_description,sdl_num_vertex_buffers=1,sdl_vertex_attributes=vertex_attribute,sdl_num_vertex_attributes=5},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline device))
 
 update_buffer::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUTransferBuffer->Int->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO Bool
-update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer transfer_buffer vertex_size index_size parameter_size vertex index parameter=let vertex_length=DS.length vertex in let index_length=DS.length index in let parameter_length=DS.length parameter in if vertex_length==0||index_length==0||parameter_length==0 then return False else let unit_vertex=FS.sizeOf (undefined::Vertex) in let unit_index=FS.sizeOf (undefined::DW.Word32) in let unit_parameter=FS.sizeOf (undefined::Parameter) in let new_vertex_size=vertex_length*unit_vertex in let new_index_size=index_length*unit_index in let new_parameter_size=parameter_length*unit_parameter in if vertex_size<new_vertex_size||index_size<new_index_size||parameter_size<new_parameter_size then error "update_buffer: error 1" else do
+update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer transfer_buffer vertex_size index_size parameter_size vertex index parameter=let vertex_length=DS.length vertex in let index_length=DS.length index in let parameter_length=DS.length parameter in if vertex_length==0||index_length==0||parameter_length==0 then return False else let unit_vertex=FS.sizeOf (undefined::Vertex) in let unit_index=FS.sizeOf (undefined::DW.Word32) in let unit_parameter=FS.sizeOf (undefined::Parameter) in let new_vertex_size=vertex_length*unit_vertex in let new_index_size=index_length*unit_index in let new_parameter_size=parameter_length*unit_parameter in if vertex_size<new_vertex_size||index_size<new_index_size||parameter_size<new_parameter_size then EE.quick_error "update_buffer" 0 else do
     map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer device transfer_buffer (FMU.fromBool True)
     catch_null map_transfer_buffer
     seq_poke_array unit_vertex vertex (FP.castPtr map_transfer_buffer)
