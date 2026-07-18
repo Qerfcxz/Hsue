@@ -4,16 +4,16 @@ struct VSOutput {
     float4 color:TEXCOORD0;
     float4 xy:SV_Position;
     float2 uv:TEXCOORD1;
-    float4 clip:TEXCOORD2;
+    float4 this_border:TEXCOORD2;
     float size:TEXCOORD3;
     float2 screen:TEXCOORD4;
     float scale:TEXCOORD5;
-    float clip_flag:TEXCOORD6;
+    float border_flag:TEXCOORD6;
 };
 float4 main(VSOutput output):SV_Target {
     float out_of=0;
-    if (output.clip_flag>0) {
-        out_of=(output.screen.x<output.clip.x||output.screen.y<output.clip.y||output.screen.x>output.clip.z||output.screen.y>output.clip.w)?1:0;
+    if (output.border_flag>0) {
+        out_of=(output.screen.x<output.this_border.x||output.screen.y<output.this_border.y||output.screen.x>output.this_border.z||output.screen.y>output.this_border.w)?1:0;
     }
     float4 texture_color=texture.Sample(this_sampler,output.uv);
     float4 final_color;
