@@ -93,7 +93,7 @@ force_redraw widget=case widget of
 render_trigger::Event->Engine ()->Engine ()
 render_trigger event engine=case event of
     Time {tick}->if tick>0&&mod tick test_time==0 then let engineWithRequests=create_request Clean_atlas (create_request (Unlock {leaf_id=main_widget_id}) engine) in let (new_engine,_)=update_lookup_projection_widget path_main_widget force_redraw engineWithRequests in new_engine else let widget=lookup_projection_widget path_main_widget engine in case check_and_reset_data_int widget of
-        Just _->let new_engine=maybe_collect_limited_update check_and_reset_data_int id path_main_widget 0 collector_id (Index_strategy {seat=0}) engine in create_request (Render {window_id=window_id,projection_move=move_collector}) new_engine
+        Just _->let new_engine=maybe_collect_limited_update check_and_reset_data_int id Nothing path_main_widget 0 collector_id (Index_strategy {seat=0}) engine in create_request (Render {window_id=window_id,projection_move=move_collector}) new_engine
         Nothing->engine
     _->engine
 
