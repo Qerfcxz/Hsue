@@ -13,8 +13,12 @@ import Engine.Type
 import qualified SDL.Function as SDLF
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
+import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
+import qualified Data.Vector.Storable as DVS
+import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
 
 from_same_insert_widget::Int->DS.Seq Insert_strategy->Widget a->Engine a->Engine a
 from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=intmap_update leaf_id (update_projection_object (from_same_insert_widget_a insert_widget_strategy widget)) engine.leaf}
@@ -22,7 +26,7 @@ from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {lea
 from_same_insert_widget_a::DS.Seq Insert_strategy->Widget a->Widget a->Widget a
 from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_length user_variable_length widget) coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_length user_variable_length widget) coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->EE.quick_error "from_same_insert_widget_a" 0
 
 from_same_insert_widget_b::Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
@@ -39,7 +43,7 @@ from_insert_widget leaf_id insert_widget engine=engine {leaf=intmap_update leaf_
 from_insert_widget_a::DS.Seq (Insert a (Widget a))->Widget a->Widget a
 from_insert_widget_a insert_widget widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_insert_widget_b min_index max_index id insert_widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_length user_variable_length) insert_widget coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_length user_variable_length) insert_widget coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->EE.quick_error "from_insert_widget_a" 0
 
 from_insert_widget_b::Int->Int->(Widget a->b)->DS.Seq (Insert a (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
@@ -79,9 +83,9 @@ create_widget this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (linear_coroutine,size,address,variable_length,user_variable_length)=let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in from_coroutine (to_coroutine coroutine_sequence) int in do
+    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (linear_coroutine,layout,variable_length,user_variable_length)=let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in from_coroutine (to_coroutine coroutine_sequence) int in do
         (coroutine_state,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index (init_coroutine_state variable_length user_variable_length) insert_widget_request DIM.empty
-        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative})
+        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
@@ -113,14 +117,32 @@ create_visual visual_request engine=case visual_request of
     Large_picture_request {path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {width=fromIntegral width,height=fromIntegral height,album_id=engine.album_id})
+    Atlas_request {index,clip_request,path}->create_atlas index clip_request path engine
+    Large_atlas_request {index,clip_request,path}->do
+        (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
+        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {index=index,clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id})
 
-create_picture::String->Engine a->IO (Engine a,Visual)
-create_picture path engine=do
+do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a->IO (Engine a,Visual)
+do_image action path engine=do
     (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
     let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
     copy_texture engine.device texture engine.texture left down width height
     SDLF.sdl_release_gpu_texture engine.device texture
-    return (engine {atlas=atlas},Picture {width=fromIntegral width,height=fromIntegral height,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False})
+    return (engine {atlas=atlas},action width height left down right up)
+
+create_picture::String->Engine a->IO (Engine a,Visual)
+create_picture path engine=do_image (\width height left down right up->Picture {width=fromIntegral width,height=fromIntegral height,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
+
+create_atlas::Int->DS.Seq Clip_request->String->Engine a->IO (Engine a,Visual)
+create_atlas index clip_request path engine=do_image (\width height left down right up->Atlas {index=index,clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),locked=False}) path engine
+
+create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Clip_request->Clip
+create_atlas_a width height this_x this_y reciprocal_width reciprocal_height clip_request=case clip_request of
+    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(this_x+min_u*width/2)*reciprocal_width,min_v=(this_y-max_v*height/2)*reciprocal_height,max_u=(this_x+max_u*width/2)*reciprocal_width,max_v=(this_y-min_v*height/2)*reciprocal_height}
+
+create_large_atlas::FCT.CFloat->FCT.CFloat->Clip_request->Clip
+create_large_atlas width height clip_request=case clip_request of
+    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
 remove_leaf::Int->Engine a->IO (Engine a)
 remove_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in case projection of
@@ -144,6 +166,9 @@ remove_widget this_widget engine=case this_widget of
     Coroutine {coroutine_state}->CM.foldM (\this_engine this_coroutine_state->remove_widget this_coroutine_state.widget this_engine) engine coroutine_state
     Visual {visual}->case visual of
         Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
+            SDLF.sdl_release_gpu_texture engine.device single_album.texture
+            return (engine {album=album})
+        Large_atlas {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
             SDLF.sdl_release_gpu_texture engine.device single_album.texture
             return (engine {album=album})
         _->return engine

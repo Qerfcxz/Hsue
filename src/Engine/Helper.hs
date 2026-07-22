@@ -51,7 +51,7 @@ update_widget update this_widget=case this_widget of
     Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=update_widget update widget}
     Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=update_widget update widget}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=update_widget update widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=intmap_update index (update_coroutine_state (update_widget update)) coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=intmap_update index (update_coroutine_state (update_widget update)) coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->update this_widget
 
 limited_update_widget::Int->(Widget a->Widget a)->Widget a->Widget a
@@ -61,27 +61,27 @@ limited_update_widget depth update this_widget=if depth<=0 then update this_widg
     Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=limited_update_widget (depth-1) update widget}
     Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=limited_update_widget (depth-1) update widget}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=limited_update_widget (depth-1) update widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=intmap_update index (update_coroutine_state (limited_update_widget (depth-1) update)) coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=intmap_update index (update_coroutine_state (limited_update_widget (depth-1) update)) coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->update this_widget
 
 functor_update_widget::Functor b=>(Widget a->b (Widget a))->Widget a->b (Widget a)
 functor_update_widget update this_widget=case this_widget of
     Double {which,first_widget,second_widget}->if which then fmap (\this_first_widget->Double {which=which,first_widget=this_first_widget,second_widget=second_widget}) (functor_update_widget update first_widget) else fmap (\this_second_widget->Double {which=which,first_widget=first_widget,second_widget=this_second_widget}) (functor_update_widget update second_widget)
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->fmap (\this_group_widget->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=this_group_widget}) (intmap_functor_update index (functor_update_widget update) group_widget)
-    Widget_trigger {next,widget_trigger,widget}->fmap (\this_this_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=this_this_widget}) (functor_update_widget update widget)
-    Widget_io_trigger {next,widget_io_trigger,widget}->fmap (\this_this_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=this_this_widget}) (functor_update_widget update widget)
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->fmap (\this_this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_this_widget}) (functor_update_widget update widget)
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->fmap (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=this_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}) (intmap_functor_update index (functor_update_coroutine_state (functor_update_widget update)) coroutine_state)
+    Widget_trigger {next,widget_trigger,widget}->fmap (\single_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=single_widget}) (functor_update_widget update widget)
+    Widget_io_trigger {next,widget_io_trigger,widget}->fmap (\single_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=single_widget}) (functor_update_widget update widget)
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->fmap (\single_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=single_widget}) (functor_update_widget update widget)
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->fmap (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (intmap_functor_update index (functor_update_coroutine_state (functor_update_widget update)) coroutine_state)
     _->update this_widget
 
 functor_limited_update_widget::Functor b=>Int->(Widget a->b (Widget a))->Widget a->b (Widget a)
 functor_limited_update_widget depth update this_widget=if depth<=0 then update this_widget else case this_widget of
     Double {which,first_widget,second_widget}->if which then fmap (\this_first_widget->Double {which=which,first_widget=this_first_widget,second_widget=second_widget}) (functor_limited_update_widget (depth-1) update first_widget) else fmap (\this_second_widget->Double {which=which,first_widget=first_widget,second_widget=this_second_widget}) (functor_limited_update_widget (depth-1) update second_widget)
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->fmap (\this_group_widget->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=this_group_widget}) (intmap_functor_update index (functor_limited_update_widget (depth-1) update) group_widget)
-    Widget_trigger {next,widget_trigger,widget}->fmap (\this_this_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=this_this_widget}) (functor_limited_update_widget (depth-1) update widget)
-    Widget_io_trigger {next,widget_io_trigger,widget}->fmap (\this_this_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=this_this_widget}) (functor_limited_update_widget (depth-1) update widget)
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->fmap (\this_this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_this_widget}) (functor_limited_update_widget (depth-1) update widget)
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->fmap (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=this_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}) (intmap_functor_update index (functor_update_coroutine_state (functor_limited_update_widget (depth-1) update)) coroutine_state)
+    Widget_trigger {next,widget_trigger,widget}->fmap (\single_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=single_widget}) (functor_limited_update_widget (depth-1) update widget)
+    Widget_io_trigger {next,widget_io_trigger,widget}->fmap (\single_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=single_widget}) (functor_limited_update_widget (depth-1) update widget)
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->fmap (\single_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=single_widget}) (functor_limited_update_widget (depth-1) update widget)
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->fmap (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (intmap_functor_update index (functor_update_coroutine_state (functor_limited_update_widget (depth-1) update)) coroutine_state)
     _->update this_widget
 
 update_all_widget::(Widget a->Widget a)->Widget a->Widget a
@@ -91,7 +91,7 @@ update_all_widget update this_widget=case this_widget of
     Widget_trigger {next,widget_trigger,widget}->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=update_all_widget update widget}
     Widget_io_trigger {next,widget_io_trigger,widget}->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=update_all_widget update widget}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=update_all_widget update widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=fmap (update_coroutine_state (update_all_widget update)) coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=fmap (update_coroutine_state (update_all_widget update)) coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->update this_widget
 
 update_coroutine_state::(Widget a->Widget a)->Coroutine_state a->Coroutine_state a
@@ -105,18 +105,13 @@ functor_update_coroutine_state update coroutine_state=case coroutine_state of
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (\this_ptr single_value->FS.poke this_ptr single_value>>return (FP.plusPtr this_ptr size)) ptr value)
 
-point_addition::Point->Point->Point
-point_addition first_point second_point=case first_point of
-    Point {x=first_x,y=first_y}->case second_point of
-        Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=first_y+second_y}
-
 identity_matrix::Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
 
-to_extended::a->Extended a
+to_extended::FCT.CFloat->Extended
 to_extended number=Finite {number=number}
 
-from_extended::Num a=>Extended a->a
+from_extended::Extended->FCT.CFloat
 from_extended extended=case extended of
     Negative_infinity->0
     Finite {number}->number

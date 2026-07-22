@@ -24,7 +24,7 @@ adaptive_window::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(FCT.CFloat,FCT
 adaptive_window design_width design_height width height=if design_width*height<design_height*width then (design_height/height*width,design_height) else (design_width,design_width/width*height)
 
 create_adaptive_window_trigger_request::(Event->Engine a->Maybe Int)->DIS.IntSet->Widget_request a
-create_adaptive_window_trigger_request next this_window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a this_window_id}
+create_adaptive_window_trigger_request next window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a window_id}
 
 create_adaptive_window_trigger_request_a::DIS.IntSet->Event->Engine a->Engine a
 create_adaptive_window_trigger_request_a this_window_id event engine=case event of

@@ -36,7 +36,7 @@ sdl_f_color_peek _=quick_error "sdl_f_color_peek" 0
 
 sdl_f_color_poke::Ptr SDL_FColor->SDL_FColor->IO ()
 sdl_f_color_poke ptr f_color=case f_color of
-    (SDL_FColor {sdl_r,sdl_g,sdl_b,sdl_a})->do
+    SDL_FColor {sdl_r,sdl_g,sdl_b,sdl_a}->do
         fillBytes ptr 0 (#size SDL_FColor)
         (#poke SDL_FColor,r) ptr sdl_r
         (#poke SDL_FColor,g) ptr sdl_g
@@ -62,7 +62,7 @@ sdl_gpu_buffer_binding_peek _=quick_error "sdl_gpu_buffer_binding_peek" 0
 
 sdl_gpu_buffer_binding_poke::Ptr SDL_GPUBufferBinding->SDL_GPUBufferBinding->IO ()
 sdl_gpu_buffer_binding_poke ptr buffer_binding=case buffer_binding of
-    (SDL_GPUBufferBinding {sdl_buffer,sdl_offset})->do
+    SDL_GPUBufferBinding {sdl_buffer,sdl_offset}->do
         fillBytes ptr 0 (#size SDL_GPUBufferBinding)
         (#poke SDL_GPUBufferBinding,buffer) ptr sdl_buffer
         (#poke SDL_GPUBufferBinding,offset) ptr sdl_offset
@@ -86,7 +86,7 @@ sdl_gpu_color_target_info_peek _=quick_error "sdl_gpu_color_target_info_peek" 0
 
 sdl_gpu_color_target_info_poke::Ptr SDL_GPUColorTargetInfo->SDL_GPUColorTargetInfo->IO ()
 sdl_gpu_color_target_info_poke ptr color_target_info=case color_target_info of
-    (SDL_GPUColorTargetInfo {sdl_texture,sdl_clear_color,sdl_load_op,sdl_store_op})->do
+    SDL_GPUColorTargetInfo {sdl_texture,sdl_clear_color,sdl_load_op,sdl_store_op}->do
         fillBytes ptr 0 (#size SDL_GPUColorTargetInfo)
         (#poke SDL_GPUColorTargetInfo,texture) ptr sdl_texture
         (#poke SDL_GPUColorTargetInfo,clear_color) ptr sdl_clear_color
@@ -112,7 +112,7 @@ sdl_gpu_vertex_attribute_peek _=quick_error "sdl_gpu_vertex_attribute_peek" 0
 
 sdl_gpu_vertex_attribute_poke::Ptr SDL_GPUVertexAttribute->SDL_GPUVertexAttribute->IO ()
 sdl_gpu_vertex_attribute_poke ptr vertex_attribute=case vertex_attribute of
-    (SDL_GPUVertexAttribute {sdl_location,sdl_buffer_slot,sdl_format,sdl_offset})->do
+    SDL_GPUVertexAttribute {sdl_location,sdl_buffer_slot,sdl_format,sdl_offset}->do
         fillBytes ptr 0 (#size SDL_GPUVertexAttribute)
         (#poke SDL_GPUVertexAttribute,location) ptr sdl_location
         (#poke SDL_GPUVertexAttribute,buffer_slot) ptr sdl_buffer_slot
@@ -138,7 +138,7 @@ sdl_gpu_color_target_description_peek _=quick_error "sdl_gpu_color_target_descri
 
 sdl_gpu_color_target_description_poke::Ptr SDL_GPUColorTargetDescription->SDL_GPUColorTargetDescription->IO ()
 sdl_gpu_color_target_description_poke ptr color_target_description=case color_target_description of
-    (SDL_GPUColorTargetDescription {sdl_format,sdl_blend_state})->do
+    SDL_GPUColorTargetDescription {sdl_format,sdl_blend_state}->do
         fillBytes ptr 0 (#size SDL_GPUColorTargetDescription)
         (#poke SDL_GPUColorTargetDescription,format) ptr sdl_format
         (#poke SDL_GPUColorTargetDescription,blend_state) ptr sdl_blend_state
@@ -162,7 +162,7 @@ sdl_gpu_color_target_blend_state_peek _=quick_error "sdl_gpu_color_target_blend_
 
 sdl_gpu_color_target_blend_state_poke::Ptr SDL_GPUColorTargetBlendState->SDL_GPUColorTargetBlendState->IO ()
 sdl_gpu_color_target_blend_state_poke ptr color_target_blend_state=case color_target_blend_state of
-    (SDL_GPUColorTargetBlendState {sdl_src_color_blendfactor,sdl_dst_color_blendfactor,sdl_color_blend_op,sdl_src_alpha_blendfactor,sdl_dst_alpha_blendfactor,sdl_alpha_blend_op,sdl_color_write_mask,sdl_enable_blend,sdl_enable_color_write_mask})->do
+    SDL_GPUColorTargetBlendState {sdl_src_color_blendfactor,sdl_dst_color_blendfactor,sdl_color_blend_op,sdl_src_alpha_blendfactor,sdl_dst_alpha_blendfactor,sdl_alpha_blend_op,sdl_color_write_mask,sdl_enable_blend,sdl_enable_color_write_mask}->do
         fillBytes ptr 0 (#size SDL_GPUColorTargetBlendState)
         (#poke SDL_GPUColorTargetBlendState,src_color_blendfactor) ptr sdl_src_color_blendfactor
         (#poke SDL_GPUColorTargetBlendState,dst_color_blendfactor) ptr sdl_dst_color_blendfactor
@@ -193,7 +193,7 @@ sdl_gpu_shader_create_info_peek _=quick_error "sdl_gpu_shader_create_info_peek" 
 
 sdl_gpu_shader_create_info_poke::Ptr SDL_GPUShaderCreateInfo->SDL_GPUShaderCreateInfo->IO ()
 sdl_gpu_shader_create_info_poke ptr shader_create_info=case shader_create_info of
-    (SDL_GPUShaderCreateInfo {sdl_code_size,sdl_code,sdl_entrypoint,sdl_format,sdl_stage,sdl_num_samplers,sdl_num_storage_textures,sdl_num_storage_buffers,sdl_num_uniform_buffers})->do
+    SDL_GPUShaderCreateInfo {sdl_code_size,sdl_code,sdl_entrypoint,sdl_format,sdl_stage,sdl_num_samplers,sdl_num_storage_textures,sdl_num_storage_buffers,sdl_num_uniform_buffers}->do
         fillBytes ptr 0 (#size SDL_GPUShaderCreateInfo)
         (#poke SDL_GPUShaderCreateInfo,code_size) ptr sdl_code_size
         (#poke SDL_GPUShaderCreateInfo,code) ptr sdl_code
@@ -224,7 +224,7 @@ sdl_gpu_vertex_input_state_peek _=quick_error "sdl_gpu_vertex_input_state_peek" 
 
 sdl_gpu_vertex_input_state_poke::Ptr SDL_GPUVertexInputState->SDL_GPUVertexInputState->IO ()
 sdl_gpu_vertex_input_state_poke ptr vertex_input_state=case vertex_input_state of
-    (SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions,sdl_num_vertex_buffers,sdl_vertex_attributes,sdl_num_vertex_attributes})->do
+    SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions,sdl_num_vertex_buffers,sdl_vertex_attributes,sdl_num_vertex_attributes}->do
         fillBytes ptr 0 (#size SDL_GPUVertexInputState)
         (#poke SDL_GPUVertexInputState,vertex_buffer_descriptions) ptr sdl_vertex_buffer_descriptions
         (#poke SDL_GPUVertexInputState,num_vertex_buffers) ptr sdl_num_vertex_buffers
@@ -250,7 +250,7 @@ sdl_gpu_buffer_create_info_peek _=quick_error "sdl_gpu_buffer_create_info_peek" 
 
 sdl_gpu_buffer_create_info_poke::Ptr SDL_GPUBufferCreateInfo->SDL_GPUBufferCreateInfo->IO ()
 sdl_gpu_buffer_create_info_poke ptr buffer_create_info=case buffer_create_info of
-    (SDL_GPUBufferCreateInfo {sdl_usage,sdl_size})->do
+    SDL_GPUBufferCreateInfo {sdl_usage,sdl_size}->do
         fillBytes ptr 0 (#size SDL_GPUBufferCreateInfo)
         (#poke SDL_GPUBufferCreateInfo,usage) ptr sdl_usage
         (#poke SDL_GPUBufferCreateInfo,size) ptr sdl_size
@@ -274,7 +274,7 @@ sdl_gpu_transfer_buffer_create_info_peek _=quick_error "sdl_gpu_transfer_buffer_
 
 sdl_gpu_transfer_buffer_create_info_poke::Ptr SDL_GPUTransferBufferCreateInfo->SDL_GPUTransferBufferCreateInfo->IO ()
 sdl_gpu_transfer_buffer_create_info_poke ptr transfer_buffer_create_info=case transfer_buffer_create_info of
-    (SDL_GPUTransferBufferCreateInfo {sdl_usage,sdl_size})->do
+    SDL_GPUTransferBufferCreateInfo {sdl_usage,sdl_size}->do
         fillBytes ptr 0 (#size SDL_GPUTransferBufferCreateInfo)
         (#poke SDL_GPUTransferBufferCreateInfo,usage) ptr sdl_usage
         (#poke SDL_GPUTransferBufferCreateInfo,size) ptr sdl_size
@@ -298,7 +298,7 @@ sdl_gpu_transfer_buffer_location_peek _=quick_error "sdl_gpu_transfer_buffer_loc
 
 sdl_gpu_transfer_buffer_location_poke::Ptr SDL_GPUTransferBufferLocation->SDL_GPUTransferBufferLocation->IO ()
 sdl_gpu_transfer_buffer_location_poke ptr transfer_buffer_location=case transfer_buffer_location of
-    (SDL_GPUTransferBufferLocation {sdl_transfer_buffer,sdl_offset})->do
+    SDL_GPUTransferBufferLocation {sdl_transfer_buffer,sdl_offset}->do
         fillBytes ptr 0 (#size SDL_GPUTransferBufferLocation)
         (#poke SDL_GPUTransferBufferLocation,transfer_buffer) ptr sdl_transfer_buffer
         (#poke SDL_GPUTransferBufferLocation,offset) ptr sdl_offset
@@ -322,7 +322,7 @@ sdl_gpu_buffer_region_peek _=quick_error "sdl_gpu_buffer_region_peek" 0
 
 sdl_gpu_buffer_region_poke::Ptr SDL_GPUBufferRegion->SDL_GPUBufferRegion->IO ()
 sdl_gpu_buffer_region_poke ptr buffer_region=case buffer_region of
-    (SDL_GPUBufferRegion {sdl_buffer,sdl_offset,sdl_size})->do
+    SDL_GPUBufferRegion {sdl_buffer,sdl_offset,sdl_size}->do
         fillBytes ptr 0 (#size SDL_GPUBufferRegion)
         (#poke SDL_GPUBufferRegion,buffer) ptr sdl_buffer
         (#poke SDL_GPUBufferRegion,offset) ptr sdl_offset
@@ -347,7 +347,7 @@ sdl_gpu_vertex_buffer_description_peek _=quick_error "sdl_gpu_vertex_buffer_desc
 
 sdl_gpu_vertex_buffer_description_poke::Ptr SDL_GPUVertexBufferDescription->SDL_GPUVertexBufferDescription->IO ()
 sdl_gpu_vertex_buffer_description_poke ptr vertex_buffer_description=case vertex_buffer_description of
-    (SDL_GPUVertexBufferDescription {sdl_slot,sdl_pitch,sdl_input_rate,sdl_instance_step_rate})->do
+    SDL_GPUVertexBufferDescription {sdl_slot,sdl_pitch,sdl_input_rate,sdl_instance_step_rate}->do
         fillBytes ptr 0 (#size SDL_GPUVertexBufferDescription)
         (#poke SDL_GPUVertexBufferDescription,slot) ptr sdl_slot
         (#poke SDL_GPUVertexBufferDescription,pitch) ptr sdl_pitch
@@ -373,7 +373,7 @@ sdl_gpu_graphics_pipeline_target_info_peek _=quick_error "sdl_gpu_graphics_pipel
 
 sdl_gpu_graphics_pipeline_target_info_poke::Ptr SDL_GPUGraphicsPipelineTargetInfo->SDL_GPUGraphicsPipelineTargetInfo->IO ()
 sdl_gpu_graphics_pipeline_target_info_poke ptr graphics_pipeline_target_info=case graphics_pipeline_target_info of
-    (SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions,sdl_num_color_targets,sdl_has_depth_stencil_target})->do
+    SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions,sdl_num_color_targets,sdl_has_depth_stencil_target}->do
         fillBytes ptr 0 (#size SDL_GPUGraphicsPipelineTargetInfo)
         (#poke SDL_GPUGraphicsPipelineTargetInfo,color_target_descriptions) ptr sdl_color_target_descriptions
         (#poke SDL_GPUGraphicsPipelineTargetInfo,num_color_targets) ptr sdl_num_color_targets
@@ -398,7 +398,7 @@ sdl_gpu_graphics_pipeline_create_info_peek _=quick_error "sdl_gpu_graphics_pipel
 
 sdl_gpu_graphics_pipeline_create_info_poke::Ptr SDL_GPUGraphicsPipelineCreateInfo->SDL_GPUGraphicsPipelineCreateInfo->IO ()
 sdl_gpu_graphics_pipeline_create_info_poke ptr graphics_pipeline_create_info=case graphics_pipeline_create_info of
-    (SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader,sdl_fragment_shader,sdl_vertex_input_state,sdl_primitive_type,sdl_target_info})->do
+    SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader,sdl_fragment_shader,sdl_vertex_input_state,sdl_primitive_type,sdl_target_info}->do
         fillBytes ptr 0 (#size SDL_GPUGraphicsPipelineCreateInfo)
         (#poke SDL_GPUGraphicsPipelineCreateInfo,vertex_shader) ptr sdl_vertex_shader
         (#poke SDL_GPUGraphicsPipelineCreateInfo,fragment_shader) ptr sdl_fragment_shader
@@ -425,7 +425,7 @@ sdl_gpu_texture_create_info_peek _=quick_error "sdl_gpu_texture_create_info_peek
 
 sdl_gpu_texture_create_info_poke::Ptr SDL_GPUTextureCreateInfo->SDL_GPUTextureCreateInfo->IO ()
 sdl_gpu_texture_create_info_poke ptr texture_create_info=case texture_create_info of
-    (SDL_GPUTextureCreateInfo {sdl_type,sdl_format,sdl_usage,sdl_width,sdl_height,sdl_layer_count_or_depth,sdl_num_levels,sdl_sample_count})->do
+    SDL_GPUTextureCreateInfo {sdl_type,sdl_format,sdl_usage,sdl_width,sdl_height,sdl_layer_count_or_depth,sdl_num_levels,sdl_sample_count}->do
         fillBytes ptr 0 (#size SDL_GPUTextureCreateInfo)
         (#poke SDL_GPUTextureCreateInfo,type) ptr sdl_type
         (#poke SDL_GPUTextureCreateInfo,format) ptr sdl_format
@@ -455,7 +455,7 @@ sdl_gpu_sampler_create_info_peek _=quick_error "sdl_gpu_sampler_create_info_peek
 
 sdl_gpu_sampler_create_info_poke::Ptr SDL_GPUSamplerCreateInfo->SDL_GPUSamplerCreateInfo->IO ()
 sdl_gpu_sampler_create_info_poke ptr sampler_create_info=case sampler_create_info of
-    (SDL_GPUSamplerCreateInfo {sdl_min_filter,sdl_mag_filter,sdl_mipmap_mode,sdl_address_mode_u,sdl_address_mode_v,sdl_address_mode_w})->do
+    SDL_GPUSamplerCreateInfo {sdl_min_filter,sdl_mag_filter,sdl_mipmap_mode,sdl_address_mode_u,sdl_address_mode_v,sdl_address_mode_w}->do
         fillBytes ptr 0 (#size SDL_GPUSamplerCreateInfo)
         (#poke SDL_GPUSamplerCreateInfo,min_filter) ptr sdl_min_filter
         (#poke SDL_GPUSamplerCreateInfo,mag_filter) ptr sdl_mag_filter
@@ -483,7 +483,7 @@ sdl_gpu_texture_sampler_binding_peek _=quick_error "sdl_gpu_texture_sampler_bind
 
 sdl_gpu_texture_sampler_binding_poke::Ptr SDL_GPUTextureSamplerBinding->SDL_GPUTextureSamplerBinding->IO ()
 sdl_gpu_texture_sampler_binding_poke ptr texture_sampler_binding=case texture_sampler_binding of
-    (SDL_GPUTextureSamplerBinding {sdl_texture,sdl_sampler})->do
+    SDL_GPUTextureSamplerBinding {sdl_texture,sdl_sampler}->do
         fillBytes ptr 0 (#size SDL_GPUTextureSamplerBinding)
         (#poke SDL_GPUTextureSamplerBinding,texture) ptr sdl_texture
         (#poke SDL_GPUTextureSamplerBinding,sampler) ptr sdl_sampler
@@ -507,7 +507,7 @@ sdl_gpu_texture_transfer_info_peek _=quick_error "sdl_gpu_texture_transfer_info_
 
 sdl_gpu_texture_transfer_info_poke::Ptr SDL_GPUTextureTransferInfo->SDL_GPUTextureTransferInfo->IO ()
 sdl_gpu_texture_transfer_info_poke ptr texture_transfer_info=case texture_transfer_info of
-    (SDL_GPUTextureTransferInfo {sdl_transfer_buffer,sdl_offset,sdl_pixels_per_row,sdl_rows_per_layer})->do
+    SDL_GPUTextureTransferInfo {sdl_transfer_buffer,sdl_offset,sdl_pixels_per_row,sdl_rows_per_layer}->do
         fillBytes ptr 0 (#size SDL_GPUTextureTransferInfo)
         (#poke SDL_GPUTextureTransferInfo,transfer_buffer) ptr sdl_transfer_buffer
         (#poke SDL_GPUTextureTransferInfo,offset) ptr sdl_offset
@@ -533,7 +533,7 @@ sdl_gpu_texture_region_peek _=quick_error "sdl_gpu_texture_region_peek" 0
 
 sdl_gpu_texture_region_poke::Ptr SDL_GPUTextureRegion->SDL_GPUTextureRegion->IO ()
 sdl_gpu_texture_region_poke ptr texture_region=case texture_region of
-    (SDL_GPUTextureRegion {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z,sdl_w,sdl_h,sdl_d})->do
+    SDL_GPUTextureRegion {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z,sdl_w,sdl_h,sdl_d}->do
         fillBytes ptr 0 (#size SDL_GPUTextureRegion)
         (#poke SDL_GPUTextureRegion,texture) ptr sdl_texture
         (#poke SDL_GPUTextureRegion,mip_level) ptr sdl_mip_level
@@ -564,7 +564,7 @@ sdl_gpu_texture_location_peek _=quick_error "sdl_gpu_texture_location_peek" 0
 
 sdl_gpu_texture_location_poke::Ptr SDL_GPUTextureLocation->SDL_GPUTextureLocation->IO ()
 sdl_gpu_texture_location_poke ptr texture_location=case texture_location of
-    (SDL_GPUTextureLocation {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z})->do
+    SDL_GPUTextureLocation {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z}->do
         fillBytes ptr 0 (#size SDL_GPUTextureLocation)
         (#poke SDL_GPUTextureLocation,texture) ptr sdl_texture
         (#poke SDL_GPUTextureLocation,mip_level) ptr sdl_mip_level

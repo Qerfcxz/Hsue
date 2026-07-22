@@ -97,9 +97,7 @@ do_request request engine=case request of
             command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
             catch_null command_buffer
             let (vertex,index,parameter,draw_call)=for_submit submit
-            value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
-            for_render window command_buffer (if value then \render_pass->do_render engine window command_buffer render_pass draw_call else SDLF.sdl_end_gpu_render_pass)
-            catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+            for_render window command_buffer (\texture->do_render engine window command_buffer texture draw_call vertex index parameter)
             return (new_engine,False)
         _->EE.quick_error "do_request" 2
     Io {io}->do
@@ -117,6 +115,7 @@ lock_widget::Widget a->Widget a
 lock_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
+        Atlas {index,clip_request,path,clip}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {index=index,clip_request=clip_request,path=path,clip=clip,locked=True}}
         _->widget
     Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
     _->widget
@@ -139,13 +138,18 @@ for_unlock this_widget engine=case this_widget of
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,address,size,linear_coroutine,iterative}->do
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->do
         (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate key this_coroutine_state->intmap_monad_accumulate key (`for_unlock_coroutine` this_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
-        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,address=address,size=size,linear_coroutine=linear_coroutine,iterative=iterative})
+        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked
             then do
                 (new_engine,new_visual)<-create_picture path engine
+                return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
+            else return (engine,this_widget)
+        Atlas {index,clip_request,path,locked}->if locked
+            then do
+                (new_engine,new_visual)<-create_atlas index clip_request path engine
                 return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
             else return (engine,this_widget)
         _->return (engine,this_widget)
@@ -172,18 +176,28 @@ update_article_a font character=case character of
     Character {unicode,font_id,size,left,down,right,up,red,green,blue,alpha}->case intmap_lookup unicode (intmap_lookup font_id font).glyph of
         Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,size=size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,red=red,green=green,blue=blue,alpha=alpha}
 
-for_render::Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->(FP.Ptr SDLT.SDL_GPURenderPass->IO ())->IO ()
-for_render window command_buffer next=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
+for_render::Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->(FP.Ptr SDLT.SDL_GPUTexture->IO ())->IO ()
+for_render window command_buffer action=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
     value<-SDLF.sdl_acquire_gpu_swapchain_texture command_buffer window.sdl_window ptr_texture width height
-    CM.when (FMU.toBool value) $ do
-        texture<-FS.peek ptr_texture
-        CM.unless (texture==FP.nullPtr) $ FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
-            render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-            catch_null render_pass
-            next render_pass
+    if FMU.toBool value
+        then do
+            texture<-FS.peek ptr_texture
+            if texture==FP.nullPtr then catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer) else do
+                action texture
+                catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+        else catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer)
 
-do_render::Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render engine window command_buffer render_pass draw_call=do
+do_render::Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
+do_render engine window command_buffer texture draw_call vertex index parameter=do
+    value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
+    FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
+        render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
+        catch_null render_pass
+        CM.when value (do_render_a engine window command_buffer render_pass draw_call)
+        SDLF.sdl_end_gpu_render_pass render_pass
+
+do_render_a::Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_a engine window command_buffer render_pass draw_call=do
     SDLF.sdl_bind_gpu_graphics_pipeline render_pass window.graphics_pipeline
     FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
     let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
@@ -195,11 +209,10 @@ do_render engine window command_buffer render_pass draw_call=do
         SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_a render_pass engine) draw_call
-    SDLF.sdl_end_gpu_render_pass render_pass
+    DF.mapM_ (do_render_b render_pass engine) draw_call
 
-do_render_a::FP.Ptr SDLT.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render_a render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
+do_render_b::FP.Ptr SDLT.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_b render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
     Nothing->do
         FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
         SDLF.sdl_draw_gpu_indexed_primitives render_pass index_length 1 index_offset 0 0

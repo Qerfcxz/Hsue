@@ -124,6 +124,9 @@ foreign import ccall unsafe "SDL_AcquireGPUCommandBuffer"
 foreign import ccall unsafe "SDL_SubmitGPUCommandBuffer"
     sdl_submit_gpu_command_buffer::Ptr SDL_GPUCommandBuffer->IO CBool
 
+foreign import ccall unsafe "SDL_CancelGPUCommandBuffer"
+    sdl_cancel_gpu_command_buffer::Ptr SDL_GPUCommandBuffer->IO CBool
+
 foreign import ccall unsafe "SDL_BeginGPUCopyPass"
     sdl_begin_gpu_copy_pass::Ptr SDL_GPUCommandBuffer->IO (Ptr SDL_GPUCopyPass)
 
