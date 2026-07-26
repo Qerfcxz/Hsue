@@ -128,7 +128,7 @@ create_visual visual_request engine=case visual_request of
     Large_atlas_request {clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
-    Animation_request {width,height,padding,path}->create_animation width height padding path engine
+    Animation_request {min_delay,width,height,padding,path}->create_animation min_delay width height padding path engine
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a->IO (Engine a,Visual)
 do_image action path engine=do
@@ -152,8 +152,8 @@ create_large_atlas::FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_large_atlas width height clip_request=case clip_request of
     Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
-create_animation::DW.Word32->DW.Word32->Int->String->Engine a->IO (Engine a,Visual)
-create_animation width height padding path engine=FCS.withCString path $ \this_path->do
+create_animation::FCT.CFloat->DW.Word32->DW.Word32->Int->String->Engine a->IO (Engine a,Visual)
+create_animation min_delay width height padding path engine=FCS.withCString path $ \this_path->do
     ptr_animation<-SDLF.img_load_animation this_path
     catch_null ptr_animation
     animation<-FS.peek ptr_animation
@@ -169,10 +169,10 @@ create_animation width height padding path engine=FCS.withCString path $ \this_p
             let number=width_number*height_number
             CM.when (number==0) (EE.quick_error "create_animation" 1)
             let count=fromIntegral img_count
-            delay<-DVS.generateM count (fmap (\this_delay->fromIntegral this_delay*millisecond) . FS.peekElemOff img_delays)
+            delay<-DVS.generateM count (fmap (\this_delay->max min_delay (fromIntegral this_delay*millisecond)) . FS.peekElemOff img_delays)
             new_engine<-create_animation_a img_frames width height padding new_width size frame_width frame_height pack_width pack_height width_number number count 0 engine.album_id engine
             SDLF.img_free_animation ptr_animation
-            return (new_engine,Animation {instant=DVS.all (==0) delay,delay=delay,moment=0,frame_width=fromIntegral frame_width,frame_height=fromIntegral frame_height,width=fromIntegral width,height=fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
+            return (new_engine,Animation {delay=delay,moment=0,frame_width=fromIntegral frame_width,frame_height=fromIntegral frame_height,width=fromIntegral width,height=fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
 
 create_animation_a::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->DW.Word32->DW.Word32->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Engine a->IO (Engine a)
 create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count index album_id engine=if count<=index then return engine else do
