@@ -718,6 +718,9 @@ sdl_window_borderless=(#const SDL_WINDOW_BORDERLESS)
 sdl_window_resizable::Word64
 sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
 
+sdl_window_always_on_top::Word64
+sdl_window_always_on_top=(#const SDL_WINDOW_ALWAYS_ON_TOP)
+
 sdl_pixelformat_rgba32::Word32
 sdl_pixelformat_rgba32=(#const SDL_PIXELFORMAT_RGBA32)
 

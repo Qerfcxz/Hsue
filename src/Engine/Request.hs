@@ -110,6 +110,7 @@ from_window_flag window_flag=case window_flag of
     Window_hidden->SDLI.sdl_window_hidden
     Window_borderless->SDLI.sdl_window_borderless
     Window_resizable->SDLI.sdl_window_resizable
+    Window_always_on_top->SDLI.sdl_window_always_on_top
 
 lock_widget::Widget a->Widget a
 lock_widget widget=case widget of

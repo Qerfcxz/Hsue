@@ -6,12 +6,14 @@ module Engine.Helper where
 
 import Engine.Container
 import Engine.Type
+import qualified SDL.Function as SDLF
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
+import qualified Foreign.C.String as FCS
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
@@ -116,6 +118,22 @@ from_extended extended=case extended of
     Negative_infinity->0
     Finite {number}->number
     Positive_infinity->0
+
+get_clipboard_text::IO String
+get_clipboard_text=do
+    ptr<-SDLF.sdl_get_clipboard_text
+    catch_null ptr
+    string<-FCS.peekCString ptr
+    SDLF.sdl_free (FP.castPtr ptr)
+    return string
+
+has_clipboard_text::IO Bool
+has_clipboard_text=FMU.toBool <$> SDLF.sdl_has_clipboard_text
+
+set_clipboard_text::String->IO Bool
+set_clipboard_text string=FCS.withCString string $ \ptr->do
+    value<-SDLF.sdl_set_clipboard_text ptr
+    return (FMU.toBool value)
 
 quick_create_engine::(a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a))->a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a)
 quick_create_engine create_engine state main_id projection_strategy picture_size vertex_size index_size parameter_size maybe_interval padding width height font_size pixel_range=case maybe_interval of

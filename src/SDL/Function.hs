@@ -109,6 +109,18 @@ foreign import ccall safe "SDL_AddTimerNS"
 foreign import ccall safe "SDL_RemoveTimer"
     sdl_remove_timer::Word32->IO CBool
 
+foreign import ccall safe "SDL_GetClipboardText"
+    sdl_get_clipboard_text::IO CString
+
+foreign import ccall safe "SDL_HasClipboardText"
+    sdl_has_clipboard_text::IO CBool
+
+foreign import ccall safe "SDL_SetClipboardText"
+    sdl_set_clipboard_text::CString->IO CBool
+
+foreign import ccall safe "SDL_free"
+    sdl_free::Ptr ()->IO ()
+
 foreign import ccall safe "IMG_Load"
     img_load::CString->IO (Ptr SDL_Surface)
 
