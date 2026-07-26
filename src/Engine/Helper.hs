@@ -9,8 +9,11 @@ import Engine.Type
 import qualified SDL.Function as SDLF
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
+import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
+import qualified Data.Text as DT
+import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.C.String as FCS
@@ -35,6 +38,9 @@ return_catch_null::IO (FP.Ptr a)->IO (FP.Ptr a)
 return_catch_null io=do
     ptr<-io
     if ptr==FP.nullPtr then EE.quick_error "return_catch_null" 0 else return ptr
+
+with_string::String->(FP.Ptr FCT.CChar->IO a)->IO a
+with_string string=DBS.useAsCString (DTE.encodeUtf8 (DT.pack string))
 
 lookup_widget::Widget a->Widget a
 lookup_widget this_widget=case this_widget of
@@ -131,7 +137,7 @@ has_clipboard_text::IO Bool
 has_clipboard_text=FMU.toBool <$> SDLF.sdl_has_clipboard_text
 
 set_clipboard_text::String->IO Bool
-set_clipboard_text string=FCS.withCString string $ \ptr->do
+set_clipboard_text string=with_string string $ \ptr->do
     value<-SDLF.sdl_set_clipboard_text ptr
     return (FMU.toBool value)
 

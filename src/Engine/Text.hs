@@ -20,7 +20,6 @@ import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
 import qualified Data.Text as DT
 import qualified Data.Word as DW
-import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Array as FMA
 import qualified Foreign.Ptr as FP
@@ -88,7 +87,7 @@ update_font_a path char engine=let charset=DIS.fromDistinctAscList (map DC.ord (
         Just font->update_font_b font_id path (DIS.difference charset (DIM.keysSet font.glyph)) engine
 
 update_font_b::Int->String->DIS.IntSet->Engine a->IO (Engine a)
-update_font_b font_id path charset engine=if DIS.null charset then return engine else FCS.withCString path $ \this_path->let size=DIS.size charset in FMA.allocaArray size $ \ptr_charset->do
+update_font_b font_id path charset engine=if DIS.null charset then return engine else with_string path $ \this_path->let size=DIS.size charset in FMA.allocaArray size $ \ptr_charset->do
     update_font_c ptr_charset (DIS.toAscList charset)
     ptr_msdf_output<-MSDFF.msdf_generator this_path ptr_charset (fromIntegral size) engine.font_size engine.pixel_range
     catch_null ptr_msdf_output

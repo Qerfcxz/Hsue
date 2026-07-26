@@ -11,7 +11,6 @@ import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Word as DW
-import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -35,7 +34,7 @@ atlas_insert_a width height atlas=case atlas of
         Just (new_left_atlas,left,down,right,up)->Just (Node_atlas {border=border,left_atlas=new_left_atlas,right_atlas=right_atlas},left,down,right,up)
 
 from_image::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->String->IO (FP.Ptr SDLT.SDL_GPUTexture,DW.Word32,DW.Word32)
-from_image device picture_transfer_buffer picture_size path=FCS.withCString path $ \this_path->do
+from_image device picture_transfer_buffer picture_size path=with_string path $ \this_path->do
     surface<-SDLF.img_load this_path
     catch_null surface
     new_surface<-SDLF.sdl_convert_surface surface SDLI.sdl_pixelformat_rgba32

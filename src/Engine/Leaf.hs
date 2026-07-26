@@ -21,7 +21,6 @@ import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Vector.Storable as DVS
 import qualified Data.Word as DW
-import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -153,7 +152,7 @@ create_large_atlas width height clip_request=case clip_request of
     Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
 create_animation::FCT.CFloat->DW.Word32->DW.Word32->Int->String->Engine a->IO (Engine a,Visual)
-create_animation min_delay width height padding path engine=FCS.withCString path $ \this_path->do
+create_animation min_delay width height padding path engine=with_string path $ \this_path->do
     ptr_animation<-SDLF.img_load_animation this_path
     catch_null ptr_animation
     animation<-FS.peek ptr_animation
