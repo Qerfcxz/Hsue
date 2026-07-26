@@ -589,7 +589,13 @@ img_animation_alignment::Num a=>IMG_Animation->a
 img_animation_alignment _=(#alignment IMG_Animation)
 
 img_animation_peek::Ptr IMG_Animation->IO IMG_Animation
-img_animation_peek _=quick_error "img_animation_peek" 0
+img_animation_peek ptr=do
+    img_w<-(#peek IMG_Animation,w) ptr
+    img_h<-(#peek IMG_Animation,h) ptr
+    img_count<-(#peek IMG_Animation,count) ptr
+    img_frames<-(#peek IMG_Animation,frames) ptr
+    img_delays<-(#peek IMG_Animation,delays) ptr
+    return (IMG_Animation {img_w=img_w,img_h=img_h,img_count=img_count,img_frames=img_frames,img_delays=img_delays})
 
 img_animation_poke::Ptr IMG_Animation->IMG_Animation->IO ()
 img_animation_poke ptr animation=case animation of
