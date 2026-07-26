@@ -18,6 +18,7 @@ common warnings
 library
     import:           warnings
     exposed-modules:
+        Engine.Animation
         Engine.Atlas
         Engine.Collector
         Engine.Container
@@ -37,6 +38,7 @@ library
         SDL.Function
         SDL.Include
         SDL.Type
+        Error.Error
     -- other-modules:
     -- other-extensions:
     build-depends:
