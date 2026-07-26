@@ -127,3 +127,6 @@ mebibyte=1048576
 
 nanosecond::Num a=>a
 nanosecond=1000000000
+
+millisecond::Num a=>a
+millisecond=1000000

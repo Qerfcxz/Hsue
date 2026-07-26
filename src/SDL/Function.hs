@@ -112,6 +112,12 @@ foreign import ccall safe "SDL_RemoveTimer"
 foreign import ccall safe "IMG_Load"
     img_load::CString->IO (Ptr SDL_Surface)
 
+foreign import ccall safe "IMG_LoadAnimation"
+    img_load_animation::CString->IO (Ptr IMG_Animation)
+
+foreign import ccall safe "IMG_FreeAnimation"
+    img_free_animation::Ptr IMG_Animation->IO ()
+
 foreign import ccall unsafe "SDL_BindGPUGraphicsPipeline"
     sdl_bind_gpu_graphics_pipeline::Ptr SDL_GPURenderPass->Ptr SDL_GPUGraphicsPipeline->IO ()
 

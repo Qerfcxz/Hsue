@@ -7,6 +7,7 @@
 module SDL.Include where
 
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 
 import SDL.Type
 import Error.Error
@@ -572,6 +573,33 @@ sdl_gpu_texture_location_poke ptr texture_location=case texture_location of
         (#poke SDL_GPUTextureLocation,x) ptr sdl_x
         (#poke SDL_GPUTextureLocation,y) ptr sdl_y
         (#poke SDL_GPUTextureLocation,z) ptr sdl_z
+
+data IMG_Animation=IMG_Animation {img_w::CInt,img_h::CInt,img_count::CInt,img_frames::Ptr (Ptr SDL_Surface),img_delays::Ptr CInt}
+
+instance Storable IMG_Animation where
+    sizeOf=img_animation_size_of
+    alignment=img_animation_alignment
+    peek=img_animation_peek
+    poke=img_animation_poke
+
+img_animation_size_of::Num a=>IMG_Animation->a
+img_animation_size_of _=(#size IMG_Animation)
+
+img_animation_alignment::Num a=>IMG_Animation->a
+img_animation_alignment _=(#alignment IMG_Animation)
+
+img_animation_peek::Ptr IMG_Animation->IO IMG_Animation
+img_animation_peek _=quick_error "img_animation_peek" 0
+
+img_animation_poke::Ptr IMG_Animation->IMG_Animation->IO ()
+img_animation_poke ptr animation=case animation of
+    IMG_Animation {img_w,img_h,img_count,img_frames,img_delays}->do
+        fillBytes ptr 0 (#size IMG_Animation)
+        (#poke IMG_Animation,w) ptr img_w
+        (#poke IMG_Animation,h) ptr img_h
+        (#poke IMG_Animation,count) ptr img_count
+        (#poke IMG_Animation,frames) ptr img_frames
+        (#poke IMG_Animation,delays) ptr img_delays
 
 sdl_init_video::Word32
 sdl_init_video=(#const SDL_INIT_VIDEO)

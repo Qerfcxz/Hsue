@@ -209,9 +209,9 @@ data Sentence=Sentence {sentence_core::DSeq.Seq Phrase,path::String}
 
 data Phrase=Phrase {phrase_core::DT.Text,size::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
-data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {width::FCT.CFloat,height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {width::FCT.CFloat,height::FCT.CFloat,album_id::Int}|Atlas {index::Int,clip_request::DSeq.Seq Clip_request,path::String,clip::DVS.Vector Clip,locked::Bool}|Large_atlas {index::Int,clip::DVS.Vector Clip,album_id::Int}
+data Visual=Triangle {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {point::DSeq.Seq Point}|Regular_polygon {number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {width::FCT.CFloat,height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {width::FCT.CFloat,height::FCT.CFloat,album_id::Int}|Atlas {clip_request::DSeq.Seq Clip_request,path::String,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {clip::DVS.Vector Clip,album_id::Int,index::Int}|Animation {instant::Bool,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,frame_width::FCT.CFloat,frame_height::FCT.CFloat,width::FCT.CFloat,height::FCT.CFloat,padding::FCT.CFloat,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}
 
-data Visual_request=Triangle_request {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {point::DSeq.Seq Point}|Regular_polygon_request {number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {path::String}|Large_picture_request {path::String}|Atlas_request {index::Int,clip_request::DSeq.Seq Clip_request,path::String}|Large_atlas_request {index::Int,clip_request::DSeq.Seq Clip_request,path::String}
+data Visual_request=Triangle_request {first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {point::DSeq.Seq Point}|Regular_polygon_request {number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {path::String}|Large_picture_request {path::String}|Atlas_request {clip_request::DSeq.Seq Clip_request,path::String}|Large_atlas_request {clip_request::DSeq.Seq Clip_request,path::String}|Animation_request {width::DW.Word32,height::DW.Word32,padding::Int,path::String}
 
 data Clip_request=Clip_request {x::FCT.CFloat,y::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -290,13 +290,16 @@ instance FS.Storable Layout where
     poke=layout_poke
 
 layout_size_of::Num a=>Layout->a
-layout_size_of _=8
+layout_size_of _=16
 
 layout_alignment::Num a=>Layout->a
-layout_alignment _=4
+layout_alignment _=8
 
 layout_peek::FP.Ptr Layout->IO Layout
-layout_peek _=EE.quick_error "layout_peek" 0
+layout_peek ptr=do
+    address<-FS.peekByteOff ptr 0
+    size<-FS.peekByteOff ptr 8
+    return (Layout {address=address,size=size})
 
 layout_poke::FP.Ptr Layout->Layout->IO ()
 layout_poke ptr layout=case layout of

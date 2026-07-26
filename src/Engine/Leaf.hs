@@ -7,10 +7,13 @@ module Engine.Leaf where
 import Engine.Atlas
 import Engine.Container
 import Engine.Coroutine
+import Engine.Helper
 import Engine.Projection
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as SDLF
+import qualified SDL.Include as SDLI
+import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
@@ -18,7 +21,11 @@ import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Vector.Storable as DVS
 import qualified Data.Word as DW
+import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
+import qualified Foreign.Marshal.Utils as FMU
+import qualified Foreign.Ptr as FP
+import qualified Foreign.Storable as FS
 
 from_same_insert_widget::Int->DS.Seq Insert_strategy->Widget a->Engine a->Engine a
 from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=intmap_update leaf_id (update_projection_object (from_same_insert_widget_a insert_widget_strategy widget)) engine.leaf}
@@ -117,10 +124,11 @@ create_visual visual_request engine=case visual_request of
     Large_picture_request {path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {width=fromIntegral width,height=fromIntegral height,album_id=engine.album_id})
-    Atlas_request {index,clip_request,path}->create_atlas index clip_request path engine
-    Large_atlas_request {index,clip_request,path}->do
+    Atlas_request {clip_request,path}->create_atlas 0 clip_request path engine
+    Large_atlas_request {clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {index=index,clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id})
+        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
+    Animation_request {width,height,padding,path}->create_animation width height padding path engine
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a->IO (Engine a,Visual)
 do_image action path engine=do
@@ -134,7 +142,7 @@ create_picture::String->Engine a->IO (Engine a,Visual)
 create_picture path engine=do_image (\width height left down right up->Picture {width=fromIntegral width,height=fromIntegral height,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
 
 create_atlas::Int->DS.Seq Clip_request->String->Engine a->IO (Engine a,Visual)
-create_atlas index clip_request path engine=do_image (\width height left down right up->Atlas {index=index,clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),locked=False}) path engine
+create_atlas index clip_request path engine=do_image (\width height left down right up->Atlas {clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),index=index,locked=False}) path engine
 
 create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_atlas_a width height this_x this_y reciprocal_width reciprocal_height clip_request=case clip_request of
@@ -143,6 +151,45 @@ create_atlas_a width height this_x this_y reciprocal_width reciprocal_height cli
 create_large_atlas::FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_large_atlas width height clip_request=case clip_request of
     Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
+
+create_animation::DW.Word32->DW.Word32->Int->String->Engine a->IO (Engine a,Visual)
+create_animation width height padding path engine=FCS.withCString path $ \this_path->do
+    ptr_animation<-SDLF.img_load_animation this_path
+    catch_null ptr_animation
+    animation<-FS.peek ptr_animation
+    case animation of
+        SDLI.IMG_Animation {img_w,img_h,img_count,img_frames,img_delays}->let new_width=fromIntegral width in let new_height=fromIntegral height in let size=4*new_width*new_height in do
+            CM.when (engine.picture_size<fromIntegral size) (EE.quick_error "create_animation" 0)
+            let frame_width=fromIntegral img_w
+            let frame_height=fromIntegral img_h
+            let pack_width=frame_width+2*padding
+            let pack_height=frame_height+2*padding
+            let width_number=div new_width pack_width
+            let height_number=div new_height pack_height
+            let number=width_number*height_number
+            CM.when (number==0) (EE.quick_error "create_animation" 1)
+            let count=fromIntegral img_count
+            delay<-DVS.generateM count (fmap (\this_delay->fromIntegral this_delay*millisecond) . FS.peekElemOff img_delays)
+            new_engine<-create_animation_a img_frames width height padding new_width size frame_width frame_height pack_width pack_height width_number number count 0 engine.album_id engine
+            SDLF.img_free_animation ptr_animation
+            return (new_engine,Animation {instant=DVS.all (==0) delay,delay=delay,moment=0,frame_width=fromIntegral frame_width,frame_height=fromIntegral frame_height,width=fromIntegral width,height=fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
+
+create_animation_a::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->DW.Word32->DW.Word32->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Engine a->IO (Engine a)
+create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count index album_id engine=if count<=index then return engine else do
+    texture<-upload_texture engine.device engine.picture_transfer_buffer width height (create_animation_b frame padding this_width size frame_width frame_height pack_width pack_height width_number number count index)
+    create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count (index+number) (album_id+1) (engine {album=intmap_insert album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
+
+create_animation_b::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->FP.Ptr ()->IO ()
+create_animation_b frame padding width size frame_width frame_height pack_width pack_height width_number number count index map_transfer_buffer=do
+    FMU.fillBytes (FP.castPtr map_transfer_buffer) 0 size
+    CM.forM_ [0..min number (count-index)-1] $ \this_index->do
+        surface_ptr<-FS.peekElemOff frame (index+this_index)
+        surface<-SDLF.sdl_convert_surface surface_ptr SDLI.sdl_pixelformat_rgba32
+        catch_null surface
+        pitch<-SDLI.sdl_surface_pitch surface
+        pixel<-SDLI.sdl_surface_pixels surface
+        CM.forM_ [0..frame_height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*fromIntegral pitch)) (frame_width*4)
+        SDLF.sdl_destroy_surface surface
 
 remove_leaf::Int->Engine a->IO (Engine a)
 remove_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in case projection of
@@ -171,5 +218,13 @@ remove_widget this_widget engine=case this_widget of
         Large_atlas {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
             SDLF.sdl_release_gpu_texture engine.device single_album.texture
             return (engine {album=album})
+        Animation {album_number,album_id}->do
+            new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
+            return (engine {album=new_album})
         _->return engine
     _->return engine
+
+remove_animation::FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)
+remove_animation device index album_id album=let (new_album,single_album)=intmap_delete_lookup (album_id+index) album in do
+    SDLF.sdl_release_gpu_texture device single_album.texture
+    return new_album

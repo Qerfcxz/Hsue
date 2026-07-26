@@ -115,7 +115,7 @@ lock_widget::Widget a->Widget a
 lock_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
-        Atlas {index,clip_request,path,clip}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {index=index,clip_request=clip_request,path=path,clip=clip,locked=True}}
+        Atlas {clip_request,path,clip,index}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {clip_request=clip_request,path=path,clip=clip,index=index,locked=True}}
         _->widget
     Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
     _->widget
@@ -147,7 +147,7 @@ for_unlock this_widget engine=case this_widget of
                 (new_engine,new_visual)<-create_picture path engine
                 return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
             else return (engine,this_widget)
-        Atlas {index,clip_request,path,locked}->if locked
+        Atlas {clip_request,path,index,locked}->if locked
             then do
                 (new_engine,new_visual)<-create_atlas index clip_request path engine
                 return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
