@@ -223,7 +223,7 @@ to_key key=case key of
     SDLI.SDLK_Z->Key_z
     _->Key_unknown
 
-run_request::(Custom_request c,Custom_widget_request e)=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
+run_request::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
 run_request switch engine=case engine.request of
     DSeq.Empty->return (engine,switch)
     (request DSeq.:<| other_request)->do
@@ -256,5 +256,5 @@ run_widget event engine this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in (Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget},create_request (Io {io=update}),next)
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget},if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (next,update,new_coroutine_state)=intmap_functor_update index (functor_update_coroutine_state (\widget->let (new_widget,new_update,new_next)=run_widget event engine widget in (new_next,new_update,new_widget))) coroutine_state in (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update,next)
-    Custom_widget {custom}->let (new_custom,update,next)=custom_widget event engine custom in (Custom_widget {custom=new_custom},update,next)
+    Custom_widget {custom}->let (new_custom,update,next)=custom_widget_run event engine custom in (Custom_widget {custom=new_custom},update,next)
     _->EE.quick_error "run_widget" 0

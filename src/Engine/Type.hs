@@ -375,7 +375,11 @@ class Custom_request a where
     custom_request::a->Engine b c a d e->IO (Engine b c a d e)
 
 class Custom_widget a where
-    custom_widget::Event b->Engine c b d a e->a->(a,Engine c b d a e->Engine c b d a e,Event b->Engine c b d a e->Maybe Int)
+    custom_widget_run::Event b->Engine c b d a e->a->(a,Engine c b d a e->Engine c b d a e,Event b->Engine c b d a e->Maybe Int)
+    custom_widget_collect::FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->a->Submit
+    custom_widget_remove::a->Engine b c d a e->IO (Engine b c d a e)
+    custom_widget_lock::a->a
+    custom_widget_unlock::a->Engine b c d a e->IO (Engine b c d a e,a)
 
 class Custom_widget_request a where
     custom_widget_request::a->Engine b c d e a->IO (Engine b c d e a,e)

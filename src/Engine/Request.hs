@@ -37,7 +37,7 @@ import qualified Foreign.Storable as FS
 create_request::Request a b c d e->Engine a b c d e->Engine a b c d e
 create_request request engine=engine {request=engine.request DS.|> request}
 
-do_request::(Custom_request c,Custom_widget_request e)=>Request a b c d e->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_request::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Request a b c d e->Engine a b c d e->IO (Engine a b c d e,Bool)
 do_request request engine=case request of
     Reset_timer {interval}->if 0<interval
         then case engine.timer of
@@ -115,16 +115,17 @@ from_window_flag window_flag=case window_flag of
     Window_resizable->SDLI.sdl_window_resizable
     Window_always_on_top->SDLI.sdl_window_always_on_top
 
-lock_widget::Widget a b c d e->Widget a b c d e
+lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
         Atlas {clip_request,path,clip,index}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {clip_request=clip_request,path=path,clip=clip,index=index,locked=True}}
         _->widget
     Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
+    Custom_widget {custom}->Custom_widget {custom=custom_widget_lock custom}
     _->widget
 
-for_unlock::Widget a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
+for_unlock::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
 for_unlock this_widget engine=case this_widget of
     Double {which,first_widget,second_widget}->do
         (new_engine,new_first_widget)<-for_unlock first_widget engine
@@ -162,9 +163,12 @@ for_unlock this_widget engine=case this_widget of
             new_engine<-update_font charset engine
             return (new_engine,Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,this_widget)
+    Custom_widget {custom}->do
+        (new_engine,new_custom)<-custom_widget_unlock custom engine
+        return (new_engine,Custom_widget {custom=new_custom})
     _->return (engine,this_widget)
 
-for_unlock_coroutine::Engine a b c d e->Coroutine_state a b c d e->IO (Engine a b c d e,Coroutine_state a b c d e)
+for_unlock_coroutine::Custom_widget d=>Engine a b c d e->Coroutine_state a b c d e->IO (Engine a b c d e,Coroutine_state a b c d e)
 for_unlock_coroutine engine coroutine_state=case coroutine_state of
     Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->do
         (new_engine,new_widget)<-for_unlock widget engine

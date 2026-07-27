@@ -193,17 +193,17 @@ create_animation_b frame padding width size frame_width frame_height pack_width 
         CM.forM_ [0..frame_height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*fromIntegral pitch)) (frame_width*4)
         SDLF.sdl_destroy_surface surface
 
-remove_leaf::Int->Engine a b c d e->IO (Engine a b c d e)
+remove_leaf::Custom_widget d=>Int->Engine a b c d e->IO (Engine a b c d e)
 remove_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in case projection of
     Without {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
     With {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
 
-remove_leaf_a::DS.Seq Int->Widget a b c d e->DIM.IntMap (Projection a b c d e)->Int->Engine a b c d e->IO (Engine a b c d e)
+remove_leaf_a::Custom_widget d=>DS.Seq Int->Widget a b c d e->DIM.IntMap (Projection a b c d e)->Int->Engine a b c d e->IO (Engine a b c d e)
 remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
     DS.Empty->remove_widget object (engine {leaf=leaf})
     _ DS.:|> node_id->remove_widget object (engine {leaf=leaf,node=intmap_update node_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
 
-remove_widget::Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
+remove_widget::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 remove_widget this_widget engine=case this_widget of
     Double {first_widget,second_widget}->do
         new_engine<-remove_widget first_widget engine
@@ -224,6 +224,7 @@ remove_widget this_widget engine=case this_widget of
             new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
             return (engine {album=new_album})
         _->return engine
+    Custom_widget {custom}->custom_widget_remove custom engine
     _->return engine
 
 remove_animation::FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)

@@ -26,30 +26,30 @@ clean_collect_a widget=case widget of
     Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
     _->widget
 
-maybe_update_collect::(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
+maybe_update_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 maybe_update_collect update view maybe_border projection_path leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (functor_update_widget update widget)}) engine) in case maybe_tuple of
     Nothing->engine
     Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton submit) collect_strategy)) new_engine.leaf}
 
-maybe_update_limited_collect::(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
+maybe_update_limited_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 maybe_update_limited_collect update view maybe_border projection_path depth leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (functor_limited_update_widget depth update widget)}) engine) in case maybe_tuple of
     Nothing->engine
     Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton submit) collect_strategy)) new_engine.leaf}
 
-maybe_collect_update::(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
+maybe_collect_update::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 maybe_collect_update update view maybe_border projection_path leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view widget))) collect_strategy)),functor_update_widget update widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
-maybe_collect_limited_update::(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
+maybe_collect_limited_update::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 maybe_collect_limited_update update view maybe_border projection_path depth leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view widget))) collect_strategy)),functor_limited_update_widget depth update widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
-collect::(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
+collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 collect view maybe_border projection_path leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (update_widget (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine)))) collect_strategy))) engine.leaf}
 
-limited_collect::(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
+limited_collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 limited_collect view maybe_border projection_path depth leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (limited_update_widget depth (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine)))) collect_strategy))) engine.leaf}
 
 collect_a::DS.Seq Submit->Insert_strategy->Widget a b c d e->Widget a b c d e
@@ -60,7 +60,7 @@ collect_a this_submit collect_strategy widget=case widget of
         Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=intmap_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert seat this_submit submit}
     _->EE.quick_error "collect_a" 0
 
-to_collect::FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget a b c d e->Submit
+to_collect::Custom_widget d=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget a b c d e->Submit
 to_collect u v maybe_border widget=case lookup_widget widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->let parameter=to_Parameter origin matrix maybe_border in case visual of
         Triangle {first_point,second_point,third_point}->case origin of
@@ -86,6 +86,7 @@ to_collect u v maybe_border widget=case lookup_widget widget of
             Nothing->let new_width=width/2 in let new_height=height/2 in let (vertex,index,_)=DF.foldl' (DF.foldl' (flip (collect_text origin_x origin_y y))) (DS.empty,DS.empty,0) (fmap (DS.takeWhileL (end_text y new_height) . DS.dropWhileL (begin_text y new_height)) article) in Submit {maybe_album_id=Nothing,vertex=vertex,index=index,parameter=Parameter {x=origin_x+matrix.x,y=origin_y+matrix.y,x_x=matrix.x_x,x_y=matrix.x_y,y_x=matrix.y_x,y_y=matrix.y_y,border_flag=1,border_left=origin_x-new_width,border_down=origin_y-new_height,border_right=origin_x+new_width,border_up=origin_y+new_height},vertex_length=fromIntegral (DS.length vertex),index_length=fromIntegral (DS.length index)}
             Just border->case border of
                 Border {left,down,right,up}->let new_width=width/2 in let new_height=height/2 in let border_down=max (-new_height) down in let border_up=min new_height up in let (vertex,index,_)=DF.foldl' (DF.foldl' (flip (collect_text origin_x origin_y y))) (DS.empty,DS.empty,0) (fmap (DS.takeWhileL (end_text y (-border_down)) . DS.dropWhileL (begin_text y border_up)) article) in Submit {maybe_album_id=Nothing,vertex=vertex,index=index,parameter=Parameter {x=origin_x+matrix.x,y=origin_y+matrix.y,x_x=matrix.x_x,x_y=matrix.x_y,y_x=matrix.y_x,y_y=matrix.y_y,border_flag=1,border_left=origin_x+max (-new_width) left,border_down=origin_y+border_down,border_right=origin_x+min new_width right,border_up=origin_y+border_up},vertex_length=fromIntegral (DS.length vertex),index_length=fromIntegral (DS.length index)}
+    Custom_widget {custom}->custom_widget_collect u v maybe_border custom
     _->EE.quick_error "to_collect" 5
 
 to_Parameter::Point->Matrix->Maybe (Border FCT.CFloat)->Parameter
