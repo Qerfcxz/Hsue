@@ -736,35 +736,41 @@ sdl_event_size=(#size SDL_Event)
 sdl_event_alignment::Int
 sdl_event_alignment=(#alignment SDL_Event)
 
-sdl_event_type::Ptr ()->IO Word32
-sdl_event_type ptr=(#peek SDL_Event,type) ptr
+sdl_user_event_data1_poke::Ptr ()->Ptr ()->IO ()
+sdl_user_event_data1_poke ptr data1=(#poke SDL_UserEvent,data1) ptr data1
 
-sdl_windowevent_windowid::Ptr ()->IO Word32
-sdl_windowevent_windowid ptr=(#peek SDL_WindowEvent,windowID) ptr
+sdl_user_event_data1_peek::Ptr ()->IO (Ptr ())
+sdl_user_event_data1_peek ptr=(#peek SDL_UserEvent,data1) ptr
 
-sdl_windowevent_data1::Ptr ()->IO Word32
-sdl_windowevent_data1 ptr=(#peek SDL_WindowEvent,data1) ptr
+sdl_event_type_peek::Ptr ()->IO Word32
+sdl_event_type_peek ptr=(#peek SDL_Event,type) ptr
 
-sdl_windowevent_data2::Ptr ()->IO Word32
-sdl_windowevent_data2 ptr=(#peek SDL_WindowEvent,data2) ptr
+sdl_windowevent_windowid_peek::Ptr ()->IO Word32
+sdl_windowevent_windowid_peek ptr=(#peek SDL_WindowEvent,windowID) ptr
 
-sdl_keyboardevent_windowid::Ptr ()->IO Word32
-sdl_keyboardevent_windowid ptr=(#peek SDL_KeyboardEvent,windowID) ptr
+sdl_windowevent_data1_peek::Ptr ()->IO Word32
+sdl_windowevent_data1_peek ptr=(#peek SDL_WindowEvent,data1) ptr
 
-sdl_keyboardevent_key::Ptr ()->IO Word32
-sdl_keyboardevent_key ptr=(#peek SDL_KeyboardEvent,key) ptr
+sdl_windowevent_data2_peek::Ptr ()->IO Word32
+sdl_windowevent_data2_peek ptr=(#peek SDL_WindowEvent,data2) ptr
 
-sdl_surface_w::Ptr SDL_Surface->IO CInt
-sdl_surface_w ptr=(#peek SDL_Surface,w) ptr
+sdl_keyboardevent_windowid_peek::Ptr ()->IO Word32
+sdl_keyboardevent_windowid_peek ptr=(#peek SDL_KeyboardEvent,windowID) ptr
 
-sdl_surface_h::Ptr SDL_Surface->IO CInt
-sdl_surface_h ptr=(#peek SDL_Surface,h) ptr
+sdl_keyboardevent_key_peek::Ptr ()->IO Word32
+sdl_keyboardevent_key_peek ptr=(#peek SDL_KeyboardEvent,key) ptr
 
-sdl_surface_pitch::Ptr SDL_Surface->IO CInt
-sdl_surface_pitch ptr=(#peek SDL_Surface,pitch) ptr
+sdl_surface_w_peek::Ptr SDL_Surface->IO CInt
+sdl_surface_w_peek ptr=(#peek SDL_Surface,w) ptr
 
-sdl_surface_pixels::Ptr SDL_Surface->IO (Ptr ())
-sdl_surface_pixels ptr=(#peek SDL_Surface,pixels) ptr
+sdl_surface_h_peek::Ptr SDL_Surface->IO CInt
+sdl_surface_h_peek ptr=(#peek SDL_Surface,h) ptr
+
+sdl_surface_pitch_peek::Ptr SDL_Surface->IO CInt
+sdl_surface_pitch_peek ptr=(#peek SDL_Surface,pitch) ptr
+
+sdl_surface_pixels_peek::Ptr SDL_Surface->IO (Ptr ())
+sdl_surface_pixels_peek ptr=(#peek SDL_Surface,pixels) ptr
 
 pattern SDL_EVENT_QUIT::Word32
 pattern SDL_EVENT_QUIT=(#const SDL_EVENT_QUIT)

@@ -34,10 +34,10 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-create_request::Request a->Engine a->Engine a
+create_request::Request a b c d e->Engine a b c d e->Engine a b c d e
 create_request request engine=engine {request=engine.request DS.|> request}
 
-do_request::Request a->Engine a->IO (Engine a,Bool)
+do_request::(Custom_request c,Custom_widget_request e)=>Request a b c d e->Engine a b c d e->IO (Engine a b c d e,Bool)
 do_request request engine=case request of
     Reset_timer {interval}->if 0<interval
         then case engine.timer of
@@ -103,6 +103,9 @@ do_request request engine=case request of
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
+    Custom_request {custom}->do
+        new_engine<-custom_request custom engine
+        return (new_engine,False)
 
 from_window_flag::Window_flag->DW.Word64
 from_window_flag window_flag=case window_flag of
@@ -112,7 +115,7 @@ from_window_flag window_flag=case window_flag of
     Window_resizable->SDLI.sdl_window_resizable
     Window_always_on_top->SDLI.sdl_window_always_on_top
 
-lock_widget::Widget a->Widget a
+lock_widget::Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
@@ -121,7 +124,7 @@ lock_widget widget=case widget of
     Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
     _->widget
 
-for_unlock::Widget a->Engine a->IO (Engine a,Widget a)
+for_unlock::Widget a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
 for_unlock this_widget engine=case this_widget of
     Double {which,first_widget,second_widget}->do
         (new_engine,new_first_widget)<-for_unlock first_widget engine
@@ -161,7 +164,7 @@ for_unlock this_widget engine=case this_widget of
         else return (engine,this_widget)
     _->return (engine,this_widget)
 
-for_unlock_coroutine::Engine a->Coroutine_state a->IO (Engine a,Coroutine_state a)
+for_unlock_coroutine::Engine a b c d e->Coroutine_state a b c d e->IO (Engine a b c d e,Coroutine_state a b c d e)
 for_unlock_coroutine engine coroutine_state=case coroutine_state of
     Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->do
         (new_engine,new_widget)<-for_unlock widget engine
@@ -188,7 +191,7 @@ for_render window command_buffer action=FMA.alloca $ \ptr_texture->FMA.alloca $ 
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
         else catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer)
 
-do_render::Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
+do_render::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
 do_render engine window command_buffer texture draw_call vertex index parameter=do
     value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
@@ -197,7 +200,7 @@ do_render engine window command_buffer texture draw_call vertex index parameter=
         CM.when value (do_render_a engine window command_buffer render_pass draw_call)
         SDLF.sdl_end_gpu_render_pass render_pass
 
-do_render_a::Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_a::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->DS.Seq (Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render_a engine window command_buffer render_pass draw_call=do
     SDLF.sdl_bind_gpu_graphics_pipeline render_pass window.graphics_pipeline
     FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
@@ -212,7 +215,7 @@ do_render_a engine window command_buffer render_pass draw_call=do
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
     DF.mapM_ (do_render_b render_pass engine) draw_call
 
-do_render_b::FP.Ptr SDLT.SDL_GPURenderPass->Engine a->(Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_b::FP.Ptr SDLT.SDL_GPURenderPass->Engine a b c d e->(Maybe Int,DW.Word32,DW.Word32)->IO ()
 do_render_b render_pass engine (maybe_album_id,index_length,index_offset)=case maybe_album_id of
     Nothing->do
         FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=engine.sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)

@@ -76,17 +76,17 @@ to_charset_a::Sentence->DM.Map String (DSet.Set Char)->DM.Map String (DSet.Set C
 to_charset_a sentence charset=case sentence of
     Sentence {sentence_core,path}->DM.insert path (DF.foldl' (\this_charset phrase->DT.foldl' (flip DSet.insert) this_charset phrase.phrase_core) (DM.findWithDefault DSet.empty path charset) sentence_core) charset
 
-update_font::DM.Map String (DSet.Set Char)->Engine a->IO (Engine a)
+update_font::DM.Map String (DSet.Set Char)->Engine a b c d e->IO (Engine a b c d e)
 update_font charset engine=DM.foldlWithKey' (\io_engine path char->io_engine>>=update_font_a path char) (return engine) charset
 
-update_font_a::String->DSet.Set Char->Engine a->IO (Engine a)
+update_font_a::String->DSet.Set Char->Engine a b c d e->IO (Engine a b c d e)
 update_font_a path char engine=let charset=DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char)) in case DM.lookup path engine.font_map of
     Nothing->update_font_b engine.font_id path charset (engine {font_map=map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->case DIM.lookup font_id engine.font of
         Nothing->update_font_b font_id path charset engine
         Just font->update_font_b font_id path (DIS.difference charset (DIM.keysSet font.glyph)) engine
 
-update_font_b::Int->String->DIS.IntSet->Engine a->IO (Engine a)
+update_font_b::Int->String->DIS.IntSet->Engine a b c d e->IO (Engine a b c d e)
 update_font_b font_id path charset engine=if DIS.null charset then return engine else with_string path $ \this_path->let size=DIS.size charset in FMA.allocaArray size $ \ptr_charset->do
     update_font_c ptr_charset (DIS.toAscList charset)
     ptr_msdf_output<-MSDFF.msdf_generator this_path ptr_charset (fromIntegral size) engine.font_size engine.pixel_range

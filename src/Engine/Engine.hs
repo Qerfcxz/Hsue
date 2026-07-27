@@ -37,8 +37,8 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=SDLF.sdl_quit
 
-create_engine::a->(Event->Engine a->Maybe Int)->(Event->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a)
-create_engine state main_id projection_strategy picture_size vertex_size index_size parameter_size initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range=do
+create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a b c d e)
+create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range=do
     device<-SDLF.sdl_create_gpu_device SDLI.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
     vertex_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 1 1 "Vertex"
@@ -61,7 +61,7 @@ create_engine state main_id projection_strategy picture_size vertex_size index_s
     parameter_buffer<-FMU.with (SDLI.SDL_GPUBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_bufferusage_graphics_storage_read,sdl_size=new_parameter_size}) create_buffer
     transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=new_vertex_size+new_index_size+new_parameter_size}) (return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
     picture_transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=fromIntegral picture_size}) (return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
-    event_number<-SDLF.sdl_register_events 1
+    event_number<-SDLF.sdl_register_events 2
     callback<-SDLF.wrapper $ \_ _ interval->do
         FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \ptr->do
             FMU.fillBytes ptr 0 SDLI.sdl_event_size
@@ -72,15 +72,15 @@ create_engine state main_id projection_strategy picture_size vertex_size index_s
     let (atlas,left,down,right,up)=atlas_insert new_width new_height padding (init_atlas width height)
     copy_texture device new_texture texture left down new_width new_height
     let album_id=initial_album_id+1 in case maybe_interval of
-        Nothing->let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
+        Nothing->let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
         Just interval->if 0<interval
             then do
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
                 catch_zero timer_id
-                let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {state=state,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
+                let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
             else EE.quick_error "create_engine" 0
 
-clean_engine::Engine a->IO ()
+clean_engine::Engine a b c d e->IO ()
 clean_engine engine=do
     DF.mapM_ (clean_window engine.device) (DIM.elems engine.window)
     case engine.timer of
@@ -106,46 +106,46 @@ clean_window device window=do
     SDLF.sdl_release_gpu_graphics_pipeline device window.graphics_pipeline
     SDLF.sdl_destroy_window window.sdl_window
 
-run_engine::Engine a->IO ()
+run_engine::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Engine a b c d e->IO ()
 run_engine engine=FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \sdl_event->case engine.timer of
     Off->loop_engine_off sdl_event engine
     On {}->loop_engine_on sdl_event engine
 
-loop_engine_off::FP.Ptr ()->Engine a->IO ()
+loop_engine_off::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off sdl_event engine=do
     (new_engine,switch)<-run_request False engine
     value<-SDLF.sdl_wait_event sdl_event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type sdl_event
+            event_type<-SDLI.sdl_event_type_peek sdl_event
             loop_event switch event_type sdl_event new_engine
         else EE.quick_error "loop_engine_off" 0
 
-loop_engine_off_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_off_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off_a sdl_event engine=do
     value<-SDLF.sdl_wait_event sdl_event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type sdl_event
+            event_type<-SDLI.sdl_event_type_peek sdl_event
             loop_event False event_type sdl_event engine
         else EE.quick_error "loop_engine_off_a" 0
 
-loop_engine_on::FP.Ptr ()->Engine a->IO ()
+loop_engine_on::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on sdl_event engine=do
     (new_engine,switch)<-run_request False engine
     value<-SDLF.sdl_wait_event sdl_event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type sdl_event
+            event_type<-SDLI.sdl_event_type_peek sdl_event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
         else EE.quick_error "loop_engine_on" 0
 
-loop_engine_on_a::FP.Ptr ()->Engine a->IO ()
+loop_engine_on_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on_a sdl_event engine=do
     value<-SDLF.sdl_wait_event sdl_event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type sdl_event
+            event_type<-SDLI.sdl_event_type_peek sdl_event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
         else EE.quick_error "loop_engine_on_a" 0
 
@@ -154,39 +154,43 @@ get_interval timer=case timer of
     On {interval}->interval
     _->EE.quick_error "get_interval" 0
 
-loop_event::Bool->DW.Word32->FP.Ptr ()->Engine a->IO ()
+loop_event::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->DW.Word32->FP.Ptr ()->Engine a b c d e->IO ()
 loop_event on event_type sdl_event engine=case event_type of
     SDLI.SDL_EVENT_QUIT->return ()
     SDLI.SDL_EVENT_WINDOW_CLOSE_REQUESTED->do
-        sdl_window_id<-SDLI.sdl_windowevent_windowid sdl_event
+        sdl_window_id<-SDLI.sdl_windowevent_windowid_peek sdl_event
         case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Close}) sdl_event engine
     SDLI.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED->do
-        sdl_window_id<-SDLI.sdl_windowevent_windowid sdl_event
-        first_data<-SDLI.sdl_windowevent_data1 sdl_event
-        second_data<-SDLI.sdl_windowevent_data2 sdl_event
+        sdl_window_id<-SDLI.sdl_windowevent_windowid_peek sdl_event
+        first_data<-SDLI.sdl_windowevent_data1_peek sdl_event
+        second_data<-SDLI.sdl_windowevent_data2_peek sdl_event
         case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Resize {width=fromIntegral first_data,height=fromIntegral second_data}}) sdl_event engine
     SDLI.SDL_EVENT_KEY_UP->do
-        sdl_window_id<-SDLI.sdl_keyboardevent_windowid sdl_event
-        sdl_keycode<-SDLI.sdl_keyboardevent_key sdl_event
+        sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek sdl_event
+        sdl_keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
         let change=to_key sdl_keycode in let maintain=DSet.delete change engine.key in case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
     SDLI.SDL_EVENT_KEY_DOWN->do
-        sdl_window_id<-SDLI.sdl_keyboardevent_windowid sdl_event
-        sdl_keycode<-SDLI.sdl_keyboardevent_key sdl_event
+        sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek sdl_event
+        sdl_keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
         let change=to_key sdl_keycode in let maintain=DSet.insert change engine.key in case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
-    _->loop_event_a on sdl_event engine
+    _->if event_type==engine.event_number+1
+        then do
+            custom<-pop_event sdl_event
+            loop_event_b on (Custom_event {custom=custom}) sdl_event engine
+        else loop_event_a on sdl_event engine
 
-loop_event_a::Bool->FP.Ptr ()->Engine a->IO ()
+loop_event_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->FP.Ptr ()->Engine a b c d e->IO ()
 loop_event_a on sdl_event engine=if on then loop_engine_on_a sdl_event engine else loop_engine_off_a sdl_event engine
 
-loop_event_b::Bool->Event->FP.Ptr ()->Engine a->IO ()
+loop_event_b::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->Event a->FP.Ptr ()->Engine b a c d e->IO ()
 loop_event_b on event sdl_event engine=let new_engine=run_event event engine in if on then loop_engine_on sdl_event new_engine else loop_engine_off sdl_event new_engine
 
 to_key::DW.Word32->Key
@@ -219,29 +223,29 @@ to_key key=case key of
     SDLI.SDLK_Z->Key_z
     _->Key_unknown
 
-run_request::Bool->Engine a->IO (Engine a,Bool)
+run_request::(Custom_request c,Custom_widget_request e)=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
 run_request switch engine=case engine.request of
     DSeq.Empty->return (engine,switch)
     (request DSeq.:<| other_request)->do
         (new_engine,new_switch)<-do_request request (engine {request=other_request})
         run_request (switch/=new_switch) new_engine
 
-run_event::Event->Engine a->Engine a
+run_event::Custom_widget d=>Event a->Engine b a c d e->Engine b a c d e
 run_event event engine=case engine.main_id event engine of
     Nothing->engine
     Just leaf_id->run_event_a leaf_id event engine
 
-run_event_a::Int->Event->Engine a->Engine a
+run_event_a::Custom_widget d=>Int->Event a->Engine b a c d e->Engine b a c d e
 run_event_a leaf_id event engine=let (next,update,leaf)=intmap_functor_update leaf_id (\projection->let (new_projection,new_update,new_next)=run_event_b event engine projection in (new_next,new_update,new_projection)) engine.leaf in let new_engine=update (engine {leaf=leaf}) in case next new_engine of
     Nothing->new_engine
     Just new_leaf_id->run_event_a new_leaf_id event new_engine
 
-run_event_b::Event->Engine a->Projection a->(Projection a,Engine a->Engine a,Engine a->Maybe Int)
+run_event_b::Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->(Projection b a c d e,Engine b a c d e->Engine b a c d e,Engine b a c d e->Maybe Int)
 run_event_b event engine projection=case projection of
     Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (widget,update,next)=run_widget new_event engine (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
     With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (widget,update,next)=run_widget new_event engine (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
 
-run_widget::Event->Engine a->Widget a->(Widget a,Engine a->Engine a,Event->Engine a->Maybe Int)
+run_widget::Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,Engine b a c d e->Engine b a c d e,Event a->Engine b a c d e->Maybe Int)
 run_widget event engine this_widget=case this_widget of
     Double {which,first_widget,second_widget}->if which then let (new_first_widget,update,next)=run_widget event engine first_widget in (Double {which=which,first_widget=new_first_widget,second_widget=second_widget},update,next) else let (new_second_widget,update,next)=run_widget event engine second_widget in (Double {which=which,first_widget=first_widget,second_widget=new_second_widget},update,next)
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (next,update,new_group_widget)=intmap_functor_update index (\widget->let (new_widget,new_update,new_next)=run_widget event engine widget in (new_next,new_update,new_widget)) group_widget in (Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget},update,next)
@@ -252,4 +256,5 @@ run_widget event engine this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in (Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget},create_request (Io {io=update}),next)
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget},if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (next,update,new_coroutine_state)=intmap_functor_update index (functor_update_coroutine_state (\widget->let (new_widget,new_update,new_next)=run_widget event engine widget in (new_next,new_update,new_widget))) coroutine_state in (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update,next)
+    Custom_widget {custom}->let (new_custom,update,next)=custom_widget event engine custom in (Custom_widget {custom=new_custom},update,next)
     _->EE.quick_error "run_widget" 0

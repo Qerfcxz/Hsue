@@ -21,15 +21,15 @@ import qualified Data.Vector.Storable.Mutable as DVSM
 import qualified Data.Vector.Unboxed as DVU
 import qualified Data.Vector.Unboxed.Mutable as DVUM
 
-run_coroutine::Int->Int->DS.Seq Int->Event->Engine a->Engine a
+run_coroutine::Int->Int->DS.Seq Int->Event a->Engine b a c d e->Engine b a c d e
 run_coroutine depth leaf_id index event engine=let (update,leaf)=intmap_functor_update leaf_id (functor_update_projection_object (functor_limited_update_widget depth (DT.swap . run_coroutine_a index event engine))) engine.leaf in DF.foldl' (\this_engine this_update->this_update this_engine) (engine {leaf=leaf}) update
 
-run_coroutine_a::DS.Seq Int->Event->Engine a->Widget a->(Widget a,DS.Seq (Engine a->Engine a))
+run_coroutine_a::DS.Seq Int->Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,DS.Seq (Engine b a c d e->Engine b a c d e))
 run_coroutine_a this_index event engine widget=case widget of
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (update,new_coroutine_state)=DF.foldl' (\(this_update,this_coroutine_state) single_index->intmap_functor_update single_index (DT.swap . run_coroutine_b this_update event engine iterative linear_coroutine layout) this_coroutine_state) (DS.empty,coroutine_state) this_index in (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update)
     _->EE.quick_error "run_coroutine_a" 0
 
-run_coroutine_b::DS.Seq (Engine a->Engine a)->Event->Engine a->Bool->DV.Vector (Linear_coroutine a)->DVS.Vector Layout->Coroutine_state a->(Coroutine_state a,DS.Seq (Engine a->Engine a))
+run_coroutine_b::DS.Seq (Engine a b c d e->Engine a b c d e)->Event b->Engine a b c d e->Bool->DV.Vector (Linear_coroutine a b c d e)->DVS.Vector Layout->Coroutine_state a b c d e->(Coroutine_state a b c d e,DS.Seq (Engine a b c d e->Engine a b c d e))
 run_coroutine_b update event engine iterative linear_coroutine layout coroutine_state=case coroutine_state of
     Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->CMST.runST $ do
         new_variable<-DVU.unsafeThaw variable
@@ -37,99 +37,99 @@ run_coroutine_b update event engine iterative linear_coroutine layout coroutine_
         new_new_new_variable<-DVU.unsafeFreeze new_new_variable
         return (Coroutine_state {widget=new_widget,variable=new_new_new_variable,user_variable=new_user_variable,program_counter=new_program_counter,index_group=new_index_group,main_index_group=new_main_index_group,index_group_index=new_index_group_index,program_counter_index=new_program_counter_index},update DS.>< new_update)
 
-for_iterative::Bool->(Engine a->Engine a)->Engine a->Engine a
+for_iterative::Bool->(Engine a b c d e->Engine a b c d e)->Engine a b c d e->Engine a b c d e
 for_iterative iterative update engine=if iterative then update engine else engine
 
-init_coroutine_state::Int->Int->Widget a->Coroutine_state a
+init_coroutine_state::Int->Int->Widget a b c d e->Coroutine_state a b c d e
 init_coroutine_state variable_length user_variable_length widget=Coroutine_state {widget=widget,variable=DVU.replicate variable_length 0,user_variable=DVU.replicate user_variable_length 0,program_counter=DIM.singleton 0 (Program_counter {code_index=0,clone_index=0}),index_group=DIM.empty,main_index_group=DS.singleton 0,index_group_index=0,program_counter_index=1}
 
-to_coroutine::DS.Seq (Coroutine a)->Coroutine a
+to_coroutine::DS.Seq (Coroutine a b c d e)->Coroutine a b c d e
 to_coroutine coroutine_sequence=case coroutine_sequence of
     DS.Empty->Done
     coroutine DS.:<| other_coroutine->if DS.null other_coroutine then coroutine else Then {coroutine_sequence=coroutine_sequence}
 
-lift_coroutine::Coroutine a->Raw_coroutine a ()
+lift_coroutine::Coroutine a b c d e->Raw_coroutine a b c d e ()
 lift_coroutine coroutine=Raw_coroutine {iterator=lift_coroutine_a coroutine}
 
-lift_coroutine_a::Coroutine a->Int->(Int,DS.Seq (Coroutine a),())
+lift_coroutine_a::Coroutine a b c d e->Int->(Int,DS.Seq (Coroutine a b c d e),())
 lift_coroutine_a coroutine int=(int,DS.singleton coroutine,())
 
-do_empty::Raw_coroutine a ()
+do_empty::Raw_coroutine a b c d e ()
 do_empty=Raw_coroutine {iterator=do_empty_a}
 
-do_empty_a::Int->(Int,DS.Seq (Coroutine a),())
+do_empty_a::Int->(Int,DS.Seq (Coroutine a b c d e),())
 do_empty_a int=(int,DS.empty,())
 
-do_declare::Raw_coroutine a Int
+do_declare::Raw_coroutine a b c d e Int
 do_declare=Raw_coroutine {iterator=do_declare_a}
 
-do_declare_a::Int->(Int,DS.Seq (Coroutine a),Int)
+do_declare_a::Int->(Int,DS.Seq (Coroutine a b c d e),Int)
 do_declare_a int=(int+1,DS.empty,int)
 
-do_emit::(Event->Engine a->Widget a->(Widget a,Engine a->Engine a))->Raw_coroutine a ()
+do_emit::(Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,Engine b a c d e->Engine b a c d e))->Raw_coroutine b a c d e ()
 do_emit emit=lift_coroutine (Emit {emit=emit})
 
-do_wait::Dynamic_int a->Raw_coroutine a ()
+do_wait::Dynamic_int a b c d e->Raw_coroutine a b c d e ()
 do_wait dynamic_int=lift_coroutine (Wait {dynamic_int=dynamic_int})
 
-do_forever::Raw_coroutine a ()->Raw_coroutine a ()
+do_forever::Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_forever raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (Forever {coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_then::Raw_coroutine a ()->Raw_coroutine a ()
+do_then::Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_then raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_generator (\coroutine other_coroutine coroutine_sequence->if DS.null other_coroutine then DS.singleton coroutine else DS.singleton (Then {coroutine_sequence=coroutine_sequence})) raw_coroutine.iterator}
 
-do_while::Dynamic_bool a->Raw_coroutine a ()->Raw_coroutine a ()
+do_while::Dynamic_bool a b c d e->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_while dynamic_bool raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (While {dynamic_bool=dynamic_bool,coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_pause::Dynamic_bool a->Raw_coroutine a ()->Raw_coroutine a ()
+do_pause::Dynamic_bool a b c d e->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_pause dynamic_bool raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (Pause {dynamic_bool=dynamic_bool,coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_skip::Dynamic_bool a->Raw_coroutine a ()->Raw_coroutine a ()
+do_skip::Dynamic_bool a b c d e->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_skip dynamic_bool raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (Skip {dynamic_bool=dynamic_bool,coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_assign::Dynamic_int a->Int->Raw_coroutine a ()
+do_assign::Dynamic_int a b c d e->Int->Raw_coroutine a b c d e ()
 do_assign dynamic_int int=lift_coroutine (Assign {dynamic_int=dynamic_int,int=int})
 
-do_repeat::Dynamic_int a->Raw_coroutine a ()->Raw_coroutine a ()
+do_repeat::Dynamic_int a b c d e->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_repeat dynamic_int raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (Repeat {dynamic_int=dynamic_int,coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_clone::Int->Raw_coroutine a ()->Raw_coroutine a ()
+do_clone::Int->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_clone int raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (Clone {int=int,coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_if::Dynamic_bool a->Raw_coroutine a ()->Raw_coroutine a ()->Raw_coroutine a ()
+do_if::Dynamic_bool a b c d e->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_if dynamic_bool first_raw_coroutine second_raw_coroutine=Raw_coroutine {iterator=raw_coroutine_binary_operator (\first_coroutine_sequence second_coroutine_sequence->DS.singleton (If {dynamic_bool=dynamic_bool,first_coroutine=to_coroutine first_coroutine_sequence,second_coroutine=to_coroutine second_coroutine_sequence})) first_raw_coroutine.iterator second_raw_coroutine.iterator}
 
-do_dynamic_clone::Dynamic_int a->Int->Raw_coroutine a ()->Raw_coroutine a ()
+do_dynamic_clone::Dynamic_int a b c d e->Int->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_dynamic_clone dynamic_int int raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_operator (\coroutine_sequence->DS.singleton (Dynamic_clone {dynamic_int=dynamic_int,int=int,coroutine=to_coroutine coroutine_sequence})) raw_coroutine.iterator}
 
-do_case::Dynamic_int a->Raw_coroutine a ()->Raw_coroutine a ()
+do_case::Dynamic_int a b c d e->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_case dynamic_int raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_generator (\coroutine other_coroutine coroutine_sequence->let int=DS.length other_coroutine in if int==0 then DS.singleton coroutine else DS.singleton (Case {dynamic_int=dynamic_int,int=int+1,coroutine_sequence=coroutine_sequence})) raw_coroutine.iterator}
 
-do_fork::Raw_coroutine a ()->Raw_coroutine a ()
+do_fork::Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_fork raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_generator (\coroutine other_coroutine _->let int=DS.length other_coroutine in if int==0 then DS.singleton coroutine else DS.singleton (Fork {int=int,coroutine=coroutine,coroutine_sequence=other_coroutine})) raw_coroutine.iterator}
 
-do_race::Dynamic_int a->Int->Raw_coroutine a ()->Raw_coroutine a ()
+do_race::Dynamic_int a b c d e->Int->Raw_coroutine a b c d e ()->Raw_coroutine a b c d e ()
 do_race dynamic_int int raw_coroutine=Raw_coroutine {iterator=raw_coroutine_unary_generator (\coroutine other_coroutine coroutine_sequence->let new_int=DS.length other_coroutine in if new_int==0 then DS.singleton coroutine else DS.singleton (Race {dynamic_int=dynamic_int,first_int=int,second_int=new_int+1,coroutine_sequence=coroutine_sequence})) raw_coroutine.iterator}
 
-raw_coroutine_unary_generator::(Coroutine a->DS.Seq (Coroutine a)->DS.Seq (Coroutine a)->DS.Seq (Coroutine a))->(Int->(Int,DS.Seq (Coroutine a),()))->Int->(Int,DS.Seq (Coroutine a),())
+raw_coroutine_unary_generator::(Coroutine a b c d e->DS.Seq (Coroutine a b c d e)->DS.Seq (Coroutine a b c d e)->DS.Seq (Coroutine a b c d e))->(Int->(Int,DS.Seq (Coroutine a b c d e),()))->Int->(Int,DS.Seq (Coroutine a b c d e),())
 raw_coroutine_unary_generator generator iterator int=let (new_int,coroutine_sequence,_)=iterator int in case coroutine_sequence of
     DS.Empty->(new_int,DS.empty,())
     coroutine DS.:<| other_coroutine->(new_int,generator coroutine other_coroutine coroutine_sequence,())
 
-raw_coroutine_unary_operator::(DS.Seq (Coroutine a)->DS.Seq (Coroutine a))->(Int->(Int,DS.Seq (Coroutine a),()))->Int->(Int,DS.Seq (Coroutine a),())
+raw_coroutine_unary_operator::(DS.Seq (Coroutine a b c d e)->DS.Seq (Coroutine a b c d e))->(Int->(Int,DS.Seq (Coroutine a b c d e),()))->Int->(Int,DS.Seq (Coroutine a b c d e),())
 raw_coroutine_unary_operator operator iterator int=let (new_int,coroutine_sequence,_)=iterator int in (new_int,operator coroutine_sequence,())
 
-raw_coroutine_binary_operator::(DS.Seq (Coroutine a)->DS.Seq (Coroutine a)->DS.Seq (Coroutine a))->(Int->(Int,DS.Seq (Coroutine a),()))->(Int->(Int,DS.Seq (Coroutine a),()))->Int->(Int,DS.Seq (Coroutine a),())
+raw_coroutine_binary_operator::(DS.Seq (Coroutine a b c d e)->DS.Seq (Coroutine a b c d e)->DS.Seq (Coroutine a b c d e))->(Int->(Int,DS.Seq (Coroutine a b c d e),()))->(Int->(Int,DS.Seq (Coroutine a b c d e),()))->Int->(Int,DS.Seq (Coroutine a b c d e),())
 raw_coroutine_binary_operator operator first_iterator second_iterator int=let (first_int,first_coroutine_sequence,_)=first_iterator int in let (second_int,second_coroutine_sequence,_)=second_iterator first_int in (second_int,operator first_coroutine_sequence second_coroutine_sequence,())
 
-from_coroutine::Coroutine a->Int->(DV.Vector (Linear_coroutine a),DVS.Vector Layout,Int,Int)
+from_coroutine::Coroutine a b c d e->Int->(DV.Vector (Linear_coroutine a b c d e),DVS.Vector Layout,Int,Int)
 from_coroutine coroutine int=CMST.runST $ do
     layout<-DVSM.replicate int (Layout {address=0,size=0})
     (linear_coroutine,new_layout,int_index,user_int_index,code_index)<-from_coroutine_a coroutine 1 0 0 0 layout DIM.empty
     new_new_layout<-DVS.unsafeFreeze new_layout
     return (DV.generate (code_index+1) (\this_code_index->if code_index==this_code_index then Linear_end else intmap_lookup this_code_index linear_coroutine),new_new_layout,int_index,user_int_index)
 
-from_coroutine_a::Coroutine a->Int->Int->Int->Int->DVSM.MVector b Layout->DIM.IntMap (Linear_coroutine a)->CMST.ST b (DIM.IntMap (Linear_coroutine a),DVSM.MVector b Layout,Int,Int,Int)
+from_coroutine_a::Coroutine a b c d e->Int->Int->Int->Int->DVSM.MVector f Layout->DIM.IntMap (Linear_coroutine a b c d e)->CMST.ST f (DIM.IntMap (Linear_coroutine a b c d e),DVSM.MVector f Layout,Int,Int,Int)
 from_coroutine_a this_coroutine clone_number code_index user_int_index int_index layout linear_coroutine=case this_coroutine of
     Done->return (linear_coroutine,layout,int_index,user_int_index,code_index)
     Emit {emit}->return (DIM.insert code_index (Linear_emit {emit=emit}) linear_coroutine,layout,int_index,user_int_index,code_index+1)
@@ -180,33 +180,33 @@ from_coroutine_a this_coroutine clone_number code_index user_int_index int_index
         (new_linear_coroutine,new_layout,new_int_index,new_user_int_index,new_code_index,group_code_index)<-race_coroutine coroutine_sequence 0 countdown_int_index clone_number (code_index+2) user_int_index (int_index+2*clone_number) layout linear_coroutine
         let kill_code_index=new_code_index+3 in return (DIM.insert kill_code_index (Linear_kill_group {int_index=int_index,int=second_int}) (DIM.insert (new_code_index+2) (Linear_yield {code_index=new_code_index}) (DIM.insert (new_code_index+1) (Linear_wake_group {int_index=int_index,dynamic_int=dynamic_int,int=second_int}) (DIM.insert new_code_index (Linear_less_jump {int_index=countdown_int_index,code_index=kill_code_index,int=second_int-first_int+1}) (DIM.insert (code_index+1) (Linear_jump {code_index=new_code_index}) (DIM.insert code_index (Linear_create_group {first_int_index=int_index,second_int_index=countdown_int_index,group_code_index=group_code_index,int=second_int}) new_linear_coroutine))))),new_layout,new_int_index,new_user_int_index,new_code_index+4)
 
-then_coroutine::DS.Seq (Coroutine a)->Int->Int->Int->Int->DVSM.MVector b Layout->DIM.IntMap (Linear_coroutine a)->CMST.ST b (DIM.IntMap (Linear_coroutine a),DVSM.MVector b Layout,Int,Int,Int)
+then_coroutine::DS.Seq (Coroutine a b c d e)->Int->Int->Int->Int->DVSM.MVector f Layout->DIM.IntMap (Linear_coroutine a b c d e)->CMST.ST f (DIM.IntMap (Linear_coroutine a b c d e),DVSM.MVector f Layout,Int,Int,Int)
 then_coroutine coroutine_sequence clone_number code_index user_int_index int_index layout linear_coroutine=case coroutine_sequence of
     DS.Empty->return (linear_coroutine,layout,int_index,user_int_index,code_index)
     coroutine DS.:<| other_coroutine->do
         (new_linear_coroutine,new_layout,new_int_index,new_user_int_index,new_code_index)<-from_coroutine_a coroutine clone_number code_index user_int_index int_index layout linear_coroutine
         then_coroutine other_coroutine clone_number new_code_index new_user_int_index new_int_index new_layout new_linear_coroutine
 
-case_coroutine::DIM.IntMap Int->DIS.IntSet->DS.Seq (Coroutine a)->Int->Int->Int->Int->Int->Int->Int->DVSM.MVector b Layout->DIM.IntMap (Linear_coroutine a)->CMST.ST b (DIM.IntMap (Linear_coroutine a),DVSM.MVector b Layout,Int,Int,Int,Linear_coroutine a)
+case_coroutine::DIM.IntMap Int->DIS.IntSet->DS.Seq (Coroutine a b c d e)->Int->Int->Int->Int->Int->Int->Int->DVSM.MVector f Layout->DIM.IntMap (Linear_coroutine a b c d e)->CMST.ST f (DIM.IntMap (Linear_coroutine a b c d e),DVSM.MVector f Layout,Int,Int,Int,Linear_coroutine a b c d e)
 case_coroutine case_code_index jump_code_index coroutine_sequence int index max_int_index clone_number code_index user_int_index int_index layout linear_coroutine=case coroutine_sequence of
     DS.Empty->let (new_linear_coroutine,new_code_index)=case_coroutine_a case_code_index int 0 code_index int_index linear_coroutine in return (DIS.foldl' (\this_linear_coroutine this_code_index->DIM.insert this_code_index (Linear_jump {code_index=new_code_index}) this_linear_coroutine) new_linear_coroutine jump_code_index,layout,max_int_index,user_int_index,new_code_index,Linear_jump {code_index=code_index})
     coroutine DS.:<| other_coroutine->do
         (new_linear_coroutine,new_layout,new_int_index,new_user_int_index,new_code_index)<-from_coroutine_a coroutine clone_number code_index user_int_index (int_index+clone_number) layout linear_coroutine
         case_coroutine (DIM.insert index code_index case_code_index) (DIS.insert new_code_index jump_code_index) other_coroutine int (index+1) (max new_int_index max_int_index) clone_number (new_code_index+1) (max user_int_index new_user_int_index) int_index new_layout new_linear_coroutine
 
-case_coroutine_a::DIM.IntMap Int->Int->Int->Int->Int->DIM.IntMap (Linear_coroutine a)->(DIM.IntMap (Linear_coroutine a),Int)
+case_coroutine_a::DIM.IntMap Int->Int->Int->Int->Int->DIM.IntMap (Linear_coroutine a b c d e)->(DIM.IntMap (Linear_coroutine a b c d e),Int)
 case_coroutine_a case_code_index int index code_index int_index linear_coroutine=case int of
     1->(DIM.insert code_index (Linear_jump {code_index=intmap_lookup index case_code_index}) linear_coroutine,code_index+1)
     _->let half_int=div int 2 in let new_int=index+half_int in let (right_linear_coroutine,right_code_index)=case_coroutine_a case_code_index (int-half_int) new_int (code_index+1) int_index linear_coroutine in let (left_linear_coroutine,left_code_index)=case_coroutine_a case_code_index half_int index right_code_index int_index right_linear_coroutine in (DIM.insert code_index (Linear_less_jump {int_index=int_index,code_index=right_code_index,int=new_int}) left_linear_coroutine,left_code_index)
 
-fork_coroutine::DIS.IntSet->DS.Seq (Coroutine a)->Int->Int->Int->Int->Int->DVSM.MVector b Layout->DIM.IntMap (Linear_coroutine a)->CMST.ST b (DIM.IntMap (Linear_coroutine a),DVSM.MVector b Layout,Int,Int,Int)
+fork_coroutine::DIS.IntSet->DS.Seq (Coroutine a b c d e)->Int->Int->Int->Int->Int->DVSM.MVector f Layout->DIM.IntMap (Linear_coroutine a b c d e)->CMST.ST f (DIM.IntMap (Linear_coroutine a b c d e),DVSM.MVector f Layout,Int,Int,Int)
 fork_coroutine jump_code_index coroutine_sequence fork_code_index clone_number code_index user_int_index int_index layout linear_coroutine=case coroutine_sequence of
     DS.Empty->let new_code_index=code_index-1 in return (DIS.foldl' (\this_linear_coroutine this_code_index->DIM.insert this_code_index (Linear_jump {code_index=new_code_index}) this_linear_coroutine) linear_coroutine jump_code_index,layout,int_index,user_int_index,new_code_index)
     coroutine DS.:<| other_coroutine->do
         (new_linear_coroutine,new_layout,new_int_index,new_user_int_index,new_code_index)<-from_coroutine_a coroutine clone_number code_index user_int_index int_index layout linear_coroutine
         fork_coroutine (DIS.insert (code_index-1) jump_code_index) other_coroutine (fork_code_index+1) clone_number (new_code_index+1) new_user_int_index new_int_index new_layout (DIM.insert fork_code_index (Linear_fork {code_index=code_index}) new_linear_coroutine)
 
-race_coroutine::DS.Seq (Coroutine a)->Int->Int->Int->Int->Int->Int->DVSM.MVector b Layout->DIM.IntMap (Linear_coroutine a)->CMST.ST b (DIM.IntMap (Linear_coroutine a),DVSM.MVector b Layout,Int,Int,Int,DIM.IntMap Int)
+race_coroutine::DS.Seq (Coroutine a b c d e)->Int->Int->Int->Int->Int->Int->DVSM.MVector f Layout->DIM.IntMap (Linear_coroutine a b c d e)->CMST.ST f (DIM.IntMap (Linear_coroutine a b c d e),DVSM.MVector f Layout,Int,Int,Int,DIM.IntMap Int)
 race_coroutine coroutine_sequence index countdown_int_index clone_number code_index user_int_index int_index layout linear_coroutine=case coroutine_sequence of
     DS.Empty->return (linear_coroutine,layout,int_index,user_int_index,code_index,DIM.empty)
     coroutine DS.:<| other_coroutine->do
@@ -214,14 +214,14 @@ race_coroutine coroutine_sequence index countdown_int_index clone_number code_in
         (final_linear_coroutine,final_layout,final_int_index,final_user_int_index,final_code_index,group_code_index)<-race_coroutine other_coroutine (index+1) countdown_int_index clone_number (new_code_index+1) new_user_int_index (max int_index new_int_index) new_layout (DIM.insert new_code_index (Linear_countdown {int_index=countdown_int_index}) new_linear_coroutine)
         return (final_linear_coroutine,final_layout,final_int_index,final_user_int_index,final_code_index,DIM.insert index code_index group_code_index)
 
-step_coroutine::DV.Vector (Linear_coroutine a)->Int->Int->DS.Seq Int->DS.Seq Int->DS.Seq Int->DIM.IntMap (DS.Seq Int)->DIM.IntMap Program_counter->DVS.Vector Layout->DVU.Vector Int->DVUM.MVector b Int->((Engine a->Engine a)->Engine a->Engine a)->DS.Seq (Engine a->Engine a)->Event->Engine a->Widget a->CMST.ST b (Widget a,Engine a,DS.Seq (Engine a->Engine a),DVUM.MVector b Int,DVU.Vector Int,DIM.IntMap Program_counter,DIM.IntMap (DS.Seq Int),DS.Seq Int,Int,Int)
+step_coroutine::DV.Vector (Linear_coroutine a b c d e)->Int->Int->DS.Seq Int->DS.Seq Int->DS.Seq Int->DIM.IntMap (DS.Seq Int)->DIM.IntMap Program_counter->DVS.Vector Layout->DVU.Vector Int->DVUM.MVector f Int->((Engine a b c d e->Engine a b c d e)->Engine a b c d e->Engine a b c d e)->DS.Seq (Engine a b c d e->Engine a b c d e)->Event b->Engine a b c d e->Widget a b c d e->CMST.ST f (Widget a b c d e,Engine a b c d e,DS.Seq (Engine a b c d e->Engine a b c d e),DVUM.MVector f Int,DVU.Vector Int,DIM.IntMap Program_counter,DIM.IntMap (DS.Seq Int),DS.Seq Int,Int,Int)
 step_coroutine linear_coroutine program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget=case newborn_main_index_group of
     DS.Empty->case main_index_group of
         DS.Empty->return (widget,engine,update,variable,user_variable,program_counter,index_group,survived_main_index_group,index_group_index,program_counter_index)
         (main_index DS.:<| other_main_index)->let (new_program_counter,single_program_counter)=intmap_delete_lookup main_index program_counter in step_coroutine_a linear_coroutine main_index single_program_counter.clone_index single_program_counter.code_index program_counter_index index_group_index survived_main_index_group DS.empty other_main_index index_group new_program_counter layout user_variable variable updater update event engine widget
     (main_index DS.:<| other_main_index)->let (new_program_counter,single_program_counter)=intmap_delete_lookup main_index program_counter in step_coroutine_a linear_coroutine main_index single_program_counter.clone_index single_program_counter.code_index program_counter_index index_group_index survived_main_index_group DS.empty (other_main_index DS.>< main_index_group) index_group new_program_counter layout user_variable variable updater update event engine widget
 
-step_coroutine_a::DV.Vector (Linear_coroutine a)->Int->Int->Int->Int->Int->DS.Seq Int->DS.Seq Int->DS.Seq Int->DIM.IntMap (DS.Seq Int)->DIM.IntMap Program_counter->DVS.Vector Layout->DVU.Vector Int->DVUM.MVector b Int->((Engine a->Engine a)->Engine a->Engine a)->DS.Seq (Engine a->Engine a)->Event->Engine a->Widget a->CMST.ST b (Widget a,Engine a,DS.Seq (Engine a->Engine a),DVUM.MVector b Int,DVU.Vector Int,DIM.IntMap Program_counter,DIM.IntMap (DS.Seq Int),DS.Seq Int,Int,Int)
+step_coroutine_a::DV.Vector (Linear_coroutine a b c d e)->Int->Int->Int->Int->Int->DS.Seq Int->DS.Seq Int->DS.Seq Int->DIM.IntMap (DS.Seq Int)->DIM.IntMap Program_counter->DVS.Vector Layout->DVU.Vector Int->DVUM.MVector f Int->((Engine a b c d e->Engine a b c d e)->Engine a b c d e->Engine a b c d e)->DS.Seq (Engine a b c d e->Engine a b c d e)->Event b->Engine a b c d e->Widget a b c d e->CMST.ST f (Widget a b c d e,Engine a b c d e,DS.Seq (Engine a b c d e->Engine a b c d e),DVUM.MVector f Int,DVU.Vector Int,DIM.IntMap Program_counter,DIM.IntMap (DS.Seq Int),DS.Seq Int,Int,Int)
 step_coroutine_a linear_coroutine main_index clone_index this_code_index program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget=case linear_coroutine DV.! this_code_index of
     Linear_end->step_coroutine linear_coroutine program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget
     Linear_emit {emit}->let (new_widget,new_update)=emit event engine widget in step_coroutine_a linear_coroutine main_index clone_index (this_code_index+1) program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater (update DS.|> new_update) event (updater new_update engine) new_widget

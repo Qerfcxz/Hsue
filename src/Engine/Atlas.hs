@@ -40,10 +40,10 @@ from_image device picture_transfer_buffer picture_size path=with_string path $ \
     new_surface<-SDLF.sdl_convert_surface surface SDLI.sdl_pixelformat_rgba32
     catch_null new_surface
     SDLF.sdl_destroy_surface surface
-    width<-SDLI.sdl_surface_w new_surface
-    height<-SDLI.sdl_surface_h new_surface
-    pitch<-SDLI.sdl_surface_pitch new_surface
-    pixel<-SDLI.sdl_surface_pixels new_surface
+    width<-SDLI.sdl_surface_w_peek new_surface
+    height<-SDLI.sdl_surface_h_peek new_surface
+    pitch<-SDLI.sdl_surface_pitch_peek new_surface
+    pixel<-SDLI.sdl_surface_pixels_peek new_surface
     let new_width=fromIntegral width
     let new_height=fromIntegral height
     let new_pitch=4*width
