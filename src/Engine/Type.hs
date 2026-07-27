@@ -185,6 +185,8 @@ data Linear_coroutine a b c d e=Linear_end|Linear_emit {emit::Event b->Engine a 
 
 data Event a=Empty|Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}|Custom_event {custom::a}
 
+data Selector a=None_selector|Combine_selector {combine_selector::DSeq.Seq (Selector a)}|Self_selector {value::a}|All_selector {value::a,maybe_value::Maybe a}|Abstain_selector {value::a,maybe_value::Maybe a}|Any_selector {strict::Bool,maybe_value::Maybe a,selector::Selector a}|Default_selector {strict::Bool,maybe_value::Maybe a,selector::Selector a}|Double_first_selector {maybe_value::Maybe a,selector::Selector a}|Double_second_selector {maybe_value::Maybe a,selector::Selector a}|Double_any_selector {maybe_value::Maybe a,selector::Selector a}|Double_selector {maybe_value::Maybe a,first_selector::Selector a,second_selector::Selector a}|Group_any_selector {maybe_value::Maybe a,selector::Selector a}|Group_selector {maybe_value::Maybe a,group_selector::DIM.IntMap (Selector a)}|Widget_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Widget_io_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Widget_mix_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Coroutine_any_selector {maybe_value::Maybe a,selector::Selector a}|Coroutine_selector {maybe_value::Maybe a,coroutine_selector::DIM.IntMap (Selector a)}
+
 data Insert a=Insert {insert_strategy::Insert_strategy,value::a}
 
 data Border a=Border {left::a,down::a,right::a,up::a}
@@ -305,7 +307,7 @@ layout_poke::FP.Ptr Layout->Layout->IO ()
 layout_poke ptr layout=case layout of
     Layout {address,size}->let new_ptr=FP.castPtr ptr in do
         FS.pokeElemOff new_ptr 0 address
-        FS.pokeElemOff new_ptr 0 size
+        FS.pokeElemOff new_ptr 1 size
 
 data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,parameter_id::FCT.CFloat,size::FCT.CFloat}
 

@@ -18,39 +18,26 @@ import qualified Data.Vector.Storable as DVS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 
-clean_collect::Int->Engine a b c d e->Engine a b c d e
-clean_collect leaf_id engine=engine {leaf=intmap_update leaf_id (update_projection_object (update_all_widget clean_collect_a)) engine.leaf}
+clean_collect::Int->Selector a->Engine b c d e f->Engine b c d e f
+clean_collect leaf_id selector engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
 
 clean_collect_a::Widget a b c d e->Widget a b c d e
 clean_collect_a widget=case widget of
     Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
     _->widget
 
-maybe_update_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
-maybe_update_collect update view maybe_border projection_path leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (functor_update_widget update widget)}) engine) in case maybe_tuple of
+maybe_update_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
+maybe_update_collect update view maybe_border projection_path leaf_id selector collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) in case maybe_tuple of
     Nothing->engine
     Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton submit) collect_strategy)) new_engine.leaf}
 
-maybe_update_limited_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
-maybe_update_limited_collect update view maybe_border projection_path depth leaf_id collect_strategy engine=let maybe_tuple=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (functor_limited_update_widget depth update widget)}) engine) in case maybe_tuple of
-    Nothing->engine
-    Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (DS.singleton submit) collect_strategy)) new_engine.leaf}
-
-maybe_collect_update::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
-maybe_collect_update update view maybe_border projection_path leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view widget))) collect_strategy)),functor_update_widget update widget)}) engine) in case maybe_engine of
+maybe_collect_update::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
+maybe_collect_update update view maybe_border projection_path leaf_id selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view widget))) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
-maybe_collect_limited_update::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
-maybe_collect_limited_update update view maybe_border projection_path depth leaf_id collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view widget))) collect_strategy)),functor_limited_update_widget depth update widget)}) engine) in case maybe_engine of
-    Nothing->engine
-    Just new_engine->new_engine {leaf=new_update new_engine.leaf}
-
-collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
-collect view maybe_border projection_path leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (update_widget (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine)))) collect_strategy))) engine.leaf}
-
-limited_collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
-limited_collect view maybe_border projection_path depth leaf_id collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (limited_update_widget depth (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine)))) collect_strategy))) engine.leaf}
+collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
+collect view maybe_border projection_path leaf_id selector collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine)))) collect_strategy)) selector)) engine.leaf}
 
 collect_a::DS.Seq Submit->Insert_strategy->Widget a b c d e->Widget a b c d e
 collect_a this_submit collect_strategy widget=case widget of

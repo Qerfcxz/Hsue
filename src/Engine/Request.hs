@@ -85,7 +85,7 @@ do_request request engine=case request of
         return (new_engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {atlas=atlas,leaf=fmap (update_projection_object (update_all_widget lock_widget)) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
+        return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update lock_widget)) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
     Unlock {leaf_id}->do
         (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_unlock widget engine})) engine.leaf)
         return (new_engine {leaf=leaf},False)
@@ -132,7 +132,7 @@ for_unlock this_widget engine=case this_widget of
         (new_new_engine,new_second_widget)<-for_unlock second_widget new_engine
         return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->do
-        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulate key widget->intmap_monad_accumulate key (for_unlock widget) accumulate) (return (engine,DIM.empty)) group_widget
+        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulate this_index widget->intmap_monad_accumulate this_index (for_unlock widget) accumulate) (return (engine,DIM.empty)) group_widget
         return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
@@ -144,7 +144,7 @@ for_unlock this_widget engine=case this_widget of
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->do
-        (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate key this_coroutine_state->intmap_monad_accumulate key (`for_unlock_coroutine` this_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
+        (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate this_index single_coroutine_state->intmap_monad_accumulate this_index (`for_unlock_coroutine` single_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked

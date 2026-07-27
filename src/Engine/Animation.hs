@@ -4,14 +4,15 @@
 
 module Engine.Animation where
 
+import Engine.Container
 import Engine.Helper
 import Engine.Projection
 import Engine.Type
 import qualified Data.Vector.Storable as DVS
 import qualified Foreign.C.Types as FCT
 
-step_animation::Bool->FCT.CFloat->Engine a b c d e->Engine a b c d e
-step_animation loop time engine=engine {leaf=fmap (update_projection_object (update_all_widget (step_animation_a loop time))) engine.leaf}
+step_animation::FCT.CFloat->Int->Selector Bool->Engine a b c d e->Engine a b c d e
+step_animation time leaf_id selector engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (`step_animation_a` time) selector)) engine.leaf}
 
 step_animation_a::Bool->FCT.CFloat->Widget a b c d e->Widget a b c d e
 step_animation_a loop time widget=case widget of

@@ -21,8 +21,8 @@ import qualified Data.Vector.Storable.Mutable as DVSM
 import qualified Data.Vector.Unboxed as DVU
 import qualified Data.Vector.Unboxed.Mutable as DVUM
 
-run_coroutine::Int->Int->DS.Seq Int->Event a->Engine b a c d e->Engine b a c d e
-run_coroutine depth leaf_id index event engine=let (update,leaf)=intmap_functor_update leaf_id (functor_update_projection_object (functor_limited_update_widget depth (DT.swap . run_coroutine_a index event engine))) engine.leaf in DF.foldl' (\this_engine this_update->this_update this_engine) (engine {leaf=leaf}) update
+run_coroutine::Int->Selector a->DS.Seq Int->Event b->Engine c b d e f->Engine c b d e f
+run_coroutine leaf_id selector index event engine=let (update,leaf)=intmap_functor_update leaf_id (functor_update_projection_object (selector_monad_update (const (DT.swap . run_coroutine_a index event engine)) selector)) engine.leaf in DF.foldl' (\this_engine this_update->this_update this_engine) (engine {leaf=leaf}) update
 
 run_coroutine_a::DS.Seq Int->Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,DS.Seq (Engine b a c d e->Engine b a c d e))
 run_coroutine_a this_index event engine widget=case widget of
