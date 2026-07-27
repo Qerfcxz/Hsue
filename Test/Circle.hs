@@ -18,6 +18,19 @@ import qualified Data.Set as DSet
 import qualified Data.Text as DT
 import qualified Foreign.C.Types as FCT
 
+instance Custom_request () where
+    custom_request _ _=error "none"
+
+instance Custom_widget () where
+    custom_widget_run _ _=error "none"
+    custom_widget_collect _ _ _ _=error "none"
+    custom_widget_remove _ _=error "none"
+    custom_widget_lock _=error "none"
+    custom_widget_unlock _ _=error "none"
+
+instance Custom_widget_request () where
+    custom_widget_request _ _=error "none"
+
 test_time::Int
 test_time=1000
 
@@ -42,13 +55,13 @@ path_main_widget=Object_path {leaf_id=main_widget_id}
 move_collector::Projection_move
 move_collector=Object_move {consume=True,leaf_id=collector_id}
 
-main_router::Event->Engine ()->Maybe Int
+main_router::Event ()->Engine () () () () ()->Maybe Int
 main_router _ _=Just adaptive_trigger_id
 
-adaptive_next::Event->Engine ()->Maybe Int
+adaptive_next::Event ()->Engine () () () () ()->Maybe Int
 adaptive_next _ _=Just main_widget_id
 
-main_widget_next::Event->Engine ()->Maybe Int
+main_widget_next::Event ()->Engine () () () () ()->Maybe Int
 main_widget_next _ _=Just render_trigger_id
 
 calculate_width::FCT.CFloat->Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat
@@ -57,7 +70,7 @@ calculate_width base_width row_number _ _=let base_h=45 in let r_factor=8 in let
 calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)
 calculate_typesetting row_number _=let base_h=45 in if row_number<20 then (0,base_h) else (0,base_h+fromIntegral (row_number-20)*8)
 
-main_widget_transform::Event->Engine ()->Widget ()->(Widget (),Engine ()->Engine ())
+main_widget_transform::Event ()->Engine () () () () ()->Widget () () () () ()->(Widget () () () () (),Engine () () () () ()->Engine () () () () ())
 main_widget_transform event engine widget=case widget of
     Double {which,first_widget}->case first_widget of
         Text {origin,matrix,width,height,y,max_y,article,charset,locked}->case event of
@@ -71,7 +84,7 @@ main_widget_transform event engine widget=case widget of
         _->(widget,id)
     _->(widget,id)
 
-check_and_reset_data_int::Widget ()->Maybe (Widget ())
+check_and_reset_data_int::Widget () () () () ()->Maybe (Widget () () () () ())
 check_and_reset_data_int widget=case widget of
     Widget_trigger {next,widget_trigger,widget=inner_widget}->case inner_widget of
         Double {which,first_widget,second_widget}->case second_widget of
@@ -82,7 +95,7 @@ check_and_reset_data_int widget=case widget of
         _->Nothing
     _->Nothing
 
-force_redraw::Widget ()->Widget ()
+force_redraw::Widget () () () () ()->Widget () () () () ()
 force_redraw widget=case widget of
     Widget_trigger {next,widget_trigger,widget=inner_widget}->
         Widget_trigger {next=next,widget_trigger=widget_trigger,widget=force_redraw inner_widget}
@@ -90,7 +103,7 @@ force_redraw widget=case widget of
         Double {which=which,first_widget=first_widget,second_widget=Store {store=Data_bool {bool=True}}}
     _->widget
 
-render_trigger::Event->Engine ()->Engine ()
+render_trigger::Event ()->Engine () () () () ()->Engine () () () () ()
 render_trigger event engine=case event of
     Time {tick}->if tick>0&&mod tick test_time==0 then let engineWithRequests=create_request Clean_atlas (create_request (Unlock {leaf_id=main_widget_id}) engine) in let (new_engine,_)=update_lookup_projection_widget path_main_widget force_redraw engineWithRequests in new_engine else let widget=lookup_projection_widget path_main_widget engine in case check_and_reset_data_int widget of
         Just _->let new_engine=maybe_collect_limited_update check_and_reset_data_int id Nothing path_main_widget 0 collector_id (Index_strategy {seat=0}) engine in create_request (Render {window_id=window_id,projection_move=move_collector}) new_engine
