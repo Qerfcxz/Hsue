@@ -29,6 +29,7 @@ library
         Engine.Node
         Engine.Projection
         Engine.Request
+        Engine.Selector
         Engine.Shader
         Engine.Text
         Engine.Type
