@@ -80,7 +80,7 @@ update_font::DM.Map String (DSet.Set Char)->Engine a b c d e->IO (Engine a b c d
 update_font charset engine=DM.foldlWithKey' (\action path char->action>>=update_font_a path char) (return engine) charset
 
 update_font_a::String->DSet.Set Char->Engine a b c d e->IO (Engine a b c d e)
-update_font_a path char engine=let charset=DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char)) in case DM.lookup path engine.font_map of
+update_font_a path char engine=let charset=DSet.foldl' (\this_charset single_char->DIS.insert (DC.ord single_char) this_charset) DIS.empty char in case DM.lookup path engine.font_map of
     Nothing->update_font_b engine.font_id path charset (engine {font_map=map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->case DIM.lookup font_id engine.font of
         Nothing->update_font_b font_id path charset engine
@@ -88,7 +88,7 @@ update_font_a path char engine=let charset=DIS.fromDistinctAscList (map DC.ord (
 
 update_font_b::Int->String->DIS.IntSet->Engine a b c d e->IO (Engine a b c d e)
 update_font_b font_id path charset engine=if DIS.null charset then return engine else with_string path $ \this_path->let size=DIS.size charset in FMA.allocaArray size $ \ptr_charset->do
-    update_font_c ptr_charset (DIS.toAscList charset)
+    DIS.foldr (flip . update_font_c) (const (return ())) charset ptr_charset
     ptr_msdf_output<-MSDFF.msdf_generator this_path ptr_charset (fromIntegral size) engine.font_size engine.pixel_range
     catch_null ptr_msdf_output
     msdf_output<-FS.peek ptr_msdf_output
@@ -104,12 +104,10 @@ update_font_b font_id path charset engine=if DIS.null charset then return engine
                 Nothing->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=glyph}) engine.font})
                 Just font->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=DIM.union glyph font.glyph}) engine.font})
 
-update_font_c::FP.Ptr DW.Word32->[Int]->IO ()
-update_font_c ptr charset=case charset of
-    []->return ()
-    (char:other_char)->do
-        FS.poke ptr (fromIntegral char)
-        update_font_c (FP.plusPtr ptr 4) other_char
+update_font_c::Int->FP.Ptr DW.Word32->(FP.Ptr DW.Word32->IO ())->IO ()
+update_font_c int ptr action=do
+    FS.poke ptr (fromIntegral int)
+    action (FP.plusPtr ptr 4)
 
 update_font_d::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FP.Ptr MSDFT.MSDF_Glyph->Int->Int->DIM.IntMap Glyph->IO (DIM.IntMap Glyph)
 update_font_d x y reciprocal_width reciprocal_height msdf_glyph msdf_count index glyph=if msdf_count<=index then return glyph else do
