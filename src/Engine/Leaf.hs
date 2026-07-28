@@ -9,6 +9,7 @@ import Engine.Container
 import Engine.Coroutine
 import Engine.Helper
 import Engine.Projection
+import Engine.Selector
 import Engine.Text
 import Engine.Type
 import qualified SDL.Function as SDLF
@@ -19,6 +20,8 @@ import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
+import qualified Data.Vector as DV
+import qualified Data.Vector.Mutable as DVM
 import qualified Data.Vector.Storable as DVS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
@@ -73,6 +76,11 @@ create_widget this_widget_request engine=case this_widget_request of
     Group_request {initial_min_index,initial_max_index,index,insert_widget_request}->do
         (group_widget,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index id insert_widget_request DIM.empty
         return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=group_widget})
+    Vector_request {index,vector_widget_request}->let size=DS.length vector_widget_request in do
+        vector_widget<-DVM.new size
+        new_engine<-create_vector_widget 0 vector_widget vector_widget_request engine
+        new_vector_widget<-DV.unsafeFreeze vector_widget
+        return (new_engine,Vector {index=index,size=size,vector_widget=new_vector_widget})
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})
     Mix_trigger_request {next,mix_trigger,order}->return (engine,Mix_trigger {next=next,mix_trigger=mix_trigger,order=order})
@@ -101,6 +109,14 @@ create_widget this_widget_request engine=case this_widget_request of
     Custom_widget_request {custom}->do
         (new_engine,new_custom)<-custom_widget_request custom engine
         return (new_engine,Custom_widget {custom=new_custom})
+
+create_vector_widget::Custom_widget_request e=>Int->DVM.IOVector (Widget a b c d e)->DS.Seq (Widget_request a b c d e)->Engine a b c d e->IO (Engine a b c d e)
+create_vector_widget index vector_widget vector_widget_request engine=case vector_widget_request of
+    DS.Empty->return engine
+    (widget_request DS.:<| other_widget_request)->do
+        (new_engine,widget)<-create_widget widget_request engine
+        DVM.unsafeWrite vector_widget index widget
+        create_vector_widget (index+1) vector_widget other_widget_request new_engine
 
 from_insert_widget_request::Custom_widget_request e=>Engine a b c d e->Int->Int->(Widget a b c d e->f)->DS.Seq (Insert (Widget_request a b c d e))->DIM.IntMap f->IO (DIM.IntMap f,Int,Int,Engine a b c d e)
 from_insert_widget_request engine min_index max_index transform insert_widget_request intmap=case insert_widget_request of
@@ -200,7 +216,7 @@ remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
     _ DS.:|> node_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=intmap_update node_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
 
 remove_widget::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
-remove_widget this_widget engine=case this_widget of
+remove_widget widget engine=case widget of
     Visual {visual}->case visual of
         Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
             SDLF.sdl_release_gpu_texture engine.device single_album.texture

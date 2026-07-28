@@ -11,6 +11,7 @@ import Engine.Helper
 import Engine.Leaf
 import Engine.Node
 import Engine.Projection
+import Engine.Selector
 import Engine.Shader
 import Engine.Text
 import Engine.Type

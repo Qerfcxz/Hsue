@@ -5,8 +5,8 @@
 module Engine.Animation where
 
 import Engine.Container
-import Engine.Helper
 import Engine.Projection
+import Engine.Selector
 import Engine.Type
 import qualified Data.Vector.Storable as DVS
 import qualified Foreign.C.Types as FCT

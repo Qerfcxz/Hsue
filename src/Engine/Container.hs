@@ -52,6 +52,9 @@ intmap_update key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWit
     Nothing->EE.quick_error "intmap_update" 0
     _->new_intmap
 
+intmap_update_safe::Int->(a->a)->DIM.IntMap a->DIM.IntMap a
+intmap_update_safe key update=DIM.update (Just . update) key
+
 intmap_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
 intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
     Just value->(new_intmap,value)
@@ -64,6 +67,9 @@ intmap_functor_update_a::Functor b=>(a->b a)->Maybe a->b (Maybe a)
 intmap_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
     _->EE.quick_error "intmap_functor_update_a" 0
+
+intmap_applicative_action_safe::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
+intmap_applicative_action_safe action intmap=DIM.traverseWithKey (\key value->intmap_applicative_action_a key action intmap value)
 
 intmap_applicative_action::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
 intmap_applicative_action action first_intmap second_intmap=if DIS.isSubsetOf (DIM.keysSet first_intmap) (DIM.keysSet second_intmap) then DIM.traverseWithKey (\key value->intmap_applicative_action_a key action first_intmap value) second_intmap else EE.quick_error "intmap_applicative_action" 0

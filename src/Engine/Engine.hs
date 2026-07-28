@@ -9,6 +9,7 @@ import Engine.Container
 import Engine.Helper
 import Engine.Projection
 import Engine.Request
+import Engine.Selector
 import Engine.Shader
 import Engine.Type
 import qualified SDL.Function as SDLF
@@ -242,8 +243,8 @@ run_event_a leaf_id event engine=let (next,update,leaf)=intmap_functor_update le
 
 run_event_b::Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->(Projection b a c d e,Engine b a c d e->Engine b a c d e,Engine b a c d e->Maybe Int)
 run_event_b event engine projection=case projection of
-    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (next,update,widget)=trigger_selector_functor_update (triple_reverse . run_widget new_event engine) (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
-    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (next,update,widget)=trigger_selector_functor_update (triple_reverse . run_widget new_event engine) (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
+    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (next,update,widget)=trigger_selector_functor_update True (triple_reverse . run_widget new_event engine) (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
+    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (next,update,widget)=trigger_selector_functor_update True (triple_reverse . run_widget new_event engine) (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
 
 run_widget::Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,Engine b a c d e->Engine b a c d e,Event a->Engine b a c d e->Maybe Int)
 run_widget event engine this_widget=case this_widget of

@@ -5,8 +5,8 @@
 module Engine.Coroutine where
 
 import Engine.Container
-import Engine.Helper
 import Engine.Projection
+import Engine.Selector
 import Engine.Type
 import qualified Error.Error as EE
 import qualified Control.Monad.ST as CMST
