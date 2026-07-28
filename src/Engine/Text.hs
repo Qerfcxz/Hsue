@@ -77,7 +77,7 @@ to_charset_a sentence charset=case sentence of
     Sentence {sentence_core,path}->DM.insert path (DF.foldl' (\this_charset phrase->DT.foldl' (flip DSet.insert) this_charset phrase.phrase_core) (DM.findWithDefault DSet.empty path charset) sentence_core) charset
 
 update_font::DM.Map String (DSet.Set Char)->Engine a b c d e->IO (Engine a b c d e)
-update_font charset engine=DM.foldlWithKey' (\io_engine path char->io_engine>>=update_font_a path char) (return engine) charset
+update_font charset engine=DM.foldlWithKey' (\action path char->action>>=update_font_a path char) (return engine) charset
 
 update_font_a::String->DSet.Set Char->Engine a b c d e->IO (Engine a b c d e)
 update_font_a path char engine=let charset=DIS.fromDistinctAscList (map DC.ord (DSet.toAscList char)) in case DM.lookup path engine.font_map of

@@ -50,7 +50,7 @@ instance Storable MSDF_Output where
     poke=msdf_output_poke
 
 msdf_output_size_of::MSDF_Output->Int
-msdf_output_size_of _=36
+msdf_output_size_of _=40
 
 msdf_output_alignment::MSDF_Output->Int
 msdf_output_alignment _=8

@@ -48,7 +48,7 @@ collect_a this_submit collect_strategy widget=case widget of
     _->EE.quick_error "collect_a" 0
 
 to_collect::Custom_widget d=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget a b c d e->Submit
-to_collect u v maybe_border widget=case lookup_widget widget of
+to_collect u v maybe_border widget=case widget_lookup widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->let parameter=to_Parameter origin matrix maybe_border in case visual of
         Triangle {first_point,second_point,third_point}->case origin of
             Point {x,y}->Submit {maybe_album_id=Nothing,vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+first_point.x,y=y+first_point.y,u=u,v=v,parameter_id=0,size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+second_point.x,y=y+second_point.y,u=u,v=v,parameter_id=0,size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+third_point.x,y=y+third_point.y,u=u,v=v,parameter_id=0,size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2,parameter=parameter,vertex_length=3,index_length=3}
@@ -113,13 +113,13 @@ move::Projection_move->Int->Insert_strategy->Engine a b c d e->Engine a b c d e
 move projection_move leaf_id collect_strategy engine=let (new_engine,widget)=move_lookup projection_move engine in new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a (move_a widget) collect_strategy)) new_engine.leaf}
 
 move_a::Widget a b c d e->DS.Seq Submit
-move_a widget=let new_widget=lookup_widget widget in case new_widget of
+move_a widget=let new_widget=widget_lookup widget in case new_widget of
     Collector {submit}->DF.foldl' (DS.><) DS.empty submit
     _->EE.quick_error "move_a" 0
 
 move_lookup::Projection_move->Engine a b c d e->(Engine a b c d e,Widget a b c d e)
 move_lookup projection_move engine=case projection_move of
-    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=intmap_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (update_widget consume_widget)) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (intmap_lookup leaf_id engine.leaf))
+    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=intmap_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (abstain_selector_update consume_widget)) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (intmap_lookup leaf_id engine.leaf))
     Image_move {leaf_id}->(engine,lookup_projection_image (intmap_lookup leaf_id engine.leaf))
     Image_safe_move {leaf_id}->(engine,lookup_projection_image_safe (intmap_lookup leaf_id engine.leaf))
 

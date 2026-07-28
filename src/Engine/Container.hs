@@ -65,9 +65,17 @@ intmap_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
     _->EE.quick_error "intmap_functor_update_a" 0
 
-intmap_monad_accumulate::Monad b=>Int->(a->b (a,c))->b (a,DIM.IntMap c)->b (a,DIM.IntMap c)
-intmap_monad_accumulate key transform accumulate=do
-    (coproduct,intmap)<-accumulate
+intmap_applicative_action::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
+intmap_applicative_action action first_intmap second_intmap=if DIS.isSubsetOf (DIM.keysSet first_intmap) (DIM.keysSet second_intmap) then DIM.traverseWithKey (\key value->intmap_applicative_action_a key action first_intmap value) second_intmap else EE.quick_error "intmap_applicative_action" 0
+
+intmap_applicative_action_a::Applicative c=>Int->(a->b->c b)->DIM.IntMap a->b->c b
+intmap_applicative_action_a key action intmap value=case DIM.lookup key intmap of
+    Nothing->pure value
+    Just new_value->action new_value value
+
+intmap_monad_action::Monad b=>Int->(a->b (a,c))->b (a,DIM.IntMap c)->b (a,DIM.IntMap c)
+intmap_monad_action key transform action=do
+    (coproduct,intmap)<-action
     (new_coproduct,value)<-transform coproduct
     return (new_coproduct,intmap_insert key value intmap)
 

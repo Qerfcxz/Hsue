@@ -70,10 +70,6 @@ create_leaf leaf_id maybe_father_id widget_request engine=do
 
 create_widget::Custom_widget_request e=>Widget_request a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
 create_widget this_widget_request engine=case this_widget_request of
-    Double_request {which,first_widget_request,second_widget_request}->do
-        (new_engine,first_widget)<-create_widget first_widget_request engine
-        (new_new_engine,second_widget)<-create_widget second_widget_request new_engine
-        return (new_new_engine,Double {which=which,first_widget=first_widget,second_widget=second_widget})
     Group_request {initial_min_index,initial_max_index,index,insert_widget_request}->do
         (group_widget,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index id insert_widget_request DIM.empty
         return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=group_widget})
@@ -200,19 +196,11 @@ remove_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id en
 
 remove_leaf_a::Custom_widget d=>DS.Seq Int->Widget a b c d e->DIM.IntMap (Projection a b c d e)->Int->Engine a b c d e->IO (Engine a b c d e)
 remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
-    DS.Empty->remove_widget object (engine {leaf=leaf})
-    _ DS.:|> node_id->remove_widget object (engine {leaf=leaf,node=intmap_update node_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
+    DS.Empty->all_selector_monad_action remove_widget object (engine {leaf=leaf})
+    _ DS.:|> node_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=intmap_update node_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
 
 remove_widget::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 remove_widget this_widget engine=case this_widget of
-    Double {first_widget,second_widget}->do
-        new_engine<-remove_widget first_widget engine
-        remove_widget second_widget new_engine
-    Group {group_widget}->CM.foldM (flip remove_widget) engine group_widget
-    Widget_trigger {widget}->remove_widget widget engine
-    Widget_io_trigger {widget}->remove_widget widget engine
-    Widget_mix_trigger {widget}->remove_widget widget engine
-    Coroutine {coroutine_state}->CM.foldM (\this_engine this_coroutine_state->remove_widget this_coroutine_state.widget this_engine) engine coroutine_state
     Visual {visual}->case visual of
         Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
             SDLF.sdl_release_gpu_texture engine.device single_album.texture

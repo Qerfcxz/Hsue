@@ -92,7 +92,7 @@ do_request request engine=case request of
     Load_charset {charset}->do
         new_engine<-update_font charset engine
         return (new_engine,False)
-    Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=lookup_widget widget in case new_widget of
+    Render {window_id,projection_move}->let (new_engine,widget)=move_lookup projection_move engine in let new_widget=widget_lookup widget in case new_widget of
         Collector {submit}->let window=intmap_lookup window_id engine.window in do
             command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
             catch_null command_buffer
@@ -127,12 +127,8 @@ lock_widget widget=case widget of
 
 for_unlock::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
 for_unlock this_widget engine=case this_widget of
-    Double {which,first_widget,second_widget}->do
-        (new_engine,new_first_widget)<-for_unlock first_widget engine
-        (new_new_engine,new_second_widget)<-for_unlock second_widget new_engine
-        return (new_new_engine,Double {which=which,first_widget=new_first_widget,second_widget=new_second_widget})
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->do
-        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\accumulate this_index widget->intmap_monad_accumulate this_index (for_unlock widget) accumulate) (return (engine,DIM.empty)) group_widget
+        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\action this_index widget->intmap_monad_action this_index (for_unlock widget) action) (return (engine,DIM.empty)) group_widget
         return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget})
     Widget_trigger {next,widget_trigger,widget}->do
         (new_engine,new_widget)<-for_unlock widget engine
@@ -144,7 +140,7 @@ for_unlock this_widget engine=case this_widget of
         (new_engine,new_widget)<-for_unlock widget engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
     Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->do
-        (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\accumulate this_index single_coroutine_state->intmap_monad_accumulate this_index (`for_unlock_coroutine` single_coroutine_state) accumulate) (return (engine,DIM.empty)) coroutine_state
+        (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\action this_index single_coroutine_state->intmap_monad_action this_index (`for_unlock_coroutine` single_coroutine_state) action) (return (engine,DIM.empty)) coroutine_state
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Picture {path,locked}->if locked
