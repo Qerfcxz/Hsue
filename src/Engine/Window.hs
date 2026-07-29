@@ -35,4 +35,4 @@ create_adaptive_window_trigger_request_a this_window_id event engine=case event 
 
 create_adaptive_window_trigger_request_b::FCT.CFloat->FCT.CFloat->Window->Window
 create_adaptive_window_trigger_request_b width height window=case window of
-    Window {design_width,design_height}->let (adaptive_width,adaptive_height)=adaptive_window design_width design_height width height in window {adaptive_width=adaptive_width,adaptive_height=adaptive_height}
+    Window {design_width,design_height}->let (adaptive_width,adaptive_height)=adaptive_window design_width design_height width height in window {adaptive_width=adaptive_width,adaptive_height=adaptive_height,width=width,height=height}

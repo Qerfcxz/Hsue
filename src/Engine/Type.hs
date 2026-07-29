@@ -201,7 +201,7 @@ data Album=Album {width::DW.Word32,height::DW.Word32,texture::FP.Ptr SDLT.SDL_GP
 
 data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
-data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr SDLT.SDL_Window,graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr SDLT.SDL_Window,graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,width::FCT.CFloat,height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
 data Row=Blank|Row {row_core::DSeq.Seq Character,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
 

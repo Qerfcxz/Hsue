@@ -80,7 +80,7 @@ do_request request engine=case request of
         sdl_window_id<-SDLF.sdl_get_window_id sdl_window
         catch_zero sdl_window_id
         graphics_pipeline<-create_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
-        let new_width=fromIntegral width in let new_height=fromIntegral height in let window=intmap_insert window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,graphics_pipeline=graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in return (engine {window=window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
+        let new_width=fromIntegral width in let new_height=fromIntegral height in let window=intmap_insert window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,graphics_pipeline=graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,width=new_width,height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window in return (engine {window=window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
     Remove_window {window_id}->do
         new_engine<-remove_window window_id engine
         return (new_engine,False)

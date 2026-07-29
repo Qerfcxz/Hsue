@@ -86,6 +86,12 @@ seq_poke_array_a size value ptr=do
 triple_reverse::(a,b,c)->(c,b,a)
 triple_reverse (a,b,c)=(c,b,a)
 
+fit_matrix::Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
+fit_matrix engine window_id widget_width widget_height width height=let window=intmap_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
+
+fit_window_matrix::Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
+fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=intmap_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
+
 identity_matrix::Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
 
