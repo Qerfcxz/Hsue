@@ -23,44 +23,6 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-newtype Raw_coroutine a b c d e f=Raw_coroutine {iterator::Int->(Int,DSeq.Seq (Coroutine a b c d e),f)}
-
-instance Functor (Raw_coroutine a b c d e) where
-    fmap=raw_coroutine_fmap
-
-raw_coroutine_fmap::(a->b)->Raw_coroutine c d e f g a->Raw_coroutine c d e f g b
-raw_coroutine_fmap function raw_coroutine=Raw_coroutine {iterator=raw_coroutine_fmap_a function raw_coroutine.iterator}
-
-raw_coroutine_fmap_a::(a->b)->(Int->(Int,DSeq.Seq (Coroutine c d e f g),a))->Int->(Int,DSeq.Seq (Coroutine c d e f g),b)
-raw_coroutine_fmap_a function iterator int=let (new_int,coroutine_sequence,value)=iterator int in (new_int,coroutine_sequence,function value)
-
-instance Applicative (Raw_coroutine a b c d e) where
-    pure=raw_coroutine_pure
-    (<*>)=raw_coroutine_apply
-
-raw_coroutine_pure::a->Raw_coroutine b c d e f a
-raw_coroutine_pure value=Raw_coroutine {iterator=raw_coroutine_pure_a value}
-
-raw_coroutine_pure_a::a->Int->(Int,DSeq.Seq (Coroutine b c d e f),a)
-raw_coroutine_pure_a value int=(int,DSeq.empty,value)
-
-raw_coroutine_apply::Raw_coroutine a b c d e (f->g)->Raw_coroutine a b c d e f->Raw_coroutine a b c d e g
-raw_coroutine_apply first_raw_coroutine second_raw_coroutine=Raw_coroutine {iterator=raw_coroutine_apply_a first_raw_coroutine.iterator second_raw_coroutine.iterator}
-
-raw_coroutine_apply_a::(Int->(Int,DSeq.Seq (Coroutine a b c d e),f->g))->(Int->(Int,DSeq.Seq (Coroutine a b c d e),f))->Int->(Int,DSeq.Seq (Coroutine a b c d e),g)
-raw_coroutine_apply_a function_iterator value_iterator int=let (function_int,function_coroutine_sequence,function)=function_iterator int in
-    let (value_int,value_coroutine_sequence,value)=value_iterator function_int in (value_int,function_coroutine_sequence DSeq.>< value_coroutine_sequence,function value)
-
-instance Monad (Raw_coroutine a b c d e) where
-    return=pure
-    (>>=)=raw_coroutine_bind
-
-raw_coroutine_bind::Raw_coroutine a b c d e f->(f->Raw_coroutine a b c d e g)->Raw_coroutine a b c d e g
-raw_coroutine_bind raw_coroutine function=Raw_coroutine {iterator=raw_coroutine_bind_a raw_coroutine.iterator function}
-
-raw_coroutine_bind_a::(Int->(Int,DSeq.Seq (Coroutine a b c d e),f))->(f->Raw_coroutine a b c d e g)->Int->(Int,DSeq.Seq (Coroutine a b c d e),g)
-raw_coroutine_bind_a iterator function int=let (new_int,coroutine_sequence,value)=iterator int in let (new_new_int,new_coroutine_sequence,new_value)=(function value).iterator new_int in (new_new_int,coroutine_sequence DSeq.>< new_coroutine_sequence,new_value)
-
 newtype Dynamic_bool a b c d e=Dynamic_bool {dynamic_bool::(Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Bool}
 
 instance Eq (Dynamic_bool a b c d e) where
@@ -165,6 +127,63 @@ dynamic_int_unary_operator operator dynamic_int getter event engine widget=opera
 dynamic_int_binary_operator::(Int->Int->Int)->((Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Int)->((Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Int)->(Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Int
 dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int getter event engine widget=operator (first_dynamic_int getter event engine widget) (second_dynamic_int getter event engine widget)
 
+newtype Raw_coroutine a b c d e f=Raw_coroutine {iterator::Int->(Int,DSeq.Seq (Coroutine a b c d e),f)}
+
+instance Functor (Raw_coroutine a b c d e) where
+    fmap=raw_coroutine_fmap
+
+raw_coroutine_fmap::(a->b)->Raw_coroutine c d e f g a->Raw_coroutine c d e f g b
+raw_coroutine_fmap function raw_coroutine=Raw_coroutine {iterator=raw_coroutine_fmap_a function raw_coroutine.iterator}
+
+raw_coroutine_fmap_a::(a->b)->(Int->(Int,DSeq.Seq (Coroutine c d e f g),a))->Int->(Int,DSeq.Seq (Coroutine c d e f g),b)
+raw_coroutine_fmap_a function iterator int=let (new_int,coroutine_sequence,value)=iterator int in (new_int,coroutine_sequence,function value)
+
+instance Applicative (Raw_coroutine a b c d e) where
+    pure=raw_coroutine_pure
+    (<*>)=raw_coroutine_apply
+
+raw_coroutine_pure::a->Raw_coroutine b c d e f a
+raw_coroutine_pure value=Raw_coroutine {iterator=raw_coroutine_pure_a value}
+
+raw_coroutine_pure_a::a->Int->(Int,DSeq.Seq (Coroutine b c d e f),a)
+raw_coroutine_pure_a value int=(int,DSeq.empty,value)
+
+raw_coroutine_apply::Raw_coroutine a b c d e (f->g)->Raw_coroutine a b c d e f->Raw_coroutine a b c d e g
+raw_coroutine_apply first_raw_coroutine second_raw_coroutine=Raw_coroutine {iterator=raw_coroutine_apply_a first_raw_coroutine.iterator second_raw_coroutine.iterator}
+
+raw_coroutine_apply_a::(Int->(Int,DSeq.Seq (Coroutine a b c d e),f->g))->(Int->(Int,DSeq.Seq (Coroutine a b c d e),f))->Int->(Int,DSeq.Seq (Coroutine a b c d e),g)
+raw_coroutine_apply_a function_iterator value_iterator int=let (function_int,function_coroutine_sequence,function)=function_iterator int in
+    let (value_int,value_coroutine_sequence,value)=value_iterator function_int in (value_int,function_coroutine_sequence DSeq.>< value_coroutine_sequence,function value)
+
+instance Monad (Raw_coroutine a b c d e) where
+    return=pure
+    (>>=)=raw_coroutine_bind
+
+raw_coroutine_bind::Raw_coroutine a b c d e f->(f->Raw_coroutine a b c d e g)->Raw_coroutine a b c d e g
+raw_coroutine_bind raw_coroutine function=Raw_coroutine {iterator=raw_coroutine_bind_a raw_coroutine.iterator function}
+
+raw_coroutine_bind_a::(Int->(Int,DSeq.Seq (Coroutine a b c d e),f))->(f->Raw_coroutine a b c d e g)->Int->(Int,DSeq.Seq (Coroutine a b c d e),g)
+raw_coroutine_bind_a iterator function int=let (new_int,coroutine_sequence,value)=iterator int in let (new_new_int,new_coroutine_sequence,new_value)=(function value).iterator new_int in (new_new_int,coroutine_sequence DSeq.>< new_coroutine_sequence,new_value)
+
+data Event_result a b c d e f g=Event_result {first_value::f,update::Engine a b c d e->Engine a b c d e,second_value::g}
+
+instance Functor (Event_result a b c d e f) where
+    fmap=event_result_fmap
+
+event_result_fmap::(a->b)->Event_result c d e f g h a->Event_result c d e f g h b
+event_result_fmap function event_result=case event_result of
+    Event_result {first_value,update,second_value}->Event_result {first_value=first_value,update=update,second_value=function second_value}
+
+instance Applicative (Event_result a b c d e f) where
+    pure=event_result_pure
+    (<*>)=event_result_apply
+
+event_result_pure::a->Event_result b c d e f g a
+event_result_pure _=EE.quick_error "event_result_pure" 0
+
+event_result_apply::Event_result a b c d e f (g->h)->Event_result a b c d e f g->Event_result a b c d e f h
+event_result_apply _ _=EE.quick_error "event_result_apply" 0
+
 data Engine a b c d e=Engine {custom::a,main_id::Event b->Engine a b c d e->Maybe Int,projection_strategy::Event b->Engine a b c d e->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a b c d e),node::DIM.IntMap (Node a b c d e),window::DIM.IntMap Window,font::DIM.IntMap Font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,request::DSeq.Seq (Request a b c d e),key::DSet.Set Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::FP.Ptr SDLT.SDL_GPUSampler,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_size::FCT.CInt,vertex_size::Int,index_size::Int,parameter_size::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,width::DW.Word32,height::DW.Word32,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
 data Projection a b c d e=Without {ancestry_id::DSeq.Seq Int,object::Widget a b c d e}|With {ancestry_id::DSeq.Seq Int,object::Widget a b c d e,image::Widget a b c d e}
@@ -185,7 +204,7 @@ data Linear_coroutine a b c d e=Linear_end|Linear_emit {emit::Event b->Engine a 
 
 data Event a=Empty|Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}|Custom_event {custom::a}
 
-data Selector a=None_selector|Combine_selector {combine_selector::DSeq.Seq (Selector a)}|Self_selector {value::a}|All_selector {maybe_value::Maybe a,value::a}|Trigger_selector {maybe_value::Maybe a,value::a,bounded::Bool}|Abstain_selector {maybe_value::Maybe a,value::a,bounded::Bool}|Default_selector {maybe_value::Maybe a,selector::Selector a,bounded::Bool,strict::Bool}|Any_selector {maybe_value::Maybe a,selector::Selector a,strict::Bool}|Group_selector {maybe_value::Maybe a,group_selector::DIM.IntMap (Selector a),bounded::Bool}|Vector_selector {maybe_value::Maybe a,vector_selector::DIM.IntMap (Selector a),bounded::Bool}|Widget_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Widget_io_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Widget_mix_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Coroutine_selector {maybe_value::Maybe a,coroutine_selector::DIM.IntMap (Selector a),bounded::Bool}
+data Selector a=None_selector|Combine_selector {combine_selector::DSeq.Seq (Selector a)}|Self_selector {value::a}|All_selector {maybe_value::Maybe a,value::a}|Trigger_selector {maybe_value::Maybe a,value::a,bounded::Bool}|Default_selector {maybe_value::Maybe a,value::a,bounded::Bool}|Hosted_selector {maybe_value::Maybe a,selector::Selector a,bounded::Bool,strict::Bool}|Any_selector {maybe_value::Maybe a,selector::Selector a,strict::Bool}|Group_selector {maybe_value::Maybe a,group_selector::DIM.IntMap (Selector a),bounded::Bool}|Vector_selector {maybe_value::Maybe a,vector_selector::DIM.IntMap (Selector a),bounded::Bool}|Widget_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Widget_io_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Widget_mix_trigger_selector {maybe_value::Maybe a,selector::Selector a}|Coroutine_selector {maybe_value::Maybe a,coroutine_selector::DIM.IntMap (Selector a),bounded::Bool}
 
 data Insert a=Insert {insert_strategy::Insert_strategy,value::a}
 

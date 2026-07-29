@@ -237,22 +237,27 @@ run_event event engine=case engine.main_id event engine of
     Just leaf_id->run_event_a leaf_id event engine
 
 run_event_a::Custom_widget d=>Int->Event a->Engine b a c d e->Engine b a c d e
-run_event_a leaf_id event engine=let (next,update,leaf)=intmap_functor_update leaf_id (triple_reverse . run_event_b event engine) engine.leaf in let new_engine=update (engine {leaf=leaf}) in case next new_engine of
-    Nothing->new_engine
-    Just new_leaf_id->run_event_a new_leaf_id event new_engine
+run_event_a leaf_id event engine=case intmap_functor_update leaf_id (run_event_b event engine) engine.leaf of
+    Event_result {first_value,update,second_value}->let new_engine=update (engine {leaf=second_value}) in case first_value new_engine of
+        Nothing->new_engine
+        Just new_leaf_id->run_event_a new_leaf_id event new_engine
 
-run_event_b::Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->(Projection b a c d e,Engine b a c d e->Engine b a c d e,Engine b a c d e->Maybe Int)
+run_event_b::Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
 run_event_b event engine projection=case projection of
-    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (next,update,widget)=trigger_selector_functor_update True (triple_reverse . run_widget new_event engine) (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
-    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let (next,update,widget)=trigger_selector_functor_update True (triple_reverse . run_widget new_event engine) (lookup_projection_object projection) in (insert_projection_object widget projection,update,next new_event)
+    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let event_result=trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection_object projection) in run_event_c new_event (`insert_projection_object` projection) event_result
+    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let event_result=trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection_object projection) in run_event_c new_event (`insert_projection_object` projection) event_result
 
-run_widget::Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,Engine b a c d e->Engine b a c d e,Event a->Engine b a c d e->Maybe Int)
+run_event_c::Event a->(Widget b a c d e->Projection b a c d e)->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
+run_event_c event transform event_result=case event_result of
+    Event_result {first_value,update,second_value}->Event_result {first_value=first_value event,update=update,second_value=transform second_value}
+
+run_widget::Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)
 run_widget event engine this_widget=case this_widget of
-    Trigger {next,trigger}->(this_widget,trigger event,next)
-    Io_trigger {next,io_trigger}->(this_widget,create_request (Io {io=io_trigger event}),next)
-    Mix_trigger {next,mix_trigger,order}->(this_widget,let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
-    Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in (Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget},update,next)
-    Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in (Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget},create_request (Io {io=update}),next)
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget},if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),next)
-    Custom_widget {custom}->let (new_custom,update,next)=custom_widget_run event engine custom in (Custom_widget {custom=new_custom},update,next)
+    Trigger {next,trigger}->Event_result {first_value=next,update=trigger event,second_value=this_widget}
+    Io_trigger {next,io_trigger}->Event_result {first_value=next,update=create_request (Io {io=io_trigger event}),second_value=this_widget}
+    Mix_trigger {next,mix_trigger,order}->Event_result {first_value=next,update=let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),second_value=this_widget}
+    Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in Event_result {first_value=next,update=update,second_value=Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget}}
+    Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Event_result {first_value=next,update=create_request (Io {io=update}),second_value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Event_result {first_value=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),second_value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
+    Custom_widget {custom}->let (new_custom,update,next)=custom_widget_run event engine custom in Event_result {first_value=next,update=update,second_value=Custom_widget {custom=new_custom}}
     _->EE.quick_error "run_widget" 0
