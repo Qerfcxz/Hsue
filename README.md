@@ -18,13 +18,13 @@ Hsue is an exploration of how to build a high-performance, modern UI framework u
 
 ## ✨ Key Features
 
-*   **Modern GPU Rendering:** Built on top of the SDL3 GPU pipeline. Features fundamental draw call batching, adaptive window resizing, and explicit GPU buffer management.
-*   **Functional Coroutine Subsystem:** A custom, purely functional Coroutine DSL (`Wait`, `Fork`, `Emit`, `While`, `Repeat`, etc.). It compiles down to bytecode-like linear instructions (`Linear_coroutine`), making complex UI state machines, animations, and parallelism declarative and robust.
-*   **MSDF Crisp Text Rendering:** First-class support for Multi-channel Signed Distance Field (MSDF) text. Automatically interfaces with `msdf-atlas-gen` to generate, cache, and manage dynamic charsets and glyph atlases, ensuring pixel-perfect text at any scale.
-*   **Deferred Request System:** Side effects and state mutations are explicitly isolated. Widgets emit `Request`s (e.g., `Render`, `Create_widget`, `Load_charset`) to a central queue, which the engine processes sequentially, maintaining a clear functional data flow.
-*   **"Projection" Caching System:** A snapshot mechanism for the UI tree (`Projection a = Without object | With object image`). It caches the visual results of hierarchical transforms, reducing redundant affine matrix calculations and traversals during rendering.
-*   **Dynamic Texture Atlas:** Includes a built-in, BSP-based texture packer. Small images are packed into dynamic atlases on the fly to reduce texture binding overhead.
-*   **Composable Event Triggers:** Evolved into a highly compositional `Widget` system. Instead of rigid structures, the engine gracefully handles logic via `Trigger`, `Mix_trigger`, and `Group` wrappers, isolating side-effects (`Io_trigger`) directly alongside the pure UI nodes.
+*   **Modern GPU Pipeline & Automatic Batching:** Built on top of the SDL3 GPU API. Features Shader Storage Buffer Objects (SSBOs) for primitive parameters, custom HLSL pixel-shader clipping, and an integrated `Collector` pipeline that automatically batches draw calls by texture atlas.
+*   **Bytecode-Compiled Functional Coroutines:** A custom, purely functional Coroutine DSL supporting advanced semantics (`Wait`, `Fork`, `Race`, `Case`, `Dynamic_clone`, `Pause`, `Skip`, `Assign`, etc.). It compiles down to a bytecode-like linear instruction stream (`Linear_coroutine`) executed via ST-Monad state machines with isolated variable memory layouts.
+*   **MSDF Text Rendering & Automatic Typesetting:** Native support for Multi-channel Signed Distance Field (MSDF) text. Interfaces directly with `msdf-atlas-gen` to track dynamic charsets, manage glyph atlases, and perform multi-line paragraph typesetting (`do_typesetting`) for crisp text at any scale.
+*   **Declarative Selector System:** A powerful query and mutation mechanism (`Selector a`) for traversing and modifying complex nested widget trees (`Group`, `Vector`, `Coroutine`, `Trigger`, etc.) using combinators, pattern matching, and monadic updates.
+*   **Deferred Request Queue:** Side effects and state mutations are strictly isolated. Widgets emit explicit `Request` intentions (`Render`, `Create_widget`, `Clean_atlas`, `Unlock`, `Load_charset`), which the engine processes sequentially to maintain a pure functional data flow.
+*   **"Projection" Caching & Adaptive Windowing:** Snapshot caching for the UI tree (`Projection a = Without object | With object image`) freezes hierarchical matrix transforms to minimize redundant traversals. Paired with aspect-ratio-preserving adaptive window scaling (`adaptive_window`).
+*   **Dynamic Atlas & Animation Subsystem:** Includes a built-in BSP rectangle packing packer for dynamic texture atlases, alongside native support for multi-frame animated sprites via `SDL_image` (`IMG_LoadAnimation`).
 
 ---
 
@@ -42,10 +42,10 @@ Hsue 旨在探索如何用纯函数式编程的理念，构建一个现代、高
 
 ## ✨ 核心特性
 
-*   **现代 GPU 渲染管线:** 基于 SDL3 GPU 接口构建。底层包含了基础的 Draw Call 合批逻辑、自适应窗口缩放逻辑以及显式的 GPU Buffer 管理。
-*   **纯函数式协程系统:** 引擎内置了一套极为完备的纯函数协程 DSL（包含 `Wait`, `Fork`, `Emit`, `Repeat` 等语义）。它在底层会被编译为类似字节码的线性指令 (`Linear_coroutine`)，使得复杂的 UI 动画、状态机与高并发逻辑能够以声明式的方式优雅编写。
-*   **MSDF 高清文本渲染:** 原生集成多通道有符号距离场 (MSDF) 文本渲染引擎。底层自动调用 `msdf-atlas-gen` 管理动态字符集与图集缓存，并利用片段着色器实现了任意缩放级别下的平滑、无损文本显示。
-*   **延迟请求队列 (Request System):** 明确分离了副作用与状态变更。组件不直接执行副作用，而是向引擎发出 `Request` 意图（如渲染、加载字体、创建组件等），引擎在主循环中统一消费队列，保持清晰的数据流。
-*   **“投影”缓存系统 (Projection):** 一套 UI 树快照机制。通过区分本体与影像（`Without` / `With image`），引擎能将父节点的仿射变换等结果“冻结”并缓存，避免每帧重复计算复杂的树状结构开销。
-*   **动态纹理图集 (Dynamic Atlas):** 内置基于二叉空间分割（BSP）的矩形打包算法，运行时自动将零碎小图合并为大尺寸 Texture Atlas，有效降低渲染时的纹理绑定开销。
-*   **高可组合的触发器组件 (Triggers):** 演进出了一套高组合性的 `Widget` 体系。不再使用僵硬的结构约束，而是通过 `Trigger`, `Mix_trigger`, `Group` 等节点进行事件响应与包装，并将副作用（`Io_trigger`）安全地隔离在纯 UI 节点之旁。
+*   **现代 GPU 渲染与 Draw Call 自动合批:** 基于 SDL3 GPU 接口搭建。结合 HLSL 片段着色器与 Shader Storage Buffer (SSBO) 传输图元参数，并内置 `Collector` 收集器管线，根据纹理 Atlas 自动完成 Draw Call 的分组与合批。
+*   **字节码编译型纯函数协程:** 高阶纯函数协程 DSL，支持复杂的并发与状态控制（如 `Wait`, `Fork`, `Race`, `Case`, `Dynamic_clone`, `Pause`, `Skip`, `Assign` 等）。底层会编译为类似字节码的线性指令流 (`Linear_coroutine`)，并在 ST Monad 中高效运行状态机与隔离变量内存。
+*   **MSDF 高清文本与排版引擎:** 原生集成 MSDF（多通道有符号距离场）渲染技术。底层对接 `msdf-atlas-gen` C API，实现动态字符集提取、自动段落/多行排版计算 (`do_typesetting`) 以及任意缩放级别下的平滑矢量文本显示。
+*   **声明式 Selector 节点检索系统:** 提供强大的 `Selector a` 组合子体系，支持对深层嵌套的 Widget 结构（如 `Group`, `Vector`, `Coroutine`, `Trigger` 等）进行高效的结构遍历、模式匹配与 Monadic 局部状态更新。
+*   **延迟请求队列 (Request System):** 严格隔离副作用与状态变更。Widget 仅需发送 `Request` 意图（如渲染、节点增删、图集重建、字符集加载等），由引擎主循环统一消费队列，保持清晰单向的数据流。
+*   **“投影”缓存与自适应窗口:** UI 树快照机制 (`Projection`) 能将父节点的仿射变换计算“冻结”并缓存，避免跨帧重复计算；配合设计分辨率自适应缩放逻辑 (`adaptive_window`)，轻松应对窗口拉伸与分辨率变化。
+*   **动态图集与动画子系统:** 内置基于二叉空间分割（BSP）的矩形打包算法，运行时自动合并小图；同时原生支持基于 `SDL_image` 的多帧 Sequence 动态图集与动画播放 (`Animation`)。
