@@ -75,6 +75,18 @@ widget_lookup this_widget=case this_widget of
     Coroutine {index,coroutine_state}->widget_lookup (intmap_lookup index coroutine_state).widget
     _->this_widget
 
+self_selector::Selector ()
+self_selector=Self_selector {value=()}
+
+all_selector::Bool->Selector ()
+all_selector this_maybe=All_selector {maybe_value=if this_maybe then Just () else Nothing,value=()}
+
+trigger_selector::Bool->Bool->Selector ()
+trigger_selector this_maybe bounded=Trigger_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
+
+default_selector::Bool->Bool->Selector ()
+default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
+
 seq_poke_array::FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
 seq_poke_array size value ptr=CM.void (DF.foldlM (flip (seq_poke_array_a size)) ptr value)
 
