@@ -7,6 +7,7 @@ module Engine.Engine where
 import Engine.Atlas
 import Engine.Container
 import Engine.Helper
+import Engine.Leaf
 import Engine.Projection
 import Engine.Request
 import Engine.Selector
@@ -38,12 +39,13 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=SDLF.sdl_quit
 
-create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a b c d e)
-create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range=do
+create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a b c d e)
+create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range=do
     device<-SDLF.sdl_create_gpu_device SDLI.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
     vertex_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 1 1 "Vertex"
     fragment_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_fragment 1 0 0 "Fragment"
+    canvas_graphics_pipeline<-create_canvas_graphics_pipeline device vertex_shader fragment_shader
     texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture device)
     sampler<-FMU.with (SDLI.SDL_GPUSamplerCreateInfo {sdl_min_filter=SDLI.sdl_gpu_filter_nearest,sdl_mag_filter=SDLI.sdl_gpu_filter_nearest,sdl_mipmap_mode=SDLI.sdl_gpu_samplermipmapmode_nearest,sdl_address_mode_u=SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge,sdl_address_mode_v=SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge,sdl_address_mode_w=SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge}) (return_catch_null . SDLF.sdl_create_gpu_sampler device)
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer device
@@ -73,12 +75,12 @@ create_engine custom main_id projection_strategy picture_size vertex_size index_
     let (atlas,left,down,right,up)=atlas_insert new_width new_height padding (init_atlas width height)
     copy_texture device new_texture texture left down new_width new_height
     let album_id=initial_album_id+1 in case maybe_interval of
-        Nothing->let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
+        Nothing->let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
         Just interval->if 0<interval
             then do
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
                 catch_zero timer_id
-                let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
+                let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
             else EE.quick_error "create_engine" 0
 
 clean_engine::Engine a b c d e->IO ()
@@ -87,6 +89,7 @@ clean_engine engine=do
     case engine.timer of
         Off->return ()
         On {timer_id}->catch_false (SDLF.sdl_remove_timer timer_id)
+    DF.traverse_ (clean_canvas engine.device) (DIM.elems engine.canvas)
     DF.traverse_ (\album->SDLF.sdl_release_gpu_texture engine.device album.texture) (DIM.elems engine.album)
     FP.freeHaskellFunPtr engine.callback
     SDLF.sdl_release_gpu_texture engine.device engine.texture
@@ -96,6 +99,7 @@ clean_engine engine=do
     SDLF.sdl_release_gpu_buffer engine.device engine.parameter_buffer
     SDLF.sdl_release_gpu_transfer_buffer engine.device engine.transfer_buffer
     SDLF.sdl_release_gpu_transfer_buffer engine.device engine.picture_transfer_buffer
+    SDLF.sdl_release_gpu_graphics_pipeline engine.device engine.canvas_graphics_pipeline
     SDLF.sdl_release_gpu_shader engine.device engine.vertex_shader
     SDLF.sdl_release_gpu_shader engine.device engine.fragment_shader
     SDLF.sdl_destroy_gpu_device engine.device
@@ -244,8 +248,8 @@ run_event_a leaf_id event engine=case intmap_functor_update leaf_id (run_event_b
 
 run_event_b::Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
 run_event_b event engine projection=case projection of
-    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let event_result=trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection_object projection) in run_event_c new_event (`insert_projection_object` projection) event_result
-    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in let event_result=trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection_object projection) in run_event_c new_event (`insert_projection_object` projection) event_result
+    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in run_event_c new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))
+    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(intmap_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in run_event_c new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))
 
 run_event_c::Event a->(Widget b a c d e->Projection b a c d e)->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
 run_event_c event transform event_result=case event_result of

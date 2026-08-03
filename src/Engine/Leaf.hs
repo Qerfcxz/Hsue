@@ -17,6 +17,7 @@ import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
+import qualified Data.Bits as DB
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
@@ -66,40 +67,40 @@ from_insert_widget_b min_index max_index transform insert_widget intmap=case ins
 
 create_leaf::Custom_widget_request e=>Int->Maybe Int->Widget_request a b c d e->Engine a b c d e->IO (Engine a b c d e)
 create_leaf leaf_id maybe_father_id widget_request engine=do
-    (new_engine,widget)<-create_widget widget_request engine
+    (new_engine,widget)<-create_widget leaf_id widget_request engine
     case maybe_father_id of
         Nothing->return (new_engine {leaf=intmap_insert leaf_id (Without {ancestry_id=DS.empty,object=widget}) new_engine.leaf})
         Just father_id->let (node,single_node)=intmap_update_lookup father_id (\this_node->this_node {leaf_child=intset_insert leaf_id this_node.leaf_child}) new_engine.node in return (new_engine {leaf=intmap_insert leaf_id (Without {ancestry_id=single_node.ancestry_id DS.|> father_id,object=widget}) new_engine.leaf,node=node})
 
-create_widget::Custom_widget_request e=>Widget_request a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
-create_widget this_widget_request engine=case this_widget_request of
+create_widget::Custom_widget_request e=>Int->Widget_request a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
+create_widget leaf_id this_widget_request engine=case this_widget_request of
     Group_request {initial_min_index,initial_max_index,index,insert_widget_request}->do
-        (group_widget,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index id insert_widget_request DIM.empty
+        (new_engine,group_widget,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index id insert_widget_request DIM.empty engine
         return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=group_widget})
     Vector_request {index,vector_widget_request}->let size=DS.length vector_widget_request in do
         vector_widget<-DVM.new size
-        new_engine<-create_vector_widget 0 vector_widget vector_widget_request engine
+        new_engine<-create_vector_widget leaf_id 0 vector_widget vector_widget_request engine
         new_vector_widget<-DV.unsafeFreeze vector_widget
         return (new_engine,Vector {index=index,size=size,vector_widget=new_vector_widget})
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})
     Mix_trigger_request {next,mix_trigger,order}->return (engine,Mix_trigger {next=next,mix_trigger=mix_trigger,order=order})
     Widget_trigger_request {next,widget_trigger,widget_request}->do
-        (new_engine,widget)<-create_widget widget_request engine
+        (new_engine,widget)<-create_widget leaf_id widget_request engine
         return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=widget})
     Widget_io_trigger_request {next,widget_io_trigger,widget_request}->do
-        (new_engine,widget)<-create_widget widget_request engine
+        (new_engine,widget)<-create_widget leaf_id widget_request engine
         return (new_engine,Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=widget})
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
-        (new_engine,widget)<-create_widget widget_request engine
+        (new_engine,widget)<-create_widget leaf_id widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
     Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (linear_coroutine,layout,variable_length,user_variable_length)=let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in from_coroutine (to_coroutine coroutine_sequence) int in do
-        (coroutine_state,max_index,min_index,new_engine)<-from_insert_widget_request engine initial_min_index initial_max_index (init_coroutine_state variable_length user_variable_length) insert_widget_request DIM.empty
+        (new_engine,coroutine_state,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index (init_coroutine_state variable_length user_variable_length) insert_widget_request DIM.empty engine
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
-        (new_engine,visual)<-create_visual visual_request engine
+        (new_engine,visual)<-create_visual leaf_id visual_request engine
         return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
     Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let new_height=height/2 in if load
         then do
@@ -110,27 +111,27 @@ create_widget this_widget_request engine=case this_widget_request of
         (new_engine,new_custom)<-custom_widget_request custom engine
         return (new_engine,Custom_widget {custom=new_custom})
 
-create_vector_widget::Custom_widget_request e=>Int->DVM.IOVector (Widget a b c d e)->DS.Seq (Widget_request a b c d e)->Engine a b c d e->IO (Engine a b c d e)
-create_vector_widget index vector_widget vector_widget_request engine=case vector_widget_request of
+create_vector_widget::Custom_widget_request e=>Int->Int->DVM.IOVector (Widget a b c d e)->DS.Seq (Widget_request a b c d e)->Engine a b c d e->IO (Engine a b c d e)
+create_vector_widget leaf_id index vector_widget vector_widget_request engine=case vector_widget_request of
     DS.Empty->return engine
     (widget_request DS.:<| other_widget_request)->do
-        (new_engine,widget)<-create_widget widget_request engine
+        (new_engine,widget)<-create_widget leaf_id widget_request engine
         DVM.unsafeWrite vector_widget index widget
-        create_vector_widget (index+1) vector_widget other_widget_request new_engine
+        create_vector_widget leaf_id (index+1) vector_widget other_widget_request new_engine
 
-from_insert_widget_request::Custom_widget_request e=>Engine a b c d e->Int->Int->(Widget a b c d e->f)->DS.Seq (Insert (Widget_request a b c d e))->DIM.IntMap f->IO (DIM.IntMap f,Int,Int,Engine a b c d e)
-from_insert_widget_request engine min_index max_index transform insert_widget_request intmap=case insert_widget_request of
-    DS.Empty->return (intmap,max_index,min_index,engine)
+from_insert_widget_request::Custom_widget_request e=>Int->Int->Int->(Widget a b c d e->f)->DS.Seq (Insert (Widget_request a b c d e))->DIM.IntMap f->Engine a b c d e->IO (Engine a b c d e,DIM.IntMap f,Int,Int)
+from_insert_widget_request leaf_id min_index max_index transform insert_widget_request intmap engine=case insert_widget_request of
+    DS.Empty->return (engine,intmap,max_index,min_index)
     insert DS.:<| other_insert->case insert of
         Insert {insert_strategy,value}->do
-            (new_engine,widget)<-create_widget value engine
+            (new_engine,widget)<-create_widget leaf_id value engine
             case insert_strategy of
-                Min_strategy->from_insert_widget_request new_engine (min_index-1) max_index transform other_insert (intmap_insert min_index (transform widget) intmap)
-                Max_strategy->from_insert_widget_request new_engine min_index (max_index+1) transform other_insert (intmap_insert max_index (transform widget) intmap)
-                Index_strategy {seat}->if seat<=min_index then from_insert_widget_request new_engine (seat-1) max_index transform other_insert (intmap_insert seat (transform widget) intmap) else if max_index<=seat then from_insert_widget_request new_engine min_index (seat+1) transform other_insert (intmap_insert seat (transform widget) intmap) else from_insert_widget_request new_engine min_index max_index transform other_insert (intmap_insert seat (transform widget) intmap)
+                Min_strategy->from_insert_widget_request leaf_id (min_index-1) max_index transform other_insert (intmap_insert min_index (transform widget) intmap) new_engine
+                Max_strategy->from_insert_widget_request leaf_id min_index (max_index+1) transform other_insert (intmap_insert max_index (transform widget) intmap) new_engine
+                Index_strategy {seat}->if seat<=min_index then from_insert_widget_request leaf_id (seat-1) max_index transform other_insert (intmap_insert seat (transform widget) intmap) new_engine else if max_index<=seat then from_insert_widget_request leaf_id min_index (seat+1) transform other_insert (intmap_insert seat (transform widget) intmap) new_engine else from_insert_widget_request leaf_id min_index max_index transform other_insert (intmap_insert seat (transform widget) intmap) new_engine
 
-create_visual::Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_visual visual_request engine=case visual_request of
+create_visual::Int->Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
+create_visual leaf_id visual_request engine=case visual_request of
     Triangle_request {first_point,second_point,third_point}->return (engine,Triangle {first_point=first_point,second_point=second_point,third_point=third_point})
     Convex_polygon_request {point}->return (engine,Convex_polygon {point=point})
     Regular_polygon_request {number,radius,angle}->return (engine,Regular_polygon {number=number,radius=radius,angle=angle})
@@ -143,6 +144,11 @@ create_visual visual_request engine=case visual_request of
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
     Animation_request {min_delay,width,height,padding,path}->create_animation min_delay width height padding path engine
+    Canvas_request {canvas_width,canvas_height,maybe_canvas_id}->do
+        texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+        case maybe_canvas_id of
+            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {canvas_width=canvas_width,canvas_height=canvas_height,canvas_id=engine.canvas_id,locked=False})
+            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {canvas_width=canvas_width,canvas_height=canvas_height,canvas_id=canvas_id,locked=False})
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -227,9 +233,17 @@ remove_widget widget engine=case widget of
         Animation {album_number,album_id}->do
             new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
             return (engine {album=new_album})
+        Canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
+            clean_canvas engine.device single_canvas
+            return (engine {canvas=canvas})
         _->return engine
     Custom_widget {custom}->custom_widget_remove custom engine
     _->return engine
+
+clean_canvas::FP.Ptr SDLT.SDL_GPUDevice->Canvas->IO ()
+clean_canvas device canvas=case canvas of
+    Free_canvas {texture}->SDLF.sdl_release_gpu_texture device texture
+    Bound_canvas {texture}->SDLF.sdl_release_gpu_texture device texture
 
 remove_animation::FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)
 remove_animation device index album_id album=let (new_album,single_album)=intmap_delete_lookup (album_id+index) album in do

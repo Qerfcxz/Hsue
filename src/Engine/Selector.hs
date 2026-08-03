@@ -15,31 +15,31 @@ import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
 import qualified Data.Vector.Storable as DVS
 
-group_all_selector_action::((Engine a b c d e->Widget a b c d e->f)->Engine a b c d e->DIM.IntMap (Widget a b c d e)->f)->(Widget a b c d e->Engine a b c d e->f)->DIM.IntMap (Widget a b c d e)->Engine a b c d e->f
-group_all_selector_action function value group_widget engine=function (flip value) engine group_widget
+group_all_selector_action::((a->Widget b c d e f->g)->a->DIM.IntMap (Widget b c d e f)->g)->(Widget b c d e f->a->g)->DIM.IntMap (Widget b c d e f)->a->g
+group_all_selector_action function value group_widget environment=function (flip value) environment group_widget
 
 group_all_selector_update::((DIM.IntMap (Widget a b c d e)->Widget a b c d e)->f->g)->((Widget a b c d e->h)->DIM.IntMap (Widget a b c d e)->f)->(Widget a b c d e->h)->Int->Int->Int->Int->Int->DIM.IntMap (Widget a b c d e)->g
 group_all_selector_update wrapper function value initial_min_index min_index initial_max_index max_index index group_widget=wrapper (\this_group_widget->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=this_group_widget}) (function value group_widget)
 
-group_default_selector_action::Bool->(Engine a b c d e->f)->(Widget a b c d e->Engine a b c d e->f)->Int->DIM.IntMap (Widget a b c d e)->Engine a b c d e->f
-group_default_selector_action bounded function value index group_widget engine=if bounded then value (intmap_lookup index group_widget) engine else maybe (function engine) (`value` engine) (DIM.lookup index group_widget)
+group_default_selector_action::Bool->(a->b)->(Widget c d e f g->a->b)->Int->DIM.IntMap (Widget c d e f g)->a->b
+group_default_selector_action bounded function value index group_widget environment=if bounded then value (intmap_lookup index group_widget) environment else maybe (function environment) (`value` environment) (DIM.lookup index group_widget)
 
 group_default_selector_update::Bool->a->((DIM.IntMap (Widget b c d e f)->Widget b c d e f)->g->a)->(Int->h->DIM.IntMap (Widget b c d e f)->g)->h->Int->Int->Int->Int->Int->DIM.IntMap (Widget b c d e f)->a
 group_default_selector_update bounded fallback wrapper function value initial_min_index min_index initial_max_index max_index index group_widget=let result=wrapper (\this_group_widget->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=this_group_widget}) (function index value group_widget) in if bounded then result else maybe fallback (const result) (DIM.lookup index group_widget)
 
-vector_all_selector_action::((Engine a b c d e->Widget a b c d e->f)->Engine a b c d e->DV.Vector (Widget a b c d e)->f)->(Widget a b c d e->Engine a b c d e->f)->DV.Vector (Widget a b c d e)->Engine a b c d e->f
-vector_all_selector_action function value vector_widget engine=function (flip value) engine vector_widget
+vector_all_selector_action::((a->Widget b c d e f->g)->a->DV.Vector (Widget b c d e f)->g)->(Widget b c d e f->a->g)->DV.Vector (Widget b c d e f)->a->g
+vector_all_selector_action function value vector_widget environment=function (flip value) environment vector_widget
 
 vector_all_selector_update::((DV.Vector (Widget a b c d e)->Widget a b c d e)->f->g)->((Widget a b c d e->h)->DV.Vector (Widget a b c d e)->f)->(Widget a b c d e->h)->Int->Int->DV.Vector (Widget a b c d e)->g
 vector_all_selector_update wrapper function value index size vector_widget=wrapper (\this_vector_widget->Vector {index=index,size=size,vector_widget=this_vector_widget}) (function value vector_widget)
 
-vector_default_selector_action::Bool->(Engine a b c d e->f)->(Widget a b c d e->Engine a b c d e->f)->Int->DV.Vector (Widget a b c d e)->Engine a b c d e->f
-vector_default_selector_action bounded function value index vector_widget engine=if bounded then value (vector_widget DV.! index) engine else maybe (function engine) (`value` engine) (vector_widget DV.!? index)
+vector_default_selector_action::Bool->(a->b)->(Widget c d e f g->a->b)->Int->DV.Vector (Widget c d e f g)->a->b
+vector_default_selector_action bounded function value index vector_widget environment=if bounded then value (vector_widget DV.! index) environment else maybe (function environment) (`value` environment) (vector_widget DV.!? index)
 
 vector_default_selector_update::Bool->a->((DV.Vector (Widget b c d e f)->Widget b c d e f)->g->a)->(Int->h->DV.Vector (Widget b c d e f)->g)->h->Int->Int->DV.Vector (Widget b c d e f)->a
 vector_default_selector_update bounded fallback wrapper function value index size vector_widget=let result=wrapper (\this_vector_widget->Vector {index=index,size=size,vector_widget=this_vector_widget}) (function index value vector_widget) in if bounded then result else maybe fallback (const result) (vector_widget DV.!? index)
 
-widget_trigger_selector_action::(Widget a b c d e->Engine a b c d e->f)->Widget a b c d e->Engine a b c d e->f
+widget_trigger_selector_action::(Widget a b c d e->f->g)->Widget a b c d e->f->g
 widget_trigger_selector_action value=value
 
 widget_trigger_selector_update::((Widget a b c d e->Widget a b c d e)->f->g)->(h->Widget a b c d e->f)->h->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e))->Widget a b c d e->g
@@ -51,179 +51,179 @@ widget_io_trigger_selector_update wrapper function value next widget_io_trigger 
 widget_mix_trigger_selector_update::((Widget a b c d e->Widget a b c d e)->f->g)->(h->Widget a b c d e->f)->h->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)))->Bool->Widget a b c d e->g
 widget_mix_trigger_selector_update wrapper function value next widget_mix_trigger order widget=wrapper (\this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_widget}) (function value widget)
 
-coroutine_all_selector_action::((Engine a b c d e->Coroutine_state a b c d e->f)->Engine a b c d e->DIM.IntMap (Coroutine_state a b c d e)->f)->(Widget a b c d e->Engine a b c d e->f)->DIM.IntMap (Coroutine_state a b c d e)->Engine a b c d e->f
-coroutine_all_selector_action function value coroutine_state engine=function (\this_engine single_coroutine_state->value single_coroutine_state.widget this_engine) engine coroutine_state
+coroutine_all_selector_action::((a->Coroutine_state b c d e f->g)->a->DIM.IntMap (Coroutine_state b c d e f)->g)->(Widget b c d e f->a->g)->DIM.IntMap (Coroutine_state b c d e f)->a->g
+coroutine_all_selector_action function value coroutine_state environment=function (\this_environment single_coroutine_state->value single_coroutine_state.widget this_environment) environment coroutine_state
 
 coroutine_all_selector_update::((DIM.IntMap (Coroutine_state a b c d e)->Widget a b c d e)->f->g)->(h->DIM.IntMap (Coroutine_state a b c d e)->f)->h->Int->Int->Int->Int->Int->Int->Int->DVS.Vector Layout->DV.Vector (Linear_coroutine a b c d e)->Bool->DIM.IntMap (Coroutine_state a b c d e)->g
 coroutine_all_selector_update wrapper function value index initial_min_index min_index initial_max_index max_index variable_length user_variable_length layout linear_coroutine iterative coroutine_state=wrapper (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (function value coroutine_state)
 
-coroutine_default_selector_action::Bool->(Engine a b c d e->f)->(Widget a b c d e->Engine a b c d e->f)->Int->DIM.IntMap (Coroutine_state a b c d e)->Engine a b c d e->f
-coroutine_default_selector_action bounded function value index coroutine_state engine=if bounded then value (intmap_lookup index coroutine_state).widget engine else maybe (function engine) (\single_coroutine_state->value single_coroutine_state.widget engine) (DIM.lookup index coroutine_state)
+coroutine_default_selector_action::Bool->(a->b)->(Widget c d e f g->a->b)->Int->DIM.IntMap (Coroutine_state c d e f g)->a->b
+coroutine_default_selector_action bounded function value index coroutine_state environment=if bounded then value (intmap_lookup index coroutine_state).widget environment else maybe (function environment) (\single_coroutine_state->value single_coroutine_state.widget environment) (DIM.lookup index coroutine_state)
 
 coroutine_default_selector_update::Bool->a->((DIM.IntMap (Coroutine_state b c d e f)->Widget b c d e f)->g->a)->(Int->h->DIM.IntMap (Coroutine_state b c d e f)->g)->h->Int->Int->Int->Int->Int->Int->Int->DVS.Vector Layout->DV.Vector (Linear_coroutine b c d e f)->Bool->DIM.IntMap (Coroutine_state b c d e f)->a
 coroutine_default_selector_update bounded fallback wrapper function value index initial_min_index min_index initial_max_index max_index variable_length user_variable_length layout linear_coroutine iterative coroutine_state=let result=wrapper (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (function index value coroutine_state) in if bounded then result else maybe fallback (const result) (DIM.lookup index coroutine_state)
 
-selector_action::(a->Widget b c d e f->Engine b c d e f->Engine b c d e f)->Selector a->Widget b c d e f->Engine b c d e f->Engine b c d e f
-selector_action action this_selector this_widget engine=case this_selector of
-    None_selector->engine
-    Combine_selector {combine_selector}->DF.foldl' (\this_engine single_selector->selector_action action single_selector this_widget this_engine) engine combine_selector
-    Self_selector {value}->action value this_widget engine
-    All_selector {maybe_value,value}->all_selector_action (action value) this_widget (selector_action_a maybe_value action this_widget engine)
-    Trigger_selector {maybe_value,value,bounded}->trigger_selector_action bounded (action value) this_widget (selector_action_a maybe_value action this_widget engine)
-    Default_selector {maybe_value,value,bounded}->default_selector_action bounded (action value) this_widget (selector_action_a maybe_value action this_widget engine)
+selector_action::(a->Widget b c d e f->g->g)->Selector a->Widget b c d e f->g->g
+selector_action action this_selector this_widget environment=case this_selector of
+    None_selector->environment
+    Combine_selector {combine_selector}->DF.foldl' (\this_environment single_selector->selector_action action single_selector this_widget this_environment) environment combine_selector
+    Self_selector {value}->action value this_widget environment
+    All_selector {maybe_value,value}->all_selector_action (action value) this_widget (selector_action_a maybe_value action this_widget environment)
+    Trigger_selector {maybe_value,value,bounded}->trigger_selector_action bounded (action value) this_widget (selector_action_a maybe_value action this_widget environment)
+    Default_selector {maybe_value,value,bounded}->default_selector_action bounded (action value) this_widget (selector_action_a maybe_value action this_widget environment)
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
-        Group {index,group_widget}->let backup=selector_action_a maybe_value action this_widget engine in group_default_selector_action bounded (const backup) (selector_action action selector) index group_widget backup
-        Vector {index,vector_widget}->let backup=selector_action_a maybe_value action this_widget engine in vector_default_selector_action bounded (const backup) (selector_action action selector) index vector_widget backup
-        Widget_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget engine)
-        Widget_io_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget engine)
-        Widget_mix_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget engine)
-        Coroutine {index,coroutine_state}->let backup=selector_action_a maybe_value action this_widget engine in coroutine_default_selector_action bounded (const backup) (selector_action action selector) index coroutine_state backup
-        _->selector_action_b strict maybe_value action this_widget engine
+        Group {index,group_widget}->let backup=selector_action_a maybe_value action this_widget environment in group_default_selector_action bounded (const backup) (selector_action action selector) index group_widget backup
+        Vector {index,vector_widget}->let backup=selector_action_a maybe_value action this_widget environment in vector_default_selector_action bounded (const backup) (selector_action action selector) index vector_widget backup
+        Widget_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
+        Widget_io_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
+        Widget_mix_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
+        Coroutine {index,coroutine_state}->let backup=selector_action_a maybe_value action this_widget environment in coroutine_default_selector_action bounded (const backup) (selector_action action selector) index coroutine_state backup
+        _->selector_action_b strict maybe_value action this_widget environment
     Any_selector {maybe_value,selector,strict}->case this_widget of
-        Group {group_widget}->group_all_selector_action DIM.foldl' (selector_action action selector) group_widget (selector_action_a maybe_value action this_widget engine)
-        Vector {vector_widget}->vector_all_selector_action DF.foldl' (selector_action action selector) vector_widget (selector_action_a maybe_value action this_widget engine)
-        Widget_trigger {widget}->widget_trigger_selector_action (selector_action action selector) widget (selector_action_a maybe_value action this_widget engine)
-        Widget_io_trigger {widget}->widget_trigger_selector_action (selector_action action selector) widget (selector_action_a maybe_value action this_widget engine)
-        Widget_mix_trigger {widget}->widget_trigger_selector_action (selector_action action selector) widget (selector_action_a maybe_value action this_widget engine)
-        Coroutine {coroutine_state}->coroutine_all_selector_action DIM.foldl' (selector_action action selector) coroutine_state (selector_action_a maybe_value action this_widget engine)
-        _->selector_action_b strict maybe_value action this_widget engine
+        Group {group_widget}->group_all_selector_action DIM.foldl' (selector_action action selector) group_widget (selector_action_a maybe_value action this_widget environment)
+        Vector {vector_widget}->vector_all_selector_action DF.foldl' (selector_action action selector) vector_widget (selector_action_a maybe_value action this_widget environment)
+        Widget_trigger {widget}->widget_trigger_selector_action (selector_action action selector) widget (selector_action_a maybe_value action this_widget environment)
+        Widget_io_trigger {widget}->widget_trigger_selector_action (selector_action action selector) widget (selector_action_a maybe_value action this_widget environment)
+        Widget_mix_trigger {widget}->widget_trigger_selector_action (selector_action action selector) widget (selector_action_a maybe_value action this_widget environment)
+        Coroutine {coroutine_state}->coroutine_all_selector_action DIM.foldl' (selector_action action selector) coroutine_state (selector_action_a maybe_value action this_widget environment)
+        _->selector_action_b strict maybe_value action this_widget environment
     Group_selector {maybe_value,group_selector,bounded,strict}->case this_widget of
-        Group {group_widget}->DIM.foldlWithKey' (\this_engine index single_selector->if bounded then selector_action action single_selector (intmap_lookup index group_widget) this_engine else maybe this_engine (\single_widget->selector_action action single_selector single_widget this_engine) (DIM.lookup index group_widget)) (selector_action_a maybe_value action this_widget engine) group_selector
-        _->selector_action_b strict maybe_value action this_widget engine
+        Group {group_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then selector_action action single_selector (intmap_lookup index group_widget) this_environment else maybe this_environment (\single_widget->selector_action action single_selector single_widget this_environment) (DIM.lookup index group_widget)) (selector_action_a maybe_value action this_widget environment) group_selector
+        _->selector_action_b strict maybe_value action this_widget environment
     Vector_selector {maybe_value,vector_selector,bounded,strict}->case this_widget of
-        Vector {vector_widget}->DIM.foldlWithKey' (\this_engine index single_selector->if bounded then selector_action action single_selector (vector_widget DV.! index) this_engine else maybe this_engine (\single_widget->selector_action action single_selector single_widget this_engine) (vector_widget DV.!? index)) (selector_action_a maybe_value action this_widget engine) vector_selector
-        _->selector_action_b strict maybe_value action this_widget engine
+        Vector {vector_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then selector_action action single_selector (vector_widget DV.! index) this_environment else maybe this_environment (\single_widget->selector_action action single_selector single_widget this_environment) (vector_widget DV.!? index)) (selector_action_a maybe_value action this_widget environment) vector_selector
+        _->selector_action_b strict maybe_value action this_widget environment
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget engine)
-        _->selector_action_b strict maybe_value action this_widget engine
+        Widget_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
+        _->selector_action_b strict maybe_value action this_widget environment
     Widget_io_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_io_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget engine)
-        _->selector_action_b strict maybe_value action this_widget engine
+        Widget_io_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
+        _->selector_action_b strict maybe_value action this_widget environment
     Widget_mix_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_mix_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget engine)
-        _->selector_action_b strict maybe_value action this_widget engine
+        Widget_mix_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
+        _->selector_action_b strict maybe_value action this_widget environment
     Coroutine_selector {maybe_value,coroutine_selector,bounded,strict}->case this_widget of
-        Coroutine {coroutine_state}->DIM.foldlWithKey' (\this_engine index single_selector->if bounded then selector_action action single_selector (intmap_lookup index coroutine_state).widget this_engine else maybe this_engine (\single_coroutine_state->selector_action action single_selector single_coroutine_state.widget this_engine) (DIM.lookup index coroutine_state)) (selector_action_a maybe_value action this_widget engine) coroutine_selector
-        _->selector_action_b strict maybe_value action this_widget engine
+        Coroutine {coroutine_state}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then selector_action action single_selector (intmap_lookup index coroutine_state).widget this_environment else maybe this_environment (\single_coroutine_state->selector_action action single_selector single_coroutine_state.widget this_environment) (DIM.lookup index coroutine_state)) (selector_action_a maybe_value action this_widget environment) coroutine_selector
+        _->selector_action_b strict maybe_value action this_widget environment
 
-selector_action_a::Maybe a->(a->Widget b c d e f->Engine b c d e f->Engine b c d e f)->Widget b c d e f->Engine b c d e f->Engine b c d e f
-selector_action_a maybe_value action widget engine=case maybe_value of
-    Nothing->engine
-    Just value->action value widget engine
+selector_action_a::Maybe a->(a->Widget b c d e f->g->g)->Widget b c d e f->g->g
+selector_action_a maybe_value action widget environment=case maybe_value of
+    Nothing->environment
+    Just value->action value widget environment
 
-selector_action_b::Bool->Maybe a->(a->Widget b c d e f->Engine b c d e f->Engine b c d e f)->Widget b c d e f->Engine b c d e f->Engine b c d e f
-selector_action_b strict maybe_value action widget engine=if strict then EE.quick_error "selector_action_b" 0 else case maybe_value of
-    Nothing->engine
-    Just value->action value widget engine
+selector_action_b::Bool->Maybe a->(a->Widget b c d e f->g->g)->Widget b c d e f->g->g
+selector_action_b strict maybe_value action widget environment=if strict then EE.quick_error "selector_action_b" 0 else case maybe_value of
+    Nothing->environment
+    Just value->action value widget environment
 
-all_selector_action::(Widget a b c d e->Engine a b c d e->Engine a b c d e)->Widget a b c d e->Engine a b c d e->Engine a b c d e
-all_selector_action action this_widget engine=case this_widget of
-    Group {group_widget}->group_all_selector_action DIM.foldl' (all_selector_action action) group_widget engine
-    Vector {vector_widget}->vector_all_selector_action DF.foldl' (all_selector_action action) vector_widget engine
-    Widget_trigger {widget}->widget_trigger_selector_action (all_selector_action action) widget engine
-    Widget_io_trigger {widget}->widget_trigger_selector_action (all_selector_action action) widget engine
-    Widget_mix_trigger {widget}->widget_trigger_selector_action (all_selector_action action) widget engine
-    Coroutine {coroutine_state}->coroutine_all_selector_action DIM.foldl' (all_selector_action action) coroutine_state engine
-    _->action this_widget engine
+all_selector_action::(Widget a b c d e->f->f)->Widget a b c d e->f->f
+all_selector_action action this_widget environment=case this_widget of
+    Group {group_widget}->group_all_selector_action DIM.foldl' (all_selector_action action) group_widget environment
+    Vector {vector_widget}->vector_all_selector_action DF.foldl' (all_selector_action action) vector_widget environment
+    Widget_trigger {widget}->widget_trigger_selector_action (all_selector_action action) widget environment
+    Widget_io_trigger {widget}->widget_trigger_selector_action (all_selector_action action) widget environment
+    Widget_mix_trigger {widget}->widget_trigger_selector_action (all_selector_action action) widget environment
+    Coroutine {coroutine_state}->coroutine_all_selector_action DIM.foldl' (all_selector_action action) coroutine_state environment
+    _->action this_widget environment
 
-trigger_selector_action::Bool->(Widget a b c d e->Engine a b c d e->Engine a b c d e)->Widget a b c d e->Engine a b c d e->Engine a b c d e
-trigger_selector_action bounded action this_widget engine=case this_widget of
-    Group {index,group_widget}->group_default_selector_action bounded id (trigger_selector_action bounded action) index group_widget engine
-    Vector {index,vector_widget}->vector_default_selector_action bounded id (trigger_selector_action bounded action) index vector_widget engine
-    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded id (trigger_selector_action bounded action) index coroutine_state engine
-    _->action this_widget engine
+trigger_selector_action::Bool->(Widget a b c d e->f->f)->Widget a b c d e->f->f
+trigger_selector_action bounded action this_widget environment=case this_widget of
+    Group {index,group_widget}->group_default_selector_action bounded id (trigger_selector_action bounded action) index group_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded id (trigger_selector_action bounded action) index vector_widget environment
+    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded id (trigger_selector_action bounded action) index coroutine_state environment
+    _->action this_widget environment
 
-default_selector_action::Bool->(Widget a b c d e->Engine a b c d e->Engine a b c d e)->Widget a b c d e->Engine a b c d e->Engine a b c d e
-default_selector_action bounded action this_widget engine=case this_widget of
-    Group {index,group_widget}->group_default_selector_action bounded id (default_selector_action bounded action) index group_widget engine
-    Vector {index,vector_widget}->vector_default_selector_action bounded id (default_selector_action bounded action) index vector_widget engine
-    Widget_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget engine
-    Widget_io_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget engine
-    Widget_mix_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget engine
-    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded id (default_selector_action bounded action) index coroutine_state engine
-    _->action this_widget engine
+default_selector_action::Bool->(Widget a b c d e->f->f)->Widget a b c d e->f->f
+default_selector_action bounded action this_widget environment=case this_widget of
+    Group {index,group_widget}->group_default_selector_action bounded id (default_selector_action bounded action) index group_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded id (default_selector_action bounded action) index vector_widget environment
+    Widget_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget environment
+    Widget_io_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget environment
+    Widget_mix_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget environment
+    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded id (default_selector_action bounded action) index coroutine_state environment
+    _->action this_widget environment
 
-selector_monad_action::Monad g=>(a->Widget b c d e f->Engine b c d e f->g (Engine b c d e f))->Selector a->Widget b c d e f->Engine b c d e f->g (Engine b c d e f)
-selector_monad_action action this_selector this_widget engine=case this_selector of
-    None_selector->return engine
-    Combine_selector {combine_selector}->DF.foldlM (\this_engine single_selector->selector_monad_action action single_selector this_widget this_engine) engine combine_selector
-    Self_selector {value}->action value this_widget engine
-    All_selector {maybe_value,value}->selector_monad_action_a maybe_value action this_widget engine (all_selector_monad_action (action value) this_widget)
-    Trigger_selector {maybe_value,value,bounded}->selector_monad_action_a maybe_value action this_widget engine (trigger_selector_monad_action bounded (action value) this_widget)
-    Default_selector {maybe_value,value,bounded}->selector_monad_action_a maybe_value action this_widget engine (default_selector_monad_action bounded (action value) this_widget)
+selector_monad_action::Monad h=>(a->Widget b c d e f->g->h g)->Selector a->Widget b c d e f->g->h g
+selector_monad_action action this_selector this_widget environment=case this_selector of
+    None_selector->return environment
+    Combine_selector {combine_selector}->DF.foldlM (\this_environment single_selector->selector_monad_action action single_selector this_widget this_environment) environment combine_selector
+    Self_selector {value}->action value this_widget environment
+    All_selector {maybe_value,value}->selector_monad_action_a maybe_value action this_widget environment (all_selector_monad_action (action value) this_widget)
+    Trigger_selector {maybe_value,value,bounded}->selector_monad_action_a maybe_value action this_widget environment (trigger_selector_monad_action bounded (action value) this_widget)
+    Default_selector {maybe_value,value,bounded}->selector_monad_action_a maybe_value action this_widget environment (default_selector_monad_action bounded (action value) this_widget)
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
-        Group {index,group_widget}->selector_monad_action_a maybe_value action this_widget engine (group_default_selector_action bounded return (selector_monad_action action selector) index group_widget)
-        Vector {index,vector_widget}->selector_monad_action_a maybe_value action this_widget engine (vector_default_selector_action bounded return (selector_monad_action action selector) index vector_widget)
-        Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        Coroutine {index,coroutine_state}->selector_monad_action_a maybe_value action this_widget engine (coroutine_default_selector_action bounded return (selector_monad_action action selector) index coroutine_state)
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Group {index,group_widget}->selector_monad_action_a maybe_value action this_widget environment (group_default_selector_action bounded return (selector_monad_action action selector) index group_widget)
+        Vector {index,vector_widget}->selector_monad_action_a maybe_value action this_widget environment (vector_default_selector_action bounded return (selector_monad_action action selector) index vector_widget)
+        Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        Coroutine {index,coroutine_state}->selector_monad_action_a maybe_value action this_widget environment (coroutine_default_selector_action bounded return (selector_monad_action action selector) index coroutine_state)
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Any_selector {maybe_value,selector,strict}->case this_widget of
-        Group {group_widget}->selector_monad_action_a maybe_value action this_widget engine (group_all_selector_action DF.foldlM (selector_monad_action action selector) group_widget)
-        Vector {vector_widget}->selector_monad_action_a maybe_value action this_widget engine (vector_all_selector_action DF.foldlM (selector_monad_action action selector) vector_widget)
-        Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        Coroutine {coroutine_state}->selector_monad_action_a maybe_value action this_widget engine (coroutine_all_selector_action DF.foldlM (selector_monad_action action selector) coroutine_state)
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Group {group_widget}->selector_monad_action_a maybe_value action this_widget environment (group_all_selector_action DF.foldlM (selector_monad_action action selector) group_widget)
+        Vector {vector_widget}->selector_monad_action_a maybe_value action this_widget environment (vector_all_selector_action DF.foldlM (selector_monad_action action selector) vector_widget)
+        Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        Coroutine {coroutine_state}->selector_monad_action_a maybe_value action this_widget environment (coroutine_all_selector_action DF.foldlM (selector_monad_action action selector) coroutine_state)
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Group_selector {maybe_value,group_selector,bounded,strict}->case this_widget of
-        Group {group_widget}->DIM.foldlWithKey' (\this_engine index single_selector->if bounded then this_engine>>=selector_monad_action action single_selector (intmap_lookup index group_widget) else maybe this_engine (\single_widget->this_engine>>=selector_monad_action action single_selector single_widget) (DIM.lookup index group_widget)) (selector_monad_action_a maybe_value action this_widget engine return) group_selector
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Group {group_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then this_environment>>=selector_monad_action action single_selector (intmap_lookup index group_widget) else maybe this_environment (\single_widget->this_environment>>=selector_monad_action action single_selector single_widget) (DIM.lookup index group_widget)) (selector_monad_action_a maybe_value action this_widget environment return) group_selector
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Vector_selector {maybe_value,vector_selector,bounded,strict}->case this_widget of
-        Vector {vector_widget}->DIM.foldlWithKey' (\this_engine index single_selector->if bounded then this_engine>>=selector_monad_action action single_selector (vector_widget DV.! index) else maybe this_engine (\single_widget->this_engine>>=selector_monad_action action single_selector single_widget) (vector_widget DV.!? index)) (selector_monad_action_a maybe_value action this_widget engine return) vector_selector
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Vector {vector_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then this_environment>>=selector_monad_action action single_selector (vector_widget DV.! index) else maybe this_environment (\single_widget->this_environment>>=selector_monad_action action single_selector single_widget) (vector_widget DV.!? index)) (selector_monad_action_a maybe_value action this_widget environment return) vector_selector
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Widget_io_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Widget_mix_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget engine (selector_monad_action action selector widget)
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
+        _->selector_monad_action_b strict maybe_value action this_widget environment
     Coroutine_selector {maybe_value,coroutine_selector,bounded,strict}->case this_widget of
-        Coroutine {coroutine_state}->DIM.foldlWithKey' (\this_engine index single_selector->if bounded then this_engine>>=selector_monad_action action single_selector (intmap_lookup index coroutine_state).widget else maybe this_engine (\single_coroutine_state->this_engine>>=selector_monad_action action single_selector single_coroutine_state.widget) (DIM.lookup index coroutine_state)) (selector_monad_action_a maybe_value action this_widget engine return) coroutine_selector
-        _->selector_monad_action_b strict maybe_value action this_widget engine
+        Coroutine {coroutine_state}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then this_environment>>=selector_monad_action action single_selector (intmap_lookup index coroutine_state).widget else maybe this_environment (\single_coroutine_state->this_environment>>=selector_monad_action action single_selector single_coroutine_state.widget) (DIM.lookup index coroutine_state)) (selector_monad_action_a maybe_value action this_widget environment return) coroutine_selector
+        _->selector_monad_action_b strict maybe_value action this_widget environment
 
-selector_monad_action_a::Monad g=>Maybe a->(a->Widget b c d e f->Engine b c d e f->g (Engine b c d e f))->Widget b c d e f->Engine b c d e f->(Engine b c d e f->g (Engine b c d e f))->g (Engine b c d e f)
-selector_monad_action_a maybe_value action widget engine monad=case maybe_value of
-    Nothing->monad engine
+selector_monad_action_a::Monad h=>Maybe a->(a->Widget b c d e f->g->h g)->Widget b c d e f->g->(g->h g)->h g
+selector_monad_action_a maybe_value action widget environment monad=case maybe_value of
+    Nothing->monad environment
     Just value->do
-        new_engine<-action value widget engine
-        monad new_engine
+        new_environment<-action value widget environment
+        monad new_environment
 
-selector_monad_action_b::Applicative g=>Bool->Maybe a->(a->Widget b c d e f->Engine b c d e f->g (Engine b c d e f))->Widget b c d e f->Engine b c d e f->g (Engine b c d e f)
-selector_monad_action_b strict maybe_value action widget engine=if strict then EE.quick_error "selector_monad_action_b" 0 else case maybe_value of
-    Nothing->pure engine
-    Just value->action value widget engine
+selector_monad_action_b::Applicative h=>Bool->Maybe a->(a->Widget b c d e f->g->h g)->Widget b c d e f->g->h g
+selector_monad_action_b strict maybe_value action widget environment=if strict then EE.quick_error "selector_monad_action_b" 0 else case maybe_value of
+    Nothing->pure environment
+    Just value->action value widget environment
 
-all_selector_monad_action::Monad f=>(Widget a b c d e->Engine a b c d e->f (Engine a b c d e))->Widget a b c d e->Engine a b c d e->f (Engine a b c d e)
-all_selector_monad_action action this_widget engine=case this_widget of
-    Group {group_widget}->group_all_selector_action DF.foldlM (all_selector_monad_action action) group_widget engine
-    Vector {vector_widget}->vector_all_selector_action DF.foldlM (all_selector_monad_action action) vector_widget engine
-    Widget_trigger {widget}->widget_trigger_selector_action (all_selector_monad_action action) widget engine
-    Widget_io_trigger {widget}->widget_trigger_selector_action (all_selector_monad_action action) widget engine
-    Widget_mix_trigger {widget}->widget_trigger_selector_action (all_selector_monad_action action) widget engine
-    Coroutine {coroutine_state}->coroutine_all_selector_action DF.foldlM (all_selector_monad_action action) coroutine_state engine
-    _->action this_widget engine
+all_selector_monad_action::Monad g=>(Widget a b c d e->f->g f)->Widget a b c d e->f->g f
+all_selector_monad_action action this_widget environment=case this_widget of
+    Group {group_widget}->group_all_selector_action DF.foldlM (all_selector_monad_action action) group_widget environment
+    Vector {vector_widget}->vector_all_selector_action DF.foldlM (all_selector_monad_action action) vector_widget environment
+    Widget_trigger {widget}->widget_trigger_selector_action (all_selector_monad_action action) widget environment
+    Widget_io_trigger {widget}->widget_trigger_selector_action (all_selector_monad_action action) widget environment
+    Widget_mix_trigger {widget}->widget_trigger_selector_action (all_selector_monad_action action) widget environment
+    Coroutine {coroutine_state}->coroutine_all_selector_action DF.foldlM (all_selector_monad_action action) coroutine_state environment
+    _->action this_widget environment
 
-trigger_selector_monad_action::Monad f=>Bool->(Widget a b c d e->Engine a b c d e->f (Engine a b c d e))->Widget a b c d e->Engine a b c d e->f (Engine a b c d e)
-trigger_selector_monad_action bounded action this_widget engine=case this_widget of
-    Group {index,group_widget}->group_default_selector_action bounded return (trigger_selector_monad_action bounded action) index group_widget engine
-    Vector {index,vector_widget}->vector_default_selector_action bounded return (trigger_selector_monad_action bounded action) index vector_widget engine
-    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded return (trigger_selector_monad_action bounded action) index coroutine_state engine
-    _->action this_widget engine
+trigger_selector_monad_action::Monad g=>Bool->(Widget a b c d e->f->g f)->Widget a b c d e->f->g f
+trigger_selector_monad_action bounded action this_widget environment=case this_widget of
+    Group {index,group_widget}->group_default_selector_action bounded return (trigger_selector_monad_action bounded action) index group_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded return (trigger_selector_monad_action bounded action) index vector_widget environment
+    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded return (trigger_selector_monad_action bounded action) index coroutine_state environment
+    _->action this_widget environment
 
-default_selector_monad_action::Monad f=>Bool->(Widget a b c d e->Engine a b c d e->f (Engine a b c d e))->Widget a b c d e->Engine a b c d e->f (Engine a b c d e)
-default_selector_monad_action bounded action this_widget engine=case this_widget of
-    Group {index,group_widget}->group_default_selector_action bounded return (default_selector_monad_action bounded action) index group_widget engine
-    Vector {index,vector_widget}->vector_default_selector_action bounded return (default_selector_monad_action bounded action) index vector_widget engine
-    Widget_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget engine
-    Widget_io_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget engine
-    Widget_mix_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget engine
-    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded return (default_selector_monad_action bounded action) index coroutine_state engine
-    _->action this_widget engine
+default_selector_monad_action::Monad g=>Bool->(Widget a b c d e->f->g f)->Widget a b c d e->f->g f
+default_selector_monad_action bounded action this_widget environment=case this_widget of
+    Group {index,group_widget}->group_default_selector_action bounded return (default_selector_monad_action bounded action) index group_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded return (default_selector_monad_action bounded action) index vector_widget environment
+    Widget_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget environment
+    Widget_io_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget environment
+    Widget_mix_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget environment
+    Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded return (default_selector_monad_action bounded action) index coroutine_state environment
+    _->action this_widget environment
 
 selector_update::(a->Widget b c d e f->Widget b c d e f)->Selector a->Widget b c d e f->Widget b c d e f
 selector_update update this_selector this_widget=case this_selector of
