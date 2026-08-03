@@ -9,6 +9,7 @@ import Engine.Engine
 import Engine.Helper
 import Engine.Projection
 import Engine.Request
+import Engine.Selector
 import Engine.Type
 import Engine.Window
 import qualified Data.Foldable as DF
@@ -23,7 +24,7 @@ instance Custom_request () where
     custom_request _ _=error "none"
 
 instance Custom_widget () where
-    custom_widget_run _ _=error "none"
+    custom_widget_run _ _ _=error "none"
     custom_widget_collect _ _ _ _=error "none"
     custom_widget_remove _ _=error "none"
     custom_widget_lock _=error "none"
@@ -103,7 +104,7 @@ force_redraw widget=case widget of
 render_trigger::Event ()->Engine () () () () ()->Engine () () () () ()
 render_trigger event engine=case event of
     Time {tick}->if tick>0&&mod tick test_time==0 then let engineWithRequests=create_request Clean_atlas (create_request (Unlock {leaf_id=main_widget_id}) engine) in let (new_engine,_)=update_lookup_projection_widget path_main_widget force_redraw engineWithRequests in new_engine else let widget=lookup_projection_widget path_main_widget engine in case check_and_reset_data_int widget of
-        Just _->let new_engine=maybe_collect_update check_and_reset_data_int id Nothing path_main_widget collector_id (Self_selector ()) (Index_strategy {seat=0}) engine in create_request (Render {window_id=window_id,projection_move=move_collector}) new_engine
+        Just _->let new_engine=maybe_collect_update check_and_reset_data_int widget_lookup Nothing path_main_widget collector_id (Self_selector ()) (Index_strategy {seat=0}) engine in create_request (Render {window_id=window_id,render_selector=Self_selector (),projection_move=move_collector}) new_engine
         Nothing->engine
     _->engine
 
