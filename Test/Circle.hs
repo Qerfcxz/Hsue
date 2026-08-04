@@ -9,7 +9,6 @@ import Engine.Engine
 import Engine.Helper
 import Engine.Projection
 import Engine.Request
-import Engine.Selector
 import Engine.Type
 import Engine.Window
 import qualified Data.Foldable as DF
@@ -75,8 +74,8 @@ calculate_typesetting row_number _=let base_h=45 in if row_number<20 then (0,bas
 main_widget_transform::Event ()->Engine () () () () ()->Widget () () () () ()->(Widget () () () () (),Engine () () () () ()->Engine () () () () ())
 main_widget_transform event engine widget=case widget of
     Vector {index,size,vector_widget}->case vector_widget DV.!? 0 of
-        Just (Text {origin,matrix,width,height,y,max_y,article,charset,locked})->case event of
-            Time {}->let scroll_speed=5 in let new_y=max 0 (min (max 0 (max_y-height)) (y+if DSet.member Key_w engine.key then -scroll_speed else 0+if DSet.member Key_s engine.key then scroll_speed else 0)) in if new_y/=y then (Vector {index=index,size=size,vector_widget=vector_widget DV.// [(0,Text {origin=origin,matrix=matrix,width=width,height=height,y=new_y,max_y=max_y,article=article,charset=charset,locked=locked}),(1,Store {store=Data_bool {bool=True}})]},id) else (widget,id)
+        Just (Text {origin,matrix,half_width,half_height,y,max_y,article,charset,locked})->case event of
+            Time {}->let scroll_speed=5 in let new_y=max 0 (min (max 0 (max_y-half_height*2)) (y+if DSet.member Key_w engine.key then -scroll_speed else 0+if DSet.member Key_s engine.key then scroll_speed else 0)) in if new_y/=y then (Vector {index=index,size=size,vector_widget=vector_widget DV.// [(0,Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=new_y,max_y=max_y,article=article,charset=charset,locked=locked}),(1,Store {store=Data_bool {bool=True}})]},id) else (widget,id)
             At {window_id=this_window_id,action}->if this_window_id==window_id
                 then case action of
                     Resize {}->(Vector {index=index,size=size,vector_widget=vector_widget DV.// [(1,Store {store=Data_bool {bool=True}})]},id)
@@ -118,7 +117,7 @@ main=do
     let article=DSeq.singleton paragraph
     let text_request=Text_request {origin=Point {x=0,y=0},matrix=identity_matrix,width=960,height=640,article=article,calculate_width=calculate_width 960,calculate_typesetting=calculate_typesetting,load=True}
     let main_widget_request=Widget_trigger_request {next=main_widget_next,widget_trigger=main_widget_transform,widget_request=Vector_request {index=0,vector_widget_request=DSeq.fromList [text_request,Store_request {store=Data_bool {bool=True}}]}}
-    let seq_request=DSeq.singleton (Create_window {window_id=window_id,title=DT.pack "Perfect Circle Dynamic Typesetting",width=1200,height=800,red=0.1,green=0.12,blue=0.15,alpha=1,window_flag=DSet.singleton Window_resizable}) DSeq.|> Create_widget {leaf_id=adaptive_trigger_id,maybe_father_id=Nothing,widget_request=create_adaptive_window_trigger_request adaptive_next (DIS.singleton window_id)} DSeq.|> Create_widget {leaf_id=main_widget_id,maybe_father_id=Nothing,widget_request=main_widget_request} DSeq.|> Create_widget {leaf_id=render_trigger_id,maybe_father_id=Nothing,widget_request=Trigger_request {next=const (const Nothing),trigger=render_trigger}} DSeq.|> Create_widget {leaf_id=collector_id,maybe_father_id=Nothing,widget_request=Collector_request {initial_min_index=0,initial_max_index=0}}
+    let seq_request=DSeq.singleton (Create_window {window_id=window_id,title=DT.pack "Perfect Circle Dynamic Typesetting",window_width=1200,window_height=800,red=0.1,green=0.12,blue=0.15,alpha=1,window_flag=DSet.singleton Window_resizable}) DSeq.|> Create_widget {leaf_id=adaptive_trigger_id,maybe_father_id=Nothing,widget_request=create_adaptive_window_trigger_request adaptive_next (DIS.singleton window_id)} DSeq.|> Create_widget {leaf_id=main_widget_id,maybe_father_id=Nothing,widget_request=main_widget_request} DSeq.|> Create_widget {leaf_id=render_trigger_id,maybe_father_id=Nothing,widget_request=Trigger_request {next=const (const Nothing),trigger=render_trigger}} DSeq.|> Create_widget {leaf_id=collector_id,maybe_father_id=Nothing,widget_request=Collector_request {initial_min_index=0,initial_max_index=0}}
     let final_engine=DF.foldl' (flip create_request) engine seq_request
     run_engine final_engine
     clean_engine final_engine
