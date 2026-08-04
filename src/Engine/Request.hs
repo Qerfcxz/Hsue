@@ -72,23 +72,23 @@ do_request request engine=case request of
     Remove_node {node_id}->do
         new_engine<-remove_node node_id engine
         return (new_engine,False)
-    Create_window {window_id,title,width,height,red,green,blue,alpha,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
-        sdl_window<-SDLF.sdl_create_window this_title width height (DF.foldl' (\sdl_window_flag this_window_flag->sdl_window_flag DB..|. from_window_flag this_window_flag) 0 window_flag)
+    Create_window {window_id,title,window_width,window_height,red,green,blue,alpha,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
+        sdl_window<-SDLF.sdl_create_window this_title window_width window_height (DF.foldl' (\sdl_window_flag this_window_flag->sdl_window_flag DB..|. from_window_flag this_window_flag) 0 window_flag)
         catch_null sdl_window
         catch_false (SDLF.sdl_claim_window_for_gpu_device engine.device sdl_window)
         catch_false (SDLF.sdl_set_gpu_swapchain_parameters engine.device sdl_window SDLI.sdl_gpu_swapchaincomposition_sdr SDLI.sdl_gpu_presentmode_mailbox)
         sdl_window_id<-SDLF.sdl_get_window_id sdl_window
         catch_zero sdl_window_id
         graphics_pipeline<-create_graphics_pipeline sdl_window engine.device engine.vertex_shader engine.fragment_shader
-        let new_width=fromIntegral width in let new_height=fromIntegral height in return (engine {window=intmap_insert window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,graphics_pipeline=graphics_pipeline,design_width=new_width,design_height=new_height,adaptive_width=new_width,adaptive_height=new_height,width=new_width,height=new_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
+        let new_window_width=fromIntegral window_width in let new_window_height=fromIntegral window_height in return (engine {window=intmap_insert window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=sdl_window,graphics_pipeline=graphics_pipeline,design_width=new_window_width,design_height=new_window_height,adaptive_width=new_window_width,adaptive_height=new_window_height,width=new_window_width,height=new_window_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
     Remove_window {window_id}->do
         new_engine<-remove_window window_id engine
         return (new_engine,False)
     Create_canvas {canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Free_canvas {canvas_width=canvas_width,canvas_height=canvas_height,texture=texture}) engine.canvas,canvas_id=engine.canvas_id+1},False)
-            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Free_canvas {canvas_width=canvas_width,canvas_height=canvas_height,texture=texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},False)
+            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Free_canvas {width=canvas_width,height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,texture=texture}) engine.canvas,canvas_id=engine.canvas_id+1},False)
+            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Free_canvas {width=canvas_width,height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,texture=texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},False)
     Remove_canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
         clean_canvas engine.device single_canvas
         return (engine {canvas=canvas},False)
@@ -109,8 +109,8 @@ do_request request engine=case request of
     Canvas_render {canvas_id,canvas_render_selector,projection_move}->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
         case intmap_lookup canvas_id engine.canvas of
-            Free_canvas {canvas_width,canvas_height,texture}->let (new_engine,widget)=move_lookup projection_move engine in do
-                let (vertex,index,parameter,draw_call)=for_submit (get_submit canvas_render_selector widget) in do_render_canvas engine (fromIntegral canvas_width) (fromIntegral canvas_height) command_buffer texture draw_call vertex index parameter
+            Free_canvas {half_width,half_height,texture}->let (new_engine,widget)=move_lookup projection_move engine in do
+                let (vertex,index,parameter,draw_call)=for_submit (get_submit canvas_render_selector widget) in do_render_canvas engine (half_width*2) (half_height*2) command_buffer texture draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return (new_engine,False)
             _->EE.quick_error "do_request" 2
@@ -135,10 +135,10 @@ from_window_flag window_flag=case window_flag of
 lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
-        Picture {width,height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {width=width,height=height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
+        Picture {half_width,half_height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
         Atlas {clip_request,path,clip,index}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {clip_request=clip_request,path=path,clip=clip,index=index,locked=True}}
         _->widget
-    Text {origin,matrix,width,height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
+    Text {origin,matrix,half_width,half_height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
     Custom_widget {custom}->Custom_widget {custom=custom_widget_lock custom}
     _->widget
 
@@ -170,16 +170,16 @@ for_unlock leaf_id this_widget engine=case this_widget of
                 (new_engine,new_visual)<-create_atlas index clip_request path engine
                 return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
             else return (engine,this_widget)
-        Canvas {canvas_width,canvas_height,canvas_id,locked}->if locked
+        Canvas {width,height,half_width,half_height,canvas_id,locked}->if locked
             then do
-                texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
-                return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas},Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {canvas_width=canvas_width,canvas_height=canvas_height,canvas_id=canvas_id,locked=False}})
+                texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+                return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas},Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {width=width,height=height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=False}})
             else return (engine,this_widget)
         _->return (engine,this_widget)
-    Text {origin,matrix,width,height,y,max_y,article,charset,locked}->if locked
+    Text {origin,matrix,half_width,half_height,y,max_y,article,charset,locked}->if locked
         then do
             new_engine<-update_font charset engine
-            return (new_engine,Text {origin=origin,matrix=matrix,width=width,height=height,y=y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
+            return (new_engine,Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,this_widget)
     Custom_widget {custom}->do
         (new_engine,new_custom)<-custom_widget_unlock custom engine
@@ -281,23 +281,23 @@ do_render_canvas_a engine width height command_buffer render_pass draw_call=do
 
 for_canvas_widget_render::Projection_path->Selector ()->Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render projection_path canvas_widget_render_selector widget engine=case widget of
-    Collector {submit}->let (vertex,index,parameter,draw_call)=for_submit submit in for_canvas_widget_render_a projection_path canvas_widget_render_selector engine $ \canvas_width canvas_height canvas_id this_engine->do
+    Collector {submit}->let (vertex,index,parameter,draw_call)=for_submit submit in for_canvas_widget_render_a projection_path canvas_widget_render_selector engine $ \half_width half_height canvas_id this_engine->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
         catch_null command_buffer
         case intmap_lookup canvas_id this_engine.canvas of
             Bound_canvas {texture}->do
-                do_render_canvas this_engine (fromIntegral canvas_width) (fromIntegral canvas_height) command_buffer texture draw_call vertex index parameter
+                do_render_canvas this_engine (half_width*2) (half_height*2) command_buffer texture draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return this_engine
             _->EE.quick_error "for_canvas_widget_render" 0
     _->EE.quick_error "for_canvas_widget_render" 1
 
-for_canvas_widget_render_a::Projection_path->Selector ()->Engine a b c d e->(DW.Word32->DW.Word32->Int->Engine a b c d e->IO (Engine a b c d e))->IO (Engine a b c d e)
+for_canvas_widget_render_a::Projection_path->Selector ()->Engine a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->IO (Engine a b c d e)
 for_canvas_widget_render_a projection_path selector engine action=selector_monad_action (\_ widget this_engine->for_canvas_widget_render_b widget action this_engine) selector (lookup_projection_widget projection_path engine) engine
 
-for_canvas_widget_render_b::Widget a b c d e->(DW.Word32->DW.Word32->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
+for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render_b widget action engine=case widget of
     Visual {visual}->case visual of
-        Canvas {canvas_width,canvas_height,canvas_id}->action canvas_width canvas_height canvas_id engine
+        Canvas {half_width,half_height,canvas_id}->action half_width half_height canvas_id engine
         _->EE.quick_error "for_canvas_widget_render_b" 0
     _->EE.quick_error "for_canvas_widget_render_b" 1

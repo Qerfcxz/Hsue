@@ -105,8 +105,8 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let new_height=height/2 in if load
         then do
             new_engine<-update_font charset engine
-            return (new_engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,width=width,height=height,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
+            return (new_engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=height/2,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=height/2,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
     Custom_widget_request {custom}->do
         (new_engine,new_custom)<-custom_widget_request custom engine
         return (new_engine,Custom_widget {custom=new_custom})
@@ -138,17 +138,17 @@ create_visual leaf_id visual_request engine=case visual_request of
     Picture_request {path}->create_picture path engine
     Large_picture_request {path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {width=fromIntegral width,height=fromIntegral height,album_id=engine.album_id})
+        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
     Atlas_request {clip_request,path}->create_atlas 0 clip_request path engine
     Large_atlas_request {clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
     Animation_request {min_delay,width,height,padding,path}->create_animation min_delay width height padding path engine
-    Canvas_request {canvas_width,canvas_height,maybe_canvas_id}->do
-        texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+    Canvas_request {width,height,maybe_canvas_id}->do
+        texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {canvas_width=canvas_width,canvas_height=canvas_height,canvas_id=engine.canvas_id,locked=False})
-            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {canvas_width=canvas_width,canvas_height=canvas_height,canvas_id=canvas_id,locked=False})
+            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=engine.canvas_id,locked=False})
+            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=canvas_id,locked=False})
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -159,18 +159,18 @@ do_image action path engine=do
     return (engine {atlas=atlas},action width height left down right up)
 
 create_picture::String->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_picture path engine=do_image (\width height left down right up->Picture {width=fromIntegral width,height=fromIntegral height,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
+create_picture path engine=do_image (\width height left down right up->Picture {half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
 
 create_atlas::Int->DS.Seq Clip_request->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 create_atlas index clip_request path engine=do_image (\width height left down right up->Atlas {clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),index=index,locked=False}) path engine
 
 create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_atlas_a width height this_x this_y reciprocal_width reciprocal_height clip_request=case clip_request of
-    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(this_x+min_u*width/2)*reciprocal_width,min_v=(this_y-max_v*height/2)*reciprocal_height,max_u=(this_x+max_u*width/2)*reciprocal_width,max_v=(this_y-min_v*height/2)*reciprocal_height}
+    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=(this_x+min_u*width/2)*reciprocal_width,min_v=(this_y-max_v*height/2)*reciprocal_height,max_u=(this_x+max_u*width/2)*reciprocal_width,max_v=(this_y-min_v*height/2)*reciprocal_height}
 
 create_large_atlas::FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_large_atlas width height clip_request=case clip_request of
-    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,width=width*(max_u-min_u)/2,height=height*(max_v-min_v)/2,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
+    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
 create_animation::FCT.CFloat->DW.Word32->DW.Word32->Int->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 create_animation min_delay width height padding path engine=with_string path $ \this_path->do
@@ -192,7 +192,7 @@ create_animation min_delay width height padding path engine=with_string path $ \
             delay<-DVS.generateM count (fmap (\this_delay->max min_delay (fromIntegral this_delay*millisecond)) . FS.peekElemOff img_delays)
             new_engine<-create_animation_a img_frames width height padding new_width size frame_width frame_height pack_width pack_height width_number number count 0 engine.album_id engine
             SDLF.img_free_animation ptr_animation
-            return (new_engine,Animation {delay=delay,moment=0,frame_width=fromIntegral frame_width,frame_height=fromIntegral frame_height,width=fromIntegral width,height=fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
+            return (new_engine,Animation {delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,reciprocal_width=1/fromIntegral width,reciprocal_height=1/fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
 
 create_animation_a::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->DW.Word32->DW.Word32->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Engine a b c d e->IO (Engine a b c d e)
 create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count index album_id engine=if count<=index then return engine else do
