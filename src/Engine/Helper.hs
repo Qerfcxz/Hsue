@@ -17,7 +17,6 @@ import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Vector as DV
 import qualified Data.Word as DW
-import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
@@ -120,9 +119,9 @@ get_clipboard_text::IO String
 get_clipboard_text=do
     ptr<-SDLF.sdl_get_clipboard_text
     catch_null ptr
-    string<-FCS.peekCString ptr
+    string<-DBS.packCString ptr
     SDLF.sdl_free (FP.castPtr ptr)
-    return string
+    return (DT.unpack (DTE.decodeUtf8 string))
 
 has_clipboard_text::IO Bool
 has_clipboard_text=fmap FMU.toBool SDLF.sdl_has_clipboard_text
