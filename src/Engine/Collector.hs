@@ -36,6 +36,12 @@ maybe_collect_update update view maybe_border projection_path leaf_id selector c
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
+collect_canvas::Point->Matrix->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Int->Int->Selector a->Insert_strategy->Engine b c d e f->Engine b c d e f
+collect_canvas origin matrix red green blue alpha maybe_border canvas_id leaf_id selector collect_strategy engine=case intmap_lookup canvas_id engine.canvas of
+    Free_canvas {half_width,half_height}->case origin of
+        Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (Submit {maybe_canvas_id=Just canvas_id,maybe_album_id=Nothing,vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=0,v=1,parameter_id=0,size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=1,v=1,parameter_id=0,size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=1,v=0,parameter_id=0,size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=0,v=0,parameter_id=0,size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter origin matrix maybe_border,vertex_length=4,index_length=6})) collect_strategy)) selector)) engine.leaf}
+    _->EE.quick_error "collect_canvas" 0
+
 collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
 collect view maybe_border projection_path leaf_id selector collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine)))) collect_strategy)) selector)) engine.leaf}
 
