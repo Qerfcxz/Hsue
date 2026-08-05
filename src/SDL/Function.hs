@@ -136,6 +136,9 @@ foreign import ccall unsafe "SDL_BindGPUGraphicsPipeline"
 foreign import ccall unsafe "SDL_DrawGPUIndexedPrimitives"
     sdl_draw_gpu_indexed_primitives::Ptr SDL_GPURenderPass->Word32->Word32->Word32->Int32->Word32->IO ()
 
+foreign import ccall unsafe "SDL_DrawGPUPrimitives"
+    sdl_draw_gpu_primitives::Ptr SDL_GPURenderPass->Word32->Word32->Word32->Word32->IO ()
+
 foreign import ccall unsafe "SDL_AcquireGPUCommandBuffer"
     sdl_acquire_gpu_command_buffer::Ptr SDL_GPUDevice->IO (Ptr SDL_GPUCommandBuffer)
 
@@ -171,6 +174,9 @@ foreign import ccall unsafe "SDL_EndGPURenderPass"
 
 foreign import ccall unsafe "SDL_PushGPUVertexUniformData"
     sdl_push_gpu_vertex_uniform_data::Ptr SDL_GPUCommandBuffer->Word32->Ptr ()->Word32->IO ()
+
+foreign import ccall unsafe "SDL_PushGPUFragmentUniformData"
+    sdl_push_gpu_fragment_uniform_data::Ptr SDL_GPUCommandBuffer->Word32->Ptr ()->Word32->IO ()
 
 foreign import ccall unsafe "SDL_BindGPUFragmentSamplers"
     sdl_bind_gpu_fragment_samplers::Ptr SDL_GPURenderPass->Word32->Ptr SDL_GPUTextureSamplerBinding->Word32->IO ()

@@ -146,9 +146,10 @@ create_visual leaf_id visual_request engine=case visual_request of
     Animation_request {min_delay,width,height,padding,path}->create_animation min_delay width height padding path engine
     Canvas_request {width,height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+        temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=engine.canvas_id,locked=False})
-            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=canvas_id,locked=False})
+            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=engine.canvas_id,locked=False})
+            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=canvas_id,locked=False})
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -242,8 +243,12 @@ remove_widget widget engine=case widget of
 
 clean_canvas::FP.Ptr SDLT.SDL_GPUDevice->Canvas->IO ()
 clean_canvas device canvas=case canvas of
-    Free_canvas {texture}->SDLF.sdl_release_gpu_texture device texture
-    Bound_canvas {texture}->SDLF.sdl_release_gpu_texture device texture
+    Free_canvas {texture,temporary_texture}->do
+        SDLF.sdl_release_gpu_texture device texture
+        SDLF.sdl_release_gpu_texture device temporary_texture
+    Bound_canvas {texture,temporary_texture}->do
+        SDLF.sdl_release_gpu_texture device texture
+        SDLF.sdl_release_gpu_texture device temporary_texture
 
 remove_animation::FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)
 remove_animation device index album_id album=let (new_album,single_album)=intmap_delete_lookup (album_id+index) album in do
