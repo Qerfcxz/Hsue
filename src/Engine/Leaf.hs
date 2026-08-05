@@ -234,7 +234,7 @@ remove_widget widget engine=case widget of
         Animation {album_number,album_id}->do
             new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
             return (engine {album=new_album})
-        Canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
+        Canvas {canvas_id,locked}->if locked then return engine else let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
             clean_canvas engine.device single_canvas
             return (engine {canvas=canvas})
         _->return engine

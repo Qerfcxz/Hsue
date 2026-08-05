@@ -214,7 +214,7 @@ data Data=Data_bool {bool::Bool}|Data_int {int::Int}
 
 data Submit=Submit {maybe_canvas_id::Maybe Int,maybe_album_id::Maybe Int,vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32,parameter::Parameter,vertex_length::DW.Word32,index_length::DW.Word32}
 
-data Uniform=Uniform {size::Int,write::FP.Ptr ()->IO ()}
+data Uniform=Uniform {size::Int,alignment::Int,write::FP.Ptr ()->IO ()}
 
 data Shader=Shader {sdl_shader::FP.Ptr SDLT.SDL_GPUShader,pipeline_id::DIS.IntSet}
 

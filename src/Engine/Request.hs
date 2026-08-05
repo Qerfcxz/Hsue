@@ -341,9 +341,9 @@ for_canvas_widget_render_a projection_path selector engine action=selector_monad
 for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render_b widget action engine=case widget of
     Visual {visual}->case visual of
-        Canvas {half_width,half_height,canvas_id}->action half_width half_height canvas_id engine
-        _->EE.quick_error "for_canvas_widget_render_b" 0
-    _->EE.quick_error "for_canvas_widget_render_b" 1
+        Canvas {half_width,half_height,canvas_id,locked}->if locked then EE.quick_error "for_canvas_widget_render_b" 0 else action half_width half_height canvas_id engine
+        _->EE.quick_error "for_canvas_widget_render_b" 1
+    _->EE.quick_error "for_canvas_widget_render_b" 2
 
 do_shader_canvas::Canvas->Int->Int->Uniform->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
 do_shader_canvas canvas canvas_id pipeline_id uniform texture temporary_texture engine=do
@@ -355,7 +355,7 @@ do_shader_canvas canvas canvas_id pipeline_id uniform texture temporary_texture 
         SDLF.sdl_bind_gpu_graphics_pipeline render_pass (intmap_lookup pipeline_id engine.pipeline).sdl_pipeline
         FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=engine.sampler}) $ \texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
         case uniform of
-            Uniform {size,write}->FMA.allocaBytesAligned size 16 $ \ptr->do
+            Uniform {size,alignment,write}->FMA.allocaBytesAligned size alignment $ \ptr->do
                 write ptr
                 SDLF.sdl_push_gpu_fragment_uniform_data command_buffer 0 ptr (fromIntegral size)
         SDLF.sdl_draw_gpu_primitives render_pass 3 1 0 0
