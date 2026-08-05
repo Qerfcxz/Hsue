@@ -26,6 +26,7 @@ import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
 import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
+import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
@@ -90,15 +91,31 @@ do_request request engine=case request of
         case maybe_canvas_id of
             Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Free_canvas {width=canvas_width,height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},False)
             Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Free_canvas {width=canvas_width,height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},False)
-    Remove_canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
-        clean_canvas engine.device single_canvas
-        return (engine {canvas=canvas},False)
+    Remove_canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in case single_canvas of
+        Free_canvas {texture,temporary_texture}->do
+            SDLF.sdl_release_gpu_texture engine.device texture
+            SDLF.sdl_release_gpu_texture engine.device temporary_texture
+            return (engine {canvas=canvas},False)
+        Bound_canvas {texture,temporary_texture,leaf_id}->do
+            SDLF.sdl_release_gpu_texture engine.device texture
+            SDLF.sdl_release_gpu_texture engine.device temporary_texture
+            return (engine {canvas=canvas,leaf=intmap_update leaf_id (update_projection_object lock_canvas_widget) engine.leaf},False)
     Create_shader {shader_id,stage,num_sampler,num_uniform_buffer,path}->do
-        shader<-load_shader engine.device SDLI.sdl_gpu_shaderformat_dxil stage num_sampler 0 num_uniform_buffer path
-        return (engine {custom_shader=intmap_insert shader_id shader engine.custom_shader},False)
-    Create_pipeline {pipeline_id,vertex_shader_id,fragment_shader_id}->do
-        pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=standard_blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=intmap_lookup vertex_shader_id engine.custom_shader,sdl_fragment_shader=intmap_lookup fragment_shader_id engine.custom_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
-        return (engine {custom_pipeline=intmap_insert pipeline_id pipeline engine.custom_pipeline},False)
+        sdl_shader<-load_shader engine.device SDLI.sdl_gpu_shaderformat_dxil stage num_sampler 0 num_uniform_buffer path
+        return (engine {shader=intmap_insert shader_id (Shader {sdl_shader=sdl_shader,pipeline_id=DIS.empty}) engine.shader},False)
+    Remove_shader {shader_id}->let (shader,single_shader)=intmap_delete_lookup shader_id engine.shader in case single_shader of
+        Shader {sdl_shader,pipeline_id}->if DIS.null pipeline_id
+            then do
+                SDLF.sdl_release_gpu_shader engine.device sdl_shader
+                return (engine {shader=shader},False)
+            else EE.quick_error "do_request" 2
+    Create_pipeline {pipeline_id,vertex_shader_id,fragment_shader_id}->let (shader,vertex_shader)=intmap_update_lookup vertex_shader_id (insert_pipeline_id pipeline_id) engine.shader in let (new_shader,fragment_shader)=intmap_update_lookup fragment_shader_id (insert_pipeline_id pipeline_id) shader in do
+        sdl_pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=standard_blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
+        return (engine {pipeline=intmap_insert pipeline_id (Pipeline {sdl_pipeline=sdl_pipeline,vertex_shader_id=vertex_shader_id,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
+    Remove_pipeline {pipeline_id}->let (pipeline,single_pipeline)=intmap_delete_lookup pipeline_id engine.pipeline in case single_pipeline of
+        Pipeline {sdl_pipeline,vertex_shader_id,fragment_shader_id}->do
+            SDLF.sdl_release_gpu_graphics_pipeline engine.device sdl_pipeline
+            return (engine {pipeline=pipeline,shader=intmap_update fragment_shader_id (delete_pipeline_id pipeline_id) (intmap_update vertex_shader_id (delete_pipeline_id pipeline_id) engine.shader)},False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
         return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update lock_widget)) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
@@ -120,28 +137,13 @@ do_request request engine=case request of
                 let (vertex,index,parameter,draw_call)=for_submit (get_submit canvas_render_selector widget) in do_render_canvas engine (half_width*2) (half_height*2) command_buffer texture draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return (new_engine,False)
-            _->EE.quick_error "do_request" 2
+            _->EE.quick_error "do_request" 3
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move}->do
         new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (for_canvas_widget_render projection_path) canvas_widget_render_selector widget new_engine
         return (new_new_engine,False)
     Shader_canvas {canvas_id,pipeline_id,uniform}->case intmap_lookup canvas_id engine.canvas of
-        Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do
-            command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
-            catch_null command_buffer
-            FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=temporary_texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
-                render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-                catch_null render_pass
-                SDLF.sdl_bind_gpu_graphics_pipeline render_pass (intmap_lookup pipeline_id engine.custom_pipeline)
-                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=engine.sampler}) $ \texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
-                case uniform of
-                    Uniform {size,write}->FMA.allocaBytesAligned size 16 $ \ptr->do
-                        write ptr
-                        SDLF.sdl_push_gpu_fragment_uniform_data command_buffer 0 ptr (fromIntegral size)
-                SDLF.sdl_draw_gpu_primitives render_pass 3 1 0 0
-                SDLF.sdl_end_gpu_render_pass render_pass
-                catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
-                return (engine {canvas=DIM.insert canvas_id (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) engine.canvas},False)
-        _->EE.quick_error "do_request" 3
+        Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) canvas_id pipeline_id uniform texture temporary_texture engine
+        Bound_canvas {texture,temporary_texture,leaf_id}->do_shader_canvas (Bound_canvas {texture=temporary_texture,temporary_texture=texture,leaf_id=leaf_id}) canvas_id pipeline_id uniform texture temporary_texture engine
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
@@ -156,6 +158,21 @@ from_window_flag window_flag=case window_flag of
     Window_borderless->SDLI.sdl_window_borderless
     Window_resizable->SDLI.sdl_window_resizable
     Window_always_on_top->SDLI.sdl_window_always_on_top
+
+lock_canvas_widget::Widget a b c d e->Widget a b c d e
+lock_canvas_widget widget=case widget of
+    Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
+        Canvas {width,height,half_width,half_height,canvas_id}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {width=width,height=height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=True}}
+        _->EE.quick_error "lock_canvas_widget" 0
+    _->EE.quick_error "lock_canvas_widget" 1
+
+insert_pipeline_id::Int->Shader->Shader
+insert_pipeline_id this_pipeline_id shader=case shader of
+    Shader {sdl_shader,pipeline_id}->Shader {sdl_shader=sdl_shader,pipeline_id=intset_insert this_pipeline_id pipeline_id}
+
+delete_pipeline_id::Int->Shader->Shader
+delete_pipeline_id this_pipeline_id shader=case shader of
+    Shader {sdl_shader,pipeline_id}->Shader {sdl_shader=sdl_shader,pipeline_id=intset_delete this_pipeline_id pipeline_id}
 
 lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
@@ -327,3 +344,21 @@ for_canvas_widget_render_b widget action engine=case widget of
         Canvas {half_width,half_height,canvas_id}->action half_width half_height canvas_id engine
         _->EE.quick_error "for_canvas_widget_render_b" 0
     _->EE.quick_error "for_canvas_widget_render_b" 1
+
+do_shader_canvas::Canvas->Int->Int->Uniform->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_shader_canvas canvas canvas_id pipeline_id uniform texture temporary_texture engine=do
+    command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
+    catch_null command_buffer
+    FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=temporary_texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
+        render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
+        catch_null render_pass
+        SDLF.sdl_bind_gpu_graphics_pipeline render_pass (intmap_lookup pipeline_id engine.pipeline).sdl_pipeline
+        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=engine.sampler}) $ \texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
+        case uniform of
+            Uniform {size,write}->FMA.allocaBytesAligned size 16 $ \ptr->do
+                write ptr
+                SDLF.sdl_push_gpu_fragment_uniform_data command_buffer 0 ptr (fromIntegral size)
+        SDLF.sdl_draw_gpu_primitives render_pass 3 1 0 0
+        SDLF.sdl_end_gpu_render_pass render_pass
+        catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+        return (engine {canvas=DIM.insert canvas_id canvas engine.canvas},False)

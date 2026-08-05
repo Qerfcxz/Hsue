@@ -86,7 +86,7 @@ intmap_monad_action key transform action=do
     return (new_coproduct,intmap_insert key value intmap)
 
 intmap_monad_fold::Monad c=>(Int->a->b->c b)->DIM.IntMap a->b->c b
-intmap_monad_fold transform=DIM.foldrWithKey (\key value update xxx->transform key value xxx>>=update) return
+intmap_monad_fold transform=DIM.foldrWithKey (\key first_value update second_value->transform key first_value second_value>>=update) return
 
 intset_insert::Int->DIS.IntSet->DIS.IntSet
 intset_insert key intset=if DIS.member key intset then EE.quick_error "intset_insert" 0 else DIS.insert key intset
