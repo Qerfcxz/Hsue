@@ -117,7 +117,7 @@ render_trigger event engine=case event of
 main::IO ()
 main=do
     init_engine
-    engine<-quick_create_engine create_engine (0.5,0.5) main_router (\_ _->Image_safe_strategy) 16 16 16 16 (Just 100) 2 1200 800 40 4 standard_sampler
+    engine<-quick_create_engine (0.5,0.5) main_router (\_ _->Image_safe_strategy) 16 16 16 16 (Just 100) 2 1200 800 40 4 standard_sampler
     let phrase=Phrase {phrase_core=DT.pack "Haskell SDL3 GPU Typography Engine Dynamic Layout Demo. ",size=40,red=0.9,green=0.8,blue=0.3,alpha=1}
     let sentence=Sentence {sentence_core=DSeq.singleton phrase,path="arial"}
     let paragraph=DSeq.replicate 100 sentence
