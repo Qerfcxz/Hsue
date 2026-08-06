@@ -266,8 +266,6 @@ data Blend_factor=Blend_factor_invalid|Blend_factor_zero|Blend_factor_one|Blend_
 
 data Blend_op=Blend_op_invalid|Blend_op_min|Blend_op_max|Blend_op_add|Blend_op_subtract|Blend_op_reverse_subtract
 
-data Color_component_flag=Color_component_r|Color_component_g|Color_component_b|Color_component_a
-
 data Blend_state=Blend_state {src_color_blend_factor::Blend_factor,dst_color_blend_factor::Blend_factor,color_blend_op::Blend_op,src_alpha_blend_factor::Blend_factor,dst_alpha_blend_factor::Blend_factor,alpha_blend_op::Blend_op,color_write_mask::DSet.Set Color_component_flag,enable_blend::Bool,enable_color_write_mask::Bool}
 
 data Filter=Filter_nearest|Filter_linear
@@ -285,6 +283,8 @@ data Press=Press_up|Press_down
 data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z deriving (Eq,Ord)
 
 data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable|Window_always_on_top deriving (Eq,Ord)
+
+data Color_component_flag=Color_component_r|Color_component_g|Color_component_b|Color_component_a deriving (Eq,Ord)
 
 data Extended=Negative_infinity|Finite {number::FCT.CFloat}|Positive_infinity deriving (Eq,Ord)
 
