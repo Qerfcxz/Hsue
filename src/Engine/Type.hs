@@ -200,7 +200,7 @@ data Coroutine_state a b c d e=Coroutine_state {widget::Widget a b c d e,variabl
 
 data Coroutine a b c d e=Done|Emit {emit::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e)}|Wait {dynamic_int::Dynamic_int a b c d e}|Forever {coroutine::Coroutine a b c d e}|Then {coroutine_sequence::DSeq.Seq (Coroutine a b c d e)}|While {dynamic_bool::Dynamic_bool a b c d e,coroutine::Coroutine a b c d e}|Pause {dynamic_bool::Dynamic_bool a b c d e,coroutine::Coroutine a b c d e}|Skip {dynamic_bool::Dynamic_bool a b c d e,coroutine::Coroutine a b c d e}|Assign {dynamic_int::Dynamic_int a b c d e,int::Int}|Repeat {dynamic_int::Dynamic_int a b c d e,coroutine::Coroutine a b c d e}|Clone {int::Int,coroutine::Coroutine a b c d e}|If {dynamic_bool::Dynamic_bool a b c d e,first_coroutine::Coroutine a b c d e,second_coroutine::Coroutine a b c d e}|Dynamic_clone {dynamic_int::Dynamic_int a b c d e,int::Int,coroutine::Coroutine a b c d e}|Case {dynamic_int::Dynamic_int a b c d e,int::Int,coroutine_sequence::DSeq.Seq (Coroutine a b c d e)}|Fork {int::Int,coroutine::Coroutine a b c d e,coroutine_sequence::DSeq.Seq (Coroutine a b c d e)}|Race {dynamic_int::Dynamic_int a b c d e,first_int::Int,second_int::Int,coroutine_sequence::DSeq.Seq (Coroutine a b c d e)}
 
-data Linear_coroutine a b c d e=Linear_end|Linear_emit {emit::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e)}|Linear_wait {int_index::Int}|Linear_kill_fork {int_index::Int}|Linear_countdown {int_index::Int}|Linear_wake {int_index::Int}|Linear_fork {code_index::Int}|Linear_yield {code_index::Int}|Linear_jump {code_index::Int}|Linear_kill_group {group_int_index::DIM.IntMap Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_kill_clone {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a b c d e}|Linear_int {int_index::Int,int::Int}|Linear_true_jump {code_index::Int,dynamic_bool::Dynamic_bool a b c d e}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a b c d e}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_wake_group {int_index::Int,dynamic_int::Dynamic_int a b c d e,int::Int}|Linear_assign {user_int_index::Int,clone_number::Int,dynamic_int::Dynamic_int a b c d e}|Linear_create_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_create_active_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a b c d e,int::Int}
+data Linear_coroutine a b c d e=Linear_end|Linear_emit {emit::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e)}|Linear_wait {int_index::Int}|Linear_countdown {int_index::Int}|Linear_wake {int_index::Int}|Linear_fork {code_index::Int}|Linear_yield {code_index::Int}|Linear_jump {code_index::Int}|Linear_kill {group_int_index::DIM.IntMap Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_kill_clone {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a b c d e}|Linear_true_jump {code_index::Int,dynamic_bool::Dynamic_bool a b c d e}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a b c d e}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_wake_group {int_index::Int,dynamic_int::Dynamic_int a b c d e,int::Int}|Linear_assign {user_int_index::Int,clone_number::Int,dynamic_int::Dynamic_int a b c d e}|Linear_create_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_create_active_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a b c d e,int::Int}
 
 data Event a=Empty|Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}|Custom_event {custom::a}
 
@@ -316,15 +316,15 @@ clip_peek ptr=do
 
 clip_poke::FP.Ptr Clip->Clip->IO ()
 clip_poke ptr clip=case clip of
-    Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->let new_ptr=FP.castPtr ptr in do
-        FS.pokeElemOff new_ptr 0 x
-        FS.pokeElemOff new_ptr 1 y
-        FS.pokeElemOff new_ptr 2 half_width
-        FS.pokeElemOff new_ptr 3 half_height
-        FS.pokeElemOff new_ptr 4 min_u
-        FS.pokeElemOff new_ptr 5 min_v
-        FS.pokeElemOff new_ptr 6 max_u
-        FS.pokeElemOff new_ptr 7 max_v
+    Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->do
+        FS.pokeByteOff ptr 0 x
+        FS.pokeByteOff ptr 4 y
+        FS.pokeByteOff ptr 8 half_width
+        FS.pokeByteOff ptr 12 half_height
+        FS.pokeByteOff ptr 16 min_u
+        FS.pokeByteOff ptr 20 min_v
+        FS.pokeByteOff ptr 24 max_u
+        FS.pokeByteOff ptr 28 max_v
 
 data Layout=Layout {address::Int,size::Int}
 
@@ -348,9 +348,9 @@ layout_peek ptr=do
 
 layout_poke::FP.Ptr Layout->Layout->IO ()
 layout_poke ptr layout=case layout of
-    Layout {address,size}->let new_ptr=FP.castPtr ptr in do
-        FS.pokeElemOff new_ptr 0 address
-        FS.pokeElemOff new_ptr 1 size
+    Layout {address,size}->do
+        FS.pokeByteOff ptr 0 address
+        FS.pokeByteOff ptr 8 size
 
 data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,parameter_id::FCT.CFloat,size::FCT.CFloat}
 
@@ -371,17 +371,17 @@ vertex_peek _=EE.quick_error "vertex_peek" 0
 
 vertex_poke::FP.Ptr Vertex->Vertex->IO ()
 vertex_poke ptr vertex=case vertex of
-    Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,size}->let new_ptr=FP.castPtr ptr in do
-        FS.pokeElemOff new_ptr 0 red
-        FS.pokeElemOff new_ptr 1 green
-        FS.pokeElemOff new_ptr 2 blue
-        FS.pokeElemOff new_ptr 3 alpha
-        FS.pokeElemOff new_ptr 4 x
-        FS.pokeElemOff new_ptr 5 y
-        FS.pokeElemOff new_ptr 6 u
-        FS.pokeElemOff new_ptr 7 v
-        FS.pokeElemOff new_ptr 8 parameter_id
-        FS.pokeElemOff new_ptr 9 size
+    Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,size}->do
+        FS.pokeByteOff ptr 0 red
+        FS.pokeByteOff ptr 4 green
+        FS.pokeByteOff ptr 8 blue
+        FS.pokeByteOff ptr 12 alpha
+        FS.pokeByteOff ptr 16 x
+        FS.pokeByteOff ptr 20 y
+        FS.pokeByteOff ptr 24 u
+        FS.pokeByteOff ptr 28 v
+        FS.pokeByteOff ptr 32 parameter_id
+        FS.pokeByteOff ptr 36 size
 
 data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,border_flag::FCT.CFloat,border_left::FCT.CFloat,border_down::FCT.CFloat,border_right::FCT.CFloat,border_up::FCT.CFloat}
 
@@ -402,19 +402,18 @@ parameter_peek _=EE.quick_error "parameter_peek" 0
 
 parameter_poke::FP.Ptr Parameter->Parameter->IO ()
 parameter_poke ptr parameter=case parameter of
-    Parameter {x,y,x_x,x_y,y_x,y_y,border_flag,border_left,border_down,border_right,border_up}->let new_ptr=FP.castPtr ptr::FP.Ptr FCT.CFloat in do
-        FS.pokeElemOff new_ptr 0 x
-        FS.pokeElemOff new_ptr 1 y
-        FS.pokeElemOff new_ptr 2 x_x
-        FS.pokeElemOff new_ptr 3 x_y
-        FS.pokeElemOff new_ptr 4 y_x
-        FS.pokeElemOff new_ptr 5 y_y
-        FS.pokeElemOff new_ptr 6 0
-        FS.pokeElemOff new_ptr 7 border_flag
-        FS.pokeElemOff new_ptr 8 border_left
-        FS.pokeElemOff new_ptr 9 border_down
-        FS.pokeElemOff new_ptr 10 border_right
-        FS.pokeElemOff new_ptr 11 border_up
+    Parameter {x,y,x_x,x_y,y_x,y_y,border_flag,border_left,border_down,border_right,border_up}->do
+        FS.pokeByteOff ptr 0 x
+        FS.pokeByteOff ptr 4 y
+        FS.pokeByteOff ptr 8 x_x
+        FS.pokeByteOff ptr 12 x_y
+        FS.pokeByteOff ptr 16 y_x
+        FS.pokeByteOff ptr 20 y_y
+        FS.pokeByteOff ptr 28 border_flag
+        FS.pokeByteOff ptr 32 border_left
+        FS.pokeByteOff ptr 36 border_down
+        FS.pokeByteOff ptr 40 border_right
+        FS.pokeByteOff ptr 44 border_up
 
 class Custom_request a where
     custom_request::a->Engine b c a d e->IO (Engine b c a d e)
