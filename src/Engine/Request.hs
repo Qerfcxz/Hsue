@@ -151,9 +151,9 @@ do_request request engine=case request of
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->do
         new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (for_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
         return (new_new_engine,False)
-    Shader_canvas {canvas_id,pipeline_id,uniform}->case intmap_lookup canvas_id engine.canvas of
-        Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) canvas_id pipeline_id uniform texture temporary_texture engine
-        Bound_canvas {texture,temporary_texture,leaf_id}->do_shader_canvas (Bound_canvas {texture=temporary_texture,temporary_texture=texture,leaf_id=leaf_id}) canvas_id pipeline_id uniform texture temporary_texture engine
+    Shader_canvas {uniform,canvas_id,pipeline_id,maybe_sampler_id}->case intmap_lookup canvas_id engine.canvas of
+        Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
+        Bound_canvas {texture,temporary_texture,leaf_id}->do_shader_canvas (Bound_canvas {texture=temporary_texture,temporary_texture=texture,leaf_id=leaf_id}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
@@ -305,15 +305,15 @@ update_article_a font character=case character of
     Character {unicode,font_id,size,left,down,right,up,red,green,blue,alpha}->case intmap_lookup unicode (intmap_lookup font_id font).glyph of
         Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,size=size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,red=red,green=green,blue=blue,alpha=alpha}
 
-do_shader_canvas::Canvas->Int->Int->Uniform->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
-do_shader_canvas canvas canvas_id pipeline_id uniform texture temporary_texture engine=do
+do_shader_canvas::Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine=do
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
     catch_null command_buffer
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=temporary_texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
         render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
         catch_null render_pass
         SDLF.sdl_bind_gpu_graphics_pipeline render_pass (get_sdl_pipeline (intmap_lookup pipeline_id engine.pipeline))
-        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=engine.default_sampler}) $ \texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
+        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id}) $ \texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
         case uniform of
             Uniform {size,alignment,write}->FMA.allocaBytesAligned size alignment $ \ptr->do
                 write ptr
