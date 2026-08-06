@@ -20,7 +20,6 @@ import qualified Error.Error as EE
 import qualified Data.Bits as DB
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
-import qualified Data.IntSet as DIS
 import qualified Data.Map as DM
 import qualified Data.Sequence as DSeq
 import qualified Data.Set as DSet
@@ -40,16 +39,16 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=SDLF.sdl_quit
 
-create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->IO (Engine a b c d e)
-create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size default_vertex_shader_id initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range=do
+create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->IO (Engine a b c d e)
+create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range sampler_create_info=do
     device<-SDLF.sdl_create_gpu_device SDLI.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
-    default_vertex_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 0 0 "Default"
+    default_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 0 0 "Default"
     vertex_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 1 1 "Vertex"
     fragment_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_fragment 1 0 0 "Fragment"
     canvas_graphics_pipeline<-create_canvas_graphics_pipeline device vertex_shader fragment_shader
     texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture device)
-    sampler<-FMU.with (SDLI.SDL_GPUSamplerCreateInfo {sdl_min_filter=SDLI.sdl_gpu_filter_nearest,sdl_mag_filter=SDLI.sdl_gpu_filter_nearest,sdl_mipmap_mode=SDLI.sdl_gpu_samplermipmapmode_nearest,sdl_address_mode_u=SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge,sdl_address_mode_v=SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge,sdl_address_mode_w=SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge}) (return_catch_null . SDLF.sdl_create_gpu_sampler device)
+    sampler<-FMU.with (from_sampler_create_info sampler_create_info) (return_catch_null . SDLF.sdl_create_gpu_sampler device)
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer device
     catch_null command_buffer
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
@@ -77,12 +76,12 @@ create_engine custom main_id projection_strategy picture_size vertex_size index_
     let (atlas,left,down,right,up)=atlas_insert new_width new_height padding (init_atlas width height)
     copy_texture device new_texture texture left down new_width new_height
     let album_id=initial_album_id+1 in case maybe_interval of
-        Nothing->let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.singleton default_vertex_shader_id (Shader {sdl_shader=default_vertex_shader,pipeline_id=DIS.empty}),vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
+        Nothing->let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
         Just interval->if 0<interval
             then do
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
                 catch_zero timer_id
-                let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.singleton default_vertex_shader_id (Shader {sdl_shader=default_vertex_shader,pipeline_id=DIS.empty}),vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
+                let reciprocal_width=1/fromIntegral width in let reciprocal_height=1/fromIntegral height in return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=new_width,height=new_height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,window_map=DM.empty,font_map=DM.empty,request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,picture_size=picture_size,vertex_size=vertex_size,index_size=index_size,parameter_size=parameter_size,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,width=width,height=height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,u=fromIntegral (left+right)*reciprocal_width/2,v=fromIntegral (down+up)*reciprocal_height/2,font_size=font_size,pixel_range=pixel_range})
             else EE.quick_error "create_engine" 0
 
 clean_engine::Engine a b c d e->IO ()
@@ -95,15 +94,17 @@ clean_engine engine=do
     DF.traverse_ (\album->SDLF.sdl_release_gpu_texture engine.device album.texture) (DIM.elems engine.album)
     FP.freeHaskellFunPtr engine.callback
     SDLF.sdl_release_gpu_texture engine.device engine.texture
-    SDLF.sdl_release_gpu_sampler engine.device engine.sampler
+    DF.traverse_ (SDLF.sdl_release_gpu_sampler engine.device) (DIM.elems engine.sampler)
+    SDLF.sdl_release_gpu_sampler engine.device engine.default_sampler
     SDLF.sdl_release_gpu_buffer engine.device engine.vertex_buffer
     SDLF.sdl_release_gpu_buffer engine.device engine.index_buffer
     SDLF.sdl_release_gpu_buffer engine.device engine.parameter_buffer
     SDLF.sdl_release_gpu_transfer_buffer engine.device engine.transfer_buffer
     SDLF.sdl_release_gpu_transfer_buffer engine.device engine.picture_transfer_buffer
     SDLF.sdl_release_gpu_graphics_pipeline engine.device engine.canvas_graphics_pipeline
-    DF.traverse_ (\pipeline->SDLF.sdl_release_gpu_graphics_pipeline engine.device pipeline.sdl_pipeline) (DIM.elems engine.pipeline)
+    DF.traverse_ (SDLF.sdl_release_gpu_graphics_pipeline engine.device . get_sdl_pipeline) (DIM.elems engine.pipeline)
     DF.traverse_ (\shader->SDLF.sdl_release_gpu_shader engine.device shader.sdl_shader) (DIM.elems engine.shader)
+    SDLF.sdl_release_gpu_shader engine.device engine.default_shader
     SDLF.sdl_release_gpu_shader engine.device engine.vertex_shader
     SDLF.sdl_release_gpu_shader engine.device engine.fragment_shader
     SDLF.sdl_destroy_gpu_device engine.device
@@ -180,14 +181,14 @@ loop_event on event_type sdl_event engine=case event_type of
             Just window_id->loop_event_b on (At {window_id=window_id,action=Resize {width=fromIntegral first_data,height=fromIntegral second_data}}) sdl_event engine
     SDLI.SDL_EVENT_KEY_UP->do
         sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek sdl_event
-        sdl_keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
-        let change=to_key sdl_keycode in let maintain=DSet.delete change engine.key in case DM.lookup sdl_window_id engine.window_map of
+        keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
+        let change=to_key keycode in let maintain=DSet.delete change engine.key in case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
     SDLI.SDL_EVENT_KEY_DOWN->do
         sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek sdl_event
-        sdl_keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
-        let change=to_key sdl_keycode in let maintain=DSet.insert change engine.key in case DM.lookup sdl_window_id engine.window_map of
+        keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
+        let change=to_key keycode in let maintain=DSet.insert change engine.key in case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on sdl_event engine
             Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
     _->if event_type==engine.event_number+1

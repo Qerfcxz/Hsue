@@ -658,20 +658,65 @@ sdl_gpu_vertexelementformat_float2=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2)
 sdl_gpu_vertexelementformat_float4::Word32
 sdl_gpu_vertexelementformat_float4=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4)
 
-sdl_gpu_blendfactor_src_alpha::Word32
-sdl_gpu_blendfactor_src_alpha=(#const SDL_GPU_BLENDFACTOR_SRC_ALPHA)
-
-sdl_gpu_blendfactor_one_minus_src_alpha::Word32
-sdl_gpu_blendfactor_one_minus_src_alpha=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA)
-
-sdl_gpu_blendfactor_one::Word32
-sdl_gpu_blendfactor_one=(#const SDL_GPU_BLENDFACTOR_ONE)
+sdl_gpu_blendfactor_invalid::Word32
+sdl_gpu_blendfactor_invalid=(#const SDL_GPU_BLENDFACTOR_INVALID)
 
 sdl_gpu_blendfactor_zero::Word32
 sdl_gpu_blendfactor_zero=(#const SDL_GPU_BLENDFACTOR_ZERO)
 
+sdl_gpu_blendfactor_one::Word32
+sdl_gpu_blendfactor_one=(#const SDL_GPU_BLENDFACTOR_ONE)
+
+sdl_gpu_blendfactor_constant_color::Word32
+sdl_gpu_blendfactor_constant_color=(#const SDL_GPU_BLENDFACTOR_CONSTANT_COLOR)
+
+sdl_gpu_blendfactor_dst_color::Word32
+sdl_gpu_blendfactor_dst_color=(#const SDL_GPU_BLENDFACTOR_DST_COLOR)
+
+sdl_gpu_blendfactor_src_color::Word32
+sdl_gpu_blendfactor_src_color=(#const SDL_GPU_BLENDFACTOR_SRC_COLOR)
+
+sdl_gpu_blendfactor_dst_alpha::Word32
+sdl_gpu_blendfactor_dst_alpha=(#const SDL_GPU_BLENDFACTOR_DST_ALPHA)
+
+sdl_gpu_blendfactor_src_alpha::Word32
+sdl_gpu_blendfactor_src_alpha=(#const SDL_GPU_BLENDFACTOR_SRC_ALPHA)
+
+sdl_gpu_blendfactor_src_alpha_saturate::Word32
+sdl_gpu_blendfactor_src_alpha_saturate=(#const SDL_GPU_BLENDFACTOR_SRC_ALPHA_SATURATE)
+
+sdl_gpu_blendfactor_one_minus_constant_color::Word32
+sdl_gpu_blendfactor_one_minus_constant_color=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_CONSTANT_COLOR)
+
+sdl_gpu_blendfactor_one_minus_dst_color::Word32
+sdl_gpu_blendfactor_one_minus_dst_color=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_DST_COLOR)
+
+sdl_gpu_blendfactor_one_minus_src_color::Word32
+sdl_gpu_blendfactor_one_minus_src_color=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_COLOR)
+
+sdl_gpu_blendfactor_one_minus_dst_alpha::Word32
+sdl_gpu_blendfactor_one_minus_dst_alpha=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_DST_ALPHA)
+
+sdl_gpu_blendfactor_one_minus_src_alpha::Word32
+sdl_gpu_blendfactor_one_minus_src_alpha=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA)
+
+sdl_gpu_blendop_invalid::Word32
+sdl_gpu_blendop_invalid=(#const SDL_GPU_BLENDOP_INVALID)
+
+sdl_gpu_blendop_min::Word32
+sdl_gpu_blendop_min=(#const SDL_GPU_BLENDOP_MIN)
+
+sdl_gpu_blendop_max::Word32
+sdl_gpu_blendop_max=(#const SDL_GPU_BLENDOP_MAX)
+
 sdl_gpu_blendop_add::Word32
 sdl_gpu_blendop_add=(#const SDL_GPU_BLENDOP_ADD)
+
+sdl_gpu_blendop_subtract::Word32
+sdl_gpu_blendop_subtract=(#const SDL_GPU_BLENDOP_SUBTRACT)
+
+sdl_gpu_blendop_reverse_subtract::Word32
+sdl_gpu_blendop_reverse_subtract=(#const SDL_GPU_BLENDOP_REVERSE_SUBTRACT)
 
 sdl_gpu_colorcomponent_r::Word8
 sdl_gpu_colorcomponent_r=(#const SDL_GPU_COLORCOMPONENT_R)
@@ -706,8 +751,20 @@ sdl_gpu_samplecount_1=(#const SDL_GPU_SAMPLECOUNT_1)
 sdl_gpu_filter_nearest::Word32
 sdl_gpu_filter_nearest=(#const SDL_GPU_FILTER_NEAREST)
 
+sdl_gpu_filter_linear::Word32
+sdl_gpu_filter_linear=(#const SDL_GPU_FILTER_LINEAR)
+
 sdl_gpu_samplermipmapmode_nearest::Word32
 sdl_gpu_samplermipmapmode_nearest=(#const SDL_GPU_SAMPLERMIPMAPMODE_NEAREST)
+
+sdl_gpu_samplermipmapmode_linear::Word32
+sdl_gpu_samplermipmapmode_linear=(#const SDL_GPU_SAMPLERMIPMAPMODE_LINEAR)
+
+sdl_gpu_sampleraddressmode_repeat::Word32
+sdl_gpu_sampleraddressmode_repeat=(#const SDL_GPU_SAMPLERADDRESSMODE_REPEAT)
+
+sdl_gpu_sampleraddressmode_mirrored_repeat::Word32
+sdl_gpu_sampleraddressmode_mirrored_repeat=(#const SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT)
 
 sdl_gpu_sampleraddressmode_clamp_to_edge::Word32
 sdl_gpu_sampleraddressmode_clamp_to_edge=(#const SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE)
