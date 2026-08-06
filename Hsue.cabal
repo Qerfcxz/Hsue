@@ -24,15 +24,17 @@ library
         Engine.Container
         Engine.Coroutine
         Engine.Engine
+        Engine.Event
         Engine.Helper
-        Engine.Leaf
-        Engine.Node
         Engine.Projection
+        Engine.Render
         Engine.Request
         Engine.Selector
         Engine.Shader
         Engine.Text
         Engine.Type
+        Engine.Underlying
+        Engine.Widget
         Engine.Window
         MSDF.Function
         MSDF.Type
