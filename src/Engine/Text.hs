@@ -6,8 +6,8 @@ module Engine.Text where
 
 import Engine.Atlas
 import Engine.Container
-import Engine.Helper
 import Engine.Type
+import Engine.Underlying
 import qualified MSDF.Function as MSDFF
 import qualified MSDF.Type as MSDFT
 import qualified SDL.Function as SDLF

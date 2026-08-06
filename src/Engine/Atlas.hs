@@ -3,8 +3,8 @@
 
 module Engine.Atlas where
 
-import Engine.Helper
 import Engine.Type
+import Engine.Underlying
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT

@@ -7,20 +7,19 @@ module Engine.Request where
 import Engine.Atlas
 import Engine.Collector
 import Engine.Container
-import Engine.Helper
-import Engine.Leaf
-import Engine.Node
 import Engine.Projection
+import Engine.Render
 import Engine.Selector
 import Engine.Shader
 import Engine.Text
 import Engine.Type
+import Engine.Underlying
+import Engine.Widget
 import Engine.Window
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
-import qualified Control.Monad as CM
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
@@ -30,11 +29,9 @@ import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
-import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
-import qualified Foreign.Storable as FS
 
 create_request::Request a b c d e->Engine a b c d e->Engine a b c d e
 create_request request engine=engine {request=engine.request DS.|> request}
@@ -237,14 +234,6 @@ from_sampler_create_info sampler_create_info=case sampler_create_info of
     Sampler_create_info {min_filter,mag_filter,mipmap_mode,address_mode_u,address_mode_v,address_mode_w}->
         SDLI.SDL_GPUSamplerCreateInfo {sdl_min_filter=from_filter min_filter,sdl_mag_filter=from_filter mag_filter,sdl_mipmap_mode=from_sampler_mipmap_mode mipmap_mode,sdl_address_mode_u=from_sampler_address_mode address_mode_u,sdl_address_mode_v=from_sampler_address_mode address_mode_v,sdl_address_mode_w=from_sampler_address_mode address_mode_w}
 
-insert_pipeline_id::Int->Shader->Shader
-insert_pipeline_id this_pipeline_id shader=case shader of
-    Shader {sdl_shader,pipeline_id}->Shader {sdl_shader=sdl_shader,pipeline_id=intset_insert this_pipeline_id pipeline_id}
-
-delete_pipeline_id::Int->Shader->Shader
-delete_pipeline_id this_pipeline_id shader=case shader of
-    Shader {sdl_shader,pipeline_id}->Shader {sdl_shader=sdl_shader,pipeline_id=intset_delete this_pipeline_id pipeline_id}
-
 lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
@@ -315,106 +304,6 @@ update_article_a::DIM.IntMap Font->Character->Character
 update_article_a font character=case character of
     Character {unicode,font_id,size,left,down,right,up,red,green,blue,alpha}->case intmap_lookup unicode (intmap_lookup font_id font).glyph of
         Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,size=size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,red=red,green=green,blue=blue,alpha=alpha}
-
-for_render::Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->(FP.Ptr SDLT.SDL_GPUTexture->IO ())->IO ()
-for_render window command_buffer action=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
-    value<-SDLF.sdl_acquire_gpu_swapchain_texture command_buffer window.sdl_window ptr_texture width height
-    if FMU.toBool value
-        then do
-            texture<-FS.peek ptr_texture
-            if texture==FP.nullPtr then catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer) else do
-                action texture
-                catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
-        else catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer)
-
-do_render::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
-do_render engine window command_buffer texture maybe_sampler_id draw_call vertex index parameter=do
-    value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
-    FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
-        render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-        catch_null render_pass
-        CM.when value (do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call)
-        SDLF.sdl_end_gpu_render_pass render_pass
-
-do_render_a::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call=do
-    SDLF.sdl_bind_gpu_graphics_pipeline render_pass window.graphics_pipeline
-    FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
-    let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
-        FMU.fillBytes ptr 0 size
-        FS.pokeElemOff ptr 0 window.adaptive_width
-        FS.pokeElemOff ptr 1 window.adaptive_height
-        FS.pokeElemOff ptr 2 engine.font_size
-        FS.pokeElemOff ptr 3 engine.pixel_range
-        SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
-    FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
-    FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_b render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id) engine) draw_call
-
-do_render_b::FP.Ptr SDLT.SDL_GPURenderPass->FP.Ptr SDLT.SDL_GPUSampler->Engine a b c d e->(Maybe Int,Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render_b render_pass sampler engine (maybe_canvas_id,maybe_album_id,index_length,index_offset)=case maybe_canvas_id of
-    Just canvas_id->do
-        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (intmap_lookup canvas_id engine.canvas),sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
-        SDLF.sdl_draw_gpu_indexed_primitives render_pass index_length 1 index_offset 0 0
-    Nothing->case maybe_album_id of
-        Nothing->do
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
-            SDLF.sdl_draw_gpu_indexed_primitives render_pass index_length 1 index_offset 0 0
-        Just album_id->do
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(intmap_lookup album_id engine.album).texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
-            SDLF.sdl_draw_gpu_indexed_primitives render_pass index_length 1 index_offset 0 0
-
-do_render_c::Canvas->FP.Ptr SDLT.SDL_GPUTexture
-do_render_c canvas=case canvas of
-    Free_canvas {texture}->texture
-    Bound_canvas {texture}->texture
-
-do_render_canvas::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
-do_render_canvas engine width height command_buffer texture maybe_sampler_id draw_call vertex index parameter=do
-    value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.vertex_size engine.index_size engine.parameter_size vertex index parameter
-    FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
-        render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-        catch_null render_pass
-        CM.when value (do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_id draw_call)
-        SDLF.sdl_end_gpu_render_pass render_pass
-
-do_render_canvas_a::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_id draw_call=do
-    SDLF.sdl_bind_gpu_graphics_pipeline render_pass engine.canvas_graphics_pipeline
-    FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
-    let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
-        FMU.fillBytes ptr 0 size
-        FS.pokeElemOff ptr 0 width
-        FS.pokeElemOff ptr 1 height
-        FS.pokeElemOff ptr 2 engine.font_size
-        FS.pokeElemOff ptr 3 engine.pixel_range
-        SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
-    FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
-    FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_b render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id) engine) draw_call
-
-for_canvas_widget_render::Maybe Int->Projection_path->Selector ()->Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
-for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_selector widget engine=case widget of
-    Collector {submit}->let (vertex,index,parameter,draw_call)=for_submit submit in for_canvas_widget_render_a projection_path canvas_widget_render_selector engine $ \half_width half_height canvas_id this_engine->do
-        command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
-        catch_null command_buffer
-        case intmap_lookup canvas_id this_engine.canvas of
-            Bound_canvas {texture}->do
-                do_render_canvas this_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
-                catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
-                return this_engine
-            _->EE.quick_error "for_canvas_widget_render" 0
-    _->EE.quick_error "for_canvas_widget_render" 1
-
-for_canvas_widget_render_a::Projection_path->Selector ()->Engine a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->IO (Engine a b c d e)
-for_canvas_widget_render_a projection_path selector engine action=selector_monad_action (\_ widget this_engine->for_canvas_widget_render_b widget action this_engine) selector (lookup_projection_widget projection_path engine) engine
-
-for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
-for_canvas_widget_render_b widget action engine=case widget of
-    Visual {visual}->case visual of
-        Canvas {half_width,half_height,canvas_id,locked}->if locked then EE.quick_error "for_canvas_widget_render_b" 0 else action half_width half_height canvas_id engine
-        _->EE.quick_error "for_canvas_widget_render_b" 1
-    _->EE.quick_error "for_canvas_widget_render_b" 2
 
 do_shader_canvas::Canvas->Int->Int->Uniform->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
 do_shader_canvas canvas canvas_id pipeline_id uniform texture temporary_texture engine=do

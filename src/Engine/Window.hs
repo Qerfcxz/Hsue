@@ -5,8 +5,8 @@
 module Engine.Window where
 
 import Engine.Container
-import Engine.Helper
 import Engine.Type
+import Engine.Underlying
 import qualified SDL.Function as SDLF
 import qualified Data.IntSet as DIS
 import qualified Foreign.C.Types as FCT
