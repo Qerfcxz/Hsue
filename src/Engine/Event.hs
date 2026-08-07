@@ -25,41 +25,41 @@ import qualified Foreign.Storable as FS
 import qualified Foreign.StablePtr as FSP
 
 loop_engine_off::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
-loop_engine_off sdl_event engine=do
+loop_engine_off event engine=do
     (new_engine,switch)<-run_request False engine
-    value<-SDLF.sdl_wait_event sdl_event
+    value<-SDLF.sdl_wait_event event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type_peek sdl_event
-            loop_event switch event_type sdl_event new_engine
+            event_type<-SDLI.sdl_event_type_peek event
+            loop_event switch event_type event new_engine
         else EE.quick_error "loop_engine_off" 0
 
 loop_engine_off_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
-loop_engine_off_a sdl_event engine=do
-    value<-SDLF.sdl_wait_event sdl_event
+loop_engine_off_a event engine=do
+    value<-SDLF.sdl_wait_event event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type_peek sdl_event
-            loop_event False event_type sdl_event engine
+            event_type<-SDLI.sdl_event_type_peek event
+            loop_event False event_type event engine
         else EE.quick_error "loop_engine_off_a" 0
 
 loop_engine_on::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
-loop_engine_on sdl_event engine=do
+loop_engine_on event engine=do
     (new_engine,switch)<-run_request False engine
-    value<-SDLF.sdl_wait_event sdl_event
+    value<-SDLF.sdl_wait_event event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type_peek sdl_event
-            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) sdl_event (new_engine {count=count,time=time}) else loop_event (not switch) event_type sdl_event new_engine
+            event_type<-SDLI.sdl_event_type_peek event
+            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
         else EE.quick_error "loop_engine_on" 0
 
 loop_engine_on_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
-loop_engine_on_a sdl_event engine=do
-    value<-SDLF.sdl_wait_event sdl_event
+loop_engine_on_a event engine=do
+    value<-SDLF.sdl_wait_event event
     if FMU.toBool value
         then do
-            event_type<-SDLI.sdl_event_type_peek sdl_event
-            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) sdl_event (engine {count=count,time=time}) else loop_event True event_type sdl_event engine
+            event_type<-SDLI.sdl_event_type_peek event
+            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {count=count,time=time}) else loop_event True event_type event engine
         else EE.quick_error "loop_engine_on_a" 0
 
 get_interval::Timer->DW.Word64
@@ -68,37 +68,65 @@ get_interval timer=case timer of
     _->EE.quick_error "get_interval" 0
 
 loop_event::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->DW.Word32->FP.Ptr ()->Engine a b c d e->IO ()
-loop_event on event_type sdl_event engine=case event_type of
+loop_event on event_type event engine=case event_type of
     SDLI.SDL_EVENT_QUIT->return ()
     SDLI.SDL_EVENT_WINDOW_CLOSE_REQUESTED->do
-        sdl_window_id<-SDLI.sdl_windowevent_windowid_peek sdl_event
+        sdl_window_id<-SDLI.sdl_windowevent_windowid_peek event
         case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a on sdl_event engine
-            Just window_id->loop_event_b on (At {window_id=window_id,action=Close}) sdl_event engine
+            Nothing->loop_event_a on event engine
+            Just window_id->loop_event_b on (At {window_id=window_id,action=Close}) event engine
     SDLI.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED->do
-        sdl_window_id<-SDLI.sdl_windowevent_windowid_peek sdl_event
-        first_data<-SDLI.sdl_windowevent_data1_peek sdl_event
-        second_data<-SDLI.sdl_windowevent_data2_peek sdl_event
+        sdl_window_id<-SDLI.sdl_windowevent_windowid_peek event
         case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a on sdl_event engine
-            Just window_id->loop_event_b on (At {window_id=window_id,action=Resize {width=fromIntegral first_data,height=fromIntegral second_data}}) sdl_event engine
+            Nothing->loop_event_a on event engine
+            Just window_id->do
+                first_data<-SDLI.sdl_windowevent_data1_peek event
+                second_data<-SDLI.sdl_windowevent_data2_peek event
+                loop_event_b on (At {window_id=window_id,action=Resize {width=fromIntegral first_data,height=fromIntegral second_data}}) event engine
     SDLI.SDL_EVENT_KEY_UP->do
-        sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek sdl_event
-        keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
-        let change=to_key keycode in let maintain=DSet.delete change engine.key in case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a on sdl_event engine
-            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
+        sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek event
+        case DM.lookup sdl_window_id engine.window_map of
+            Nothing->loop_event_a on event engine
+            Just window_id->do
+                keycode<-SDLI.sdl_keyboardevent_key_peek event
+                let change=to_key keycode in let maintain=DSet.delete change engine.key in loop_event_b on (At {window_id=window_id,action=Press {press=Press_up,change=change,maintain=maintain}}) event (engine {key=maintain})
     SDLI.SDL_EVENT_KEY_DOWN->do
-        sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek sdl_event
-        keycode<-SDLI.sdl_keyboardevent_key_peek sdl_event
-        let change=to_key keycode in let maintain=DSet.insert change engine.key in case DM.lookup sdl_window_id engine.window_map of
-            Nothing->loop_event_a on sdl_event engine
-            Just window_id->loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) sdl_event (engine {key=maintain})
+        sdl_window_id<-SDLI.sdl_keyboardevent_windowid_peek event
+        case DM.lookup sdl_window_id engine.window_map of
+            Nothing->loop_event_a on event engine
+            Just window_id->do
+                keycode<-SDLI.sdl_keyboardevent_key_peek event
+                let change=to_key keycode in let maintain=DSet.insert change engine.key in loop_event_b on (At {window_id=window_id,action=Press {press=Press_down,change=change,maintain=maintain}}) event (engine {key=maintain})
+    SDLI.SDL_EVENT_MOUSE_BUTTON_UP->do
+        sdl_window_id<-SDLI.sdl_mousebuttonevent_windowid_peek event
+        case DM.lookup sdl_window_id engine.window_map of
+            Nothing->loop_event_a on event engine
+            Just window_id->do
+                mouse_button<-SDLI.sdl_mousebuttonevent_button_peek event
+                x<-SDLI.sdl_mousebuttonevent_x_peek event
+                y<-SDLI.sdl_mousebuttonevent_y_peek event
+                loop_event_b on (At {window_id=window_id,action=Click {press=Press_up,mouse_button=to_mouse_button mouse_button,x=x,y=y}}) event engine
+    SDLI.SDL_EVENT_MOUSE_BUTTON_DOWN->do
+        sdl_window_id<-SDLI.sdl_mousebuttonevent_windowid_peek event
+        case DM.lookup sdl_window_id engine.window_map of
+            Nothing->loop_event_a on event engine
+            Just window_id->do
+                mouse_button<-SDLI.sdl_mousebuttonevent_button_peek event
+                x<-SDLI.sdl_mousebuttonevent_x_peek event
+                y<-SDLI.sdl_mousebuttonevent_y_peek event
+                loop_event_b on (At {window_id=window_id,action=Click {press=Press_down,mouse_button=to_mouse_button mouse_button,x=x,y=y}}) event engine
     _->if event_type==engine.event_number+1
         then do
-            custom<-pop_event sdl_event
-            loop_event_b on (Custom_event {custom=custom}) sdl_event engine
-        else loop_event_a on sdl_event engine
+            custom<-pop_event event
+            loop_event_b on (Custom_event {custom=custom}) event engine
+        else loop_event_a on event engine
+
+to_mouse_button::DW.Word8->Mouse_button
+to_mouse_button button=case button of
+    SDLI.SDL_BUTTON_LEFT->Mouse_button_left
+    SDLI.SDL_BUTTON_MIDDLE->Mouse_button_middle
+    SDLI.SDL_BUTTON_RIGHT->Mouse_button_right
+    _->Mouse_button_unknown
 
 loop_event_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->FP.Ptr ()->Engine a b c d e->IO ()
 loop_event_a on sdl_event engine=if on then loop_engine_on_a sdl_event engine else loop_engine_off_a sdl_event engine

@@ -811,6 +811,18 @@ sdl_windowevent_data1_peek ptr=(#peek SDL_WindowEvent,data1) ptr
 sdl_windowevent_data2_peek::Ptr ()->IO Word32
 sdl_windowevent_data2_peek ptr=(#peek SDL_WindowEvent,data2) ptr
 
+sdl_mousebuttonevent_windowid_peek::Ptr ()->IO Word32
+sdl_mousebuttonevent_windowid_peek ptr=(#peek SDL_MouseButtonEvent,windowID) ptr
+
+sdl_mousebuttonevent_button_peek::Ptr ()->IO Word8
+sdl_mousebuttonevent_button_peek ptr=(#peek SDL_MouseButtonEvent,button) ptr
+
+sdl_mousebuttonevent_x_peek::Ptr ()->IO CFloat
+sdl_mousebuttonevent_x_peek ptr=(#peek SDL_MouseButtonEvent,x) ptr
+
+sdl_mousebuttonevent_y_peek::Ptr ()->IO CFloat
+sdl_mousebuttonevent_y_peek ptr=(#peek SDL_MouseButtonEvent,y) ptr
+
 sdl_keyboardevent_windowid_peek::Ptr ()->IO Word32
 sdl_keyboardevent_windowid_peek ptr=(#peek SDL_KeyboardEvent,windowID) ptr
 
@@ -837,6 +849,21 @@ pattern SDL_EVENT_WINDOW_CLOSE_REQUESTED=(#const SDL_EVENT_WINDOW_CLOSE_REQUESTE
 
 pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED::Word32
 pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED=(#const SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
+
+pattern SDL_EVENT_MOUSE_BUTTON_UP::Word32
+pattern SDL_EVENT_MOUSE_BUTTON_UP=(#const SDL_EVENT_MOUSE_BUTTON_UP)
+
+pattern SDL_EVENT_MOUSE_BUTTON_DOWN::Word32
+pattern SDL_EVENT_MOUSE_BUTTON_DOWN=(#const SDL_EVENT_MOUSE_BUTTON_DOWN)
+
+pattern SDL_BUTTON_LEFT::Word8
+pattern SDL_BUTTON_LEFT=(#const SDL_BUTTON_LEFT)
+
+pattern SDL_BUTTON_MIDDLE::Word8
+pattern SDL_BUTTON_MIDDLE=(#const SDL_BUTTON_MIDDLE)
+
+pattern SDL_BUTTON_RIGHT::Word8
+pattern SDL_BUTTON_RIGHT=(#const SDL_BUTTON_RIGHT)
 
 pattern SDL_EVENT_KEY_UP::Word32
 pattern SDL_EVENT_KEY_UP=(#const SDL_EVENT_KEY_UP)

@@ -71,7 +71,7 @@ do_request request engine=case request of
         new_engine<-remove_node node_id engine
         return (new_engine,False)
     Create_window {window_id,title,window_width,window_height,red,green,blue,alpha,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
-        window<-SDLF.sdl_create_window this_title window_width window_height (DF.foldl' (\flag this_window_flag->flag DB..|. from_window_flag this_window_flag) 0 window_flag)
+        window<-SDLF.sdl_create_window this_title window_width window_height (DF.foldl' (\this_window_flag single_window_flag->this_window_flag DB..|. from_window_flag single_window_flag) 0 window_flag)
         catch_null window
         catch_false (SDLF.sdl_claim_window_for_gpu_device engine.device window)
         catch_false (SDLF.sdl_set_gpu_swapchain_parameters engine.device window SDLI.sdl_gpu_swapchaincomposition_sdr SDLI.sdl_gpu_presentmode_mailbox)
@@ -107,9 +107,9 @@ do_request request engine=case request of
                 return (engine {shader=shader},False)
             else EE.quick_error "do_request" 2
     Create_pipeline {pipeline_id,maybe_vertex_shader_id,fragment_shader_id,blend_state}->case maybe_vertex_shader_id of
-        Nothing->let (new_shader,fragment_shader)=intmap_update_lookup fragment_shader_id (insert_pipeline_id pipeline_id) engine.shader in do
+        Nothing->let (shader,fragment_shader)=intmap_update_lookup fragment_shader_id (insert_pipeline_id pipeline_id) engine.shader in do
             pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
-            return (engine {pipeline=intmap_insert pipeline_id (Default_pipeline {sdl_pipeline=pipeline,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
+            return (engine {pipeline=intmap_insert pipeline_id (Default_pipeline {sdl_pipeline=pipeline,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=shader},False)
         Just vertex_shader_id->let (shader,vertex_shader)=intmap_update_lookup vertex_shader_id (insert_pipeline_id pipeline_id) engine.shader in let (new_shader,fragment_shader)=intmap_update_lookup fragment_shader_id (insert_pipeline_id pipeline_id) shader in do
             pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
             return (engine {pipeline=intmap_insert pipeline_id (Pipeline {sdl_pipeline=pipeline,vertex_shader_id=vertex_shader_id,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
@@ -240,7 +240,7 @@ lock_widget widget=case widget of
         Picture {half_width,half_height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
         Atlas {clip_request,path,clip,index}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {clip_request=clip_request,path=path,clip=clip,index=index,locked=True}}
         _->widget
-    Text {origin,matrix,half_width,half_height,y,max_y,article,charset}->Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,max_y=max_y,article=article,charset=charset,locked=True}
+    Text {origin,matrix,half_width,half_height,y,min_y,max_y,article,charset}->Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=True}
     Custom_widget {custom}->Custom_widget {custom=custom_widget_lock custom}
     _->widget
 
@@ -279,10 +279,10 @@ for_unlock leaf_id this_widget engine=case this_widget of
                 return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas},Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {width=width,height=height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=False}})
             else return (engine,this_widget)
         _->return (engine,this_widget)
-    Text {origin,matrix,half_width,half_height,y,max_y,article,charset,locked}->if locked
+    Text {origin,matrix,half_width,half_height,y,min_y,max_y,article,charset,locked}->if locked
         then do
             new_engine<-update_font charset engine
-            return (new_engine,Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
+            return (new_engine,Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,min_y=min_y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,this_widget)
     Custom_widget {custom}->do
         (new_engine,new_custom)<-custom_widget_unlock custom engine

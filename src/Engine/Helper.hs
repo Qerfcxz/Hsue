@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Helper where
@@ -12,7 +11,6 @@ import qualified SDL.Function as SDLF
 import qualified Data.ByteString as DBS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
-import qualified Data.Vector as DV
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
@@ -29,16 +27,6 @@ trigger_selector this_maybe bounded=Trigger_selector {maybe_value=if this_maybe 
 
 default_selector::Bool->Bool->Selector ()
 default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
-
-widget_lookup::Widget a b c d e->Widget a b c d e
-widget_lookup this_widget=case this_widget of
-    Group {index,group_widget}->widget_lookup (intmap_lookup index group_widget)
-    Vector {index,vector_widget}->widget_lookup (vector_widget DV.! index)
-    Widget_trigger {widget}->widget_lookup widget
-    Widget_io_trigger {widget}->widget_lookup widget
-    Widget_mix_trigger {widget}->widget_lookup widget
-    Coroutine {index,coroutine_state}->widget_lookup (intmap_lookup index coroutine_state).widget
-    _->this_widget
 
 fit_matrix::Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
 fit_matrix engine window_id widget_width widget_height width height=let window=intmap_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}

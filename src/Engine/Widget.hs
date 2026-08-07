@@ -103,11 +103,11 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
         (new_engine,visual)<-create_visual leaf_id visual_request engine
         return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
-    Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let new_height=height/2 in if load
+    Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=height/2 in if load
         then do
             new_engine<-update_font charset engine
-            return (new_engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=height/2,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,max_y)=do_typesetting new_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=height/2,y=0,max_y=max_y+new_height,article=new_article,charset=charset,locked=False})
+            return (new_engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=half_height,y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=half_height,y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
     Custom_widget_request {custom}->do
         (new_engine,new_custom)<-custom_widget_request custom engine
         return (new_engine,Custom_widget {custom=new_custom})
