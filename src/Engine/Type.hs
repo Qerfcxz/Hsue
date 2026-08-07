@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE OverloadedRecordDot #-}
@@ -210,8 +211,6 @@ data Insert a=Insert {insert_strategy::Insert_strategy,value::a}
 
 data Border a=Border {left::a,down::a,right::a,up::a}
 
-data Data=Data_bool {bool::Bool}|Data_int {int::Int}
-
 data Submit=Submit {maybe_canvas_id::Maybe Int,maybe_album_id::Maybe Int,vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32,parameter::Parameter,vertex_length::DW.Word32,index_length::DW.Word32}
 
 data Uniform=Uniform {size::Int,alignment::Int,write::FP.Ptr ()->IO ()}
@@ -414,6 +413,39 @@ parameter_poke ptr parameter=case parameter of
         FS.pokeByteOff ptr 36 border_down
         FS.pokeByteOff ptr 40 border_right
         FS.pokeByteOff ptr 44 border_up
+
+data Data=Data_bool {bool::Bool}|Data_int {int::Int}
+
+class Convert a b where
+    convert::a->b
+
+instance Convert Data Bool where
+    convert=data_bool_convert
+
+data_bool_convert::Data->Bool
+data_bool_convert store=case store of
+    Data_bool {bool}->bool
+    _->EE.quick_error "data_bool_convert" 0
+
+instance Convert Bool Data where
+    convert=bool_data_convert
+
+bool_data_convert::Bool->Data
+bool_data_convert bool=Data_bool {bool=bool}
+
+instance Convert Data Int where
+    convert=data_int_convert
+
+data_int_convert::Data->Int
+data_int_convert store=case store of
+    Data_int {int}->int
+    _->EE.quick_error "data_int_convert" 0
+
+instance Convert Int Data where
+    convert=int_data_convert
+
+int_data_convert::Int->Data
+int_data_convert int=Data_int {int=int}
 
 class Custom_request a where
     custom_request::a->Engine b c a d e->IO (Engine b c a d e)
