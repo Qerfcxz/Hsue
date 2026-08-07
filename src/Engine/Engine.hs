@@ -6,7 +6,7 @@ module Engine.Engine where
 
 import Engine.Atlas
 import Engine.Event
-import Engine.Request
+import Engine.Operation
 import Engine.Shader
 import Engine.Type
 import Engine.Underlying
@@ -37,14 +37,14 @@ init_engine=do
 quit_engine::IO ()
 quit_engine=SDLF.sdl_quit
 
-create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->IO (Engine a b c d e)
-create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range sampler_create_info=do
+create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a b c d e)
+create_engine custom main_id projection_strategy picture_size vertex_size index_size parameter_size initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range sampler_create_info blend_state=do
     device<-SDLF.sdl_create_gpu_device SDLI.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
     catch_null device
     default_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 0 0 "Default"
     vertex_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 1 1 "Vertex"
     fragment_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_fragment 1 0 0 "Fragment"
-    canvas_graphics_pipeline<-create_canvas_graphics_pipeline device vertex_shader fragment_shader
+    canvas_graphics_pipeline<-create_canvas_graphics_pipeline device vertex_shader fragment_shader blend_state
     texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture device)
     sampler<-FMU.with (from_sampler_create_info sampler_create_info) (return_catch_null . SDLF.sdl_create_gpu_sampler device)
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer device

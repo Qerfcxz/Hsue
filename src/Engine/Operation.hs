@@ -7,10 +7,12 @@ module Engine.Operation where
 
 import Engine.Container
 import Engine.Type
+import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
 import qualified Control.Monad.ST as CMST
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
+import qualified Foreign.Ptr as FP
 
 get_store_widget::(Convert Data f)=>Widget a b c d e->f
 get_store_widget widget=case widget of
@@ -47,6 +49,11 @@ default_update_group_widget::(Widget a b c d e->Widget a b c d e)->Widget a b c 
 default_update_group_widget update widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=intmap_update index update group_widget}
     _->EE.quick_error "default_update_group_widget" 0
+
+get_sdl_pipeline::Pipeline->FP.Ptr SDLT.SDL_GPUGraphicsPipeline
+get_sdl_pipeline pipeline=case pipeline of
+    Pipeline {sdl_pipeline}->sdl_pipeline
+    Default_pipeline {sdl_pipeline}->sdl_pipeline
 
 widget_lookup::Widget a b c d e->Widget a b c d e
 widget_lookup this_widget=case this_widget of

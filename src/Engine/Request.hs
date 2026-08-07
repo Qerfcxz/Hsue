@@ -7,6 +7,7 @@ module Engine.Request where
 import Engine.Atlas
 import Engine.Collector
 import Engine.Container
+import Engine.Operation
 import Engine.Projection
 import Engine.Render
 import Engine.Selector
@@ -28,7 +29,6 @@ import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
-import qualified Data.Word as DW
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -70,14 +70,14 @@ do_request request engine=case request of
     Remove_node {node_id}->do
         new_engine<-remove_node node_id engine
         return (new_engine,False)
-    Create_window {window_id,title,window_width,window_height,red,green,blue,alpha,window_flag}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
+    Create_window {window_id,title,window_width,window_height,red,green,blue,alpha,window_flag,blend_state}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
         window<-SDLF.sdl_create_window this_title window_width window_height (DF.foldl' (\this_window_flag single_window_flag->this_window_flag DB..|. from_window_flag single_window_flag) 0 window_flag)
         catch_null window
         catch_false (SDLF.sdl_claim_window_for_gpu_device engine.device window)
         catch_false (SDLF.sdl_set_gpu_swapchain_parameters engine.device window SDLI.sdl_gpu_swapchaincomposition_sdr SDLI.sdl_gpu_presentmode_mailbox)
         sdl_window_id<-SDLF.sdl_get_window_id window
         catch_zero sdl_window_id
-        graphics_pipeline<-create_graphics_pipeline window engine.device engine.vertex_shader engine.fragment_shader
+        graphics_pipeline<-create_graphics_pipeline window engine.device engine.vertex_shader engine.fragment_shader blend_state
         let new_window_width=fromIntegral window_width in let new_window_height=fromIntegral window_height in return (engine {window=intmap_insert window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=window,graphics_pipeline=graphics_pipeline,design_width=new_window_width,design_height=new_window_height,adaptive_width=new_window_width,adaptive_height=new_window_height,width=new_window_width,height=new_window_height,red=red,green=green,blue=blue,alpha=alpha}) engine.window,window_map=map_insert sdl_window_id window_id engine.window_map},False)
     Remove_window {window_id}->do
         new_engine<-remove_window window_id engine
@@ -161,78 +161,12 @@ do_request request engine=case request of
         new_engine<-custom_request custom engine
         return (new_engine,False)
 
-from_window_flag::Window_flag->DW.Word64
-from_window_flag window_flag=case window_flag of
-    Window_fullscreen->SDLI.sdl_window_fullscreen
-    Window_hidden->SDLI.sdl_window_hidden
-    Window_borderless->SDLI.sdl_window_borderless
-    Window_resizable->SDLI.sdl_window_resizable
-    Window_always_on_top->SDLI.sdl_window_always_on_top
-
 lock_canvas_widget::Widget a b c d e->Widget a b c d e
 lock_canvas_widget widget=case widget of
     Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
         Canvas {width,height,half_width,half_height,canvas_id}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {width=width,height=height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=True}}
         _->EE.quick_error "lock_canvas_widget" 0
     _->EE.quick_error "lock_canvas_widget" 1
-
-from_blend_factor::Blend_factor->DW.Word32
-from_blend_factor blend_factor=case blend_factor of
-    Blend_factor_invalid->SDLI.sdl_gpu_blendfactor_invalid
-    Blend_factor_zero->SDLI.sdl_gpu_blendfactor_zero
-    Blend_factor_one->SDLI.sdl_gpu_blendfactor_one
-    Blend_factor_constant_color->SDLI.sdl_gpu_blendfactor_constant_color
-    Blend_factor_dst_color->SDLI.sdl_gpu_blendfactor_dst_color
-    Blend_factor_src_color->SDLI.sdl_gpu_blendfactor_src_color
-    Blend_factor_dst_alpha->SDLI.sdl_gpu_blendfactor_dst_alpha
-    Blend_factor_src_alpha->SDLI.sdl_gpu_blendfactor_src_alpha
-    Blend_factor_src_alpha_saturate->SDLI.sdl_gpu_blendfactor_src_alpha_saturate
-    Blend_factor_one_minus_constant_color->SDLI.sdl_gpu_blendfactor_one_minus_constant_color
-    Blend_factor_one_minus_dst_color->SDLI.sdl_gpu_blendfactor_one_minus_dst_color
-    Blend_factor_one_minus_src_color->SDLI.sdl_gpu_blendfactor_one_minus_src_color
-    Blend_factor_one_minus_dst_alpha->SDLI.sdl_gpu_blendfactor_one_minus_dst_alpha
-    Blend_factor_one_minus_src_alpha->SDLI.sdl_gpu_blendfactor_one_minus_src_alpha
-
-from_blend_op::Blend_op->DW.Word32
-from_blend_op blend_op=case blend_op of
-    Blend_op_invalid->SDLI.sdl_gpu_blendop_invalid
-    Blend_op_min->SDLI.sdl_gpu_blendop_min
-    Blend_op_max->SDLI.sdl_gpu_blendop_max
-    Blend_op_add->SDLI.sdl_gpu_blendop_add
-    Blend_op_subtract->SDLI.sdl_gpu_blendop_subtract
-    Blend_op_reverse_subtract->SDLI.sdl_gpu_blendop_reverse_subtract
-
-from_color_component_flag::Color_component_flag->DW.Word8
-from_color_component_flag color_component_flag=case color_component_flag of
-    Color_component_r->SDLI.sdl_gpu_colorcomponent_r
-    Color_component_g->SDLI.sdl_gpu_colorcomponent_g
-    Color_component_b->SDLI.sdl_gpu_colorcomponent_b
-    Color_component_a->SDLI.sdl_gpu_colorcomponent_a
-
-from_blend_state::Blend_state->SDLI.SDL_GPUColorTargetBlendState
-from_blend_state blend_state=case blend_state of
-    Blend_state {src_color_blend_factor,dst_color_blend_factor,color_blend_op,src_alpha_blend_factor,dst_alpha_blend_factor,alpha_blend_op,color_write_mask,enable_blend,enable_color_write_mask}->SDLI.SDL_GPUColorTargetBlendState {sdl_src_color_blendfactor=from_blend_factor src_color_blend_factor,sdl_dst_color_blendfactor=from_blend_factor dst_color_blend_factor,sdl_color_blend_op=from_blend_op color_blend_op,sdl_src_alpha_blendfactor=from_blend_factor src_alpha_blend_factor,sdl_dst_alpha_blendfactor=from_blend_factor dst_alpha_blend_factor,sdl_alpha_blend_op=from_blend_op alpha_blend_op,sdl_color_write_mask=DF.foldl' (\this_color_write_mask color_component_flag->this_color_write_mask DB..|. from_color_component_flag color_component_flag) 0 color_write_mask,sdl_enable_blend=FMU.fromBool enable_blend,sdl_enable_color_write_mask=FMU.fromBool enable_color_write_mask}
-
-from_filter::Filter->DW.Word32
-from_filter this_filter=case this_filter of
-    Filter_nearest->SDLI.sdl_gpu_filter_nearest
-    Filter_linear->SDLI.sdl_gpu_filter_linear
-
-from_sampler_mipmap_mode::Sampler_mipmap_mode->DW.Word32
-from_sampler_mipmap_mode sampler_mipmap_mode=case sampler_mipmap_mode of
-    Sampler_mipmap_mode_nearest->SDLI.sdl_gpu_samplermipmapmode_nearest
-    Sampler_mipmap_mode_linear->SDLI.sdl_gpu_samplermipmapmode_linear
-
-from_sampler_address_mode::Sampler_address_mode->DW.Word32
-from_sampler_address_mode sampler_address_mode=case sampler_address_mode of
-    Sampler_address_mode_repeat->SDLI.sdl_gpu_sampleraddressmode_repeat
-    Sampler_address_mode_mirrored_repeat->SDLI.sdl_gpu_sampleraddressmode_mirrored_repeat
-    Sampler_address_mode_clamp_to_edge->SDLI.sdl_gpu_sampleraddressmode_clamp_to_edge
-
-from_sampler_create_info::Sampler_create_info->SDLI.SDL_GPUSamplerCreateInfo
-from_sampler_create_info sampler_create_info=case sampler_create_info of
-    Sampler_create_info {min_filter,mag_filter,mipmap_mode,address_mode_u,address_mode_v,address_mode_w}->
-        SDLI.SDL_GPUSamplerCreateInfo {sdl_min_filter=from_filter min_filter,sdl_mag_filter=from_filter mag_filter,sdl_mipmap_mode=from_sampler_mipmap_mode mipmap_mode,sdl_address_mode_u=from_sampler_address_mode address_mode_u,sdl_address_mode_v=from_sampler_address_mode address_mode_v,sdl_address_mode_w=from_sampler_address_mode address_mode_w}
 
 lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
@@ -322,8 +256,3 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
         SDLF.sdl_end_gpu_render_pass render_pass
         catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
         return (engine {canvas=DIM.insert canvas_id canvas engine.canvas},False)
-
-get_sdl_pipeline::Pipeline->FP.Ptr SDLT.SDL_GPUGraphicsPipeline
-get_sdl_pipeline pipeline=case pipeline of
-    Pipeline {sdl_pipeline}->sdl_pipeline
-    Default_pipeline {sdl_pipeline}->sdl_pipeline
