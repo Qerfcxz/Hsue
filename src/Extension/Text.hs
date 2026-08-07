@@ -33,7 +33,7 @@ scroll_bottom_text widget=case widget of
 
 click_text::FCT.CFloat->FCT.CFloat->Widget a b c d e->Bool
 click_text x y widget=case widget of
-    Text {origin,matrix,half_width,half_height}->let determinant=matrix.x_x*matrix.y_y-matrix.x_y*matrix.y_x in let new_x=x-origin.x-matrix.x in let new_y=y-origin.y-matrix.y in abs ((matrix.y_y*new_x-matrix.x_y*new_y)/determinant)<=half_width&&abs ((matrix.x_x*new_y-matrix.y_x*new_x)/determinant)<=half_height
+    Text {origin,matrix,half_width,half_height}->let determinant=matrix.x_x*matrix.y_y-matrix.x_y*matrix.y_x in let new_x=x-origin.x-matrix.x in let new_y=y-origin.y-matrix.y in abs (matrix.x+(matrix.y_y*new_x-matrix.x_y*new_y)/determinant)<=half_width&&abs (matrix.y+(matrix.x_x*new_y-matrix.y_x*new_x)/determinant)<=half_height
     _->EE.quick_error "click_text" 0
 
 create_text_trigger_request::(Event a->Engine b a c d e->Maybe Int)->(Event a->Engine b a c d e->Widget b a c d e->Widget b a c d e)->Widget_request b a c d e->Widget_request b a c d e

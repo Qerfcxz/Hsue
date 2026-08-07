@@ -12,6 +12,11 @@ import qualified Control.Monad.ST as CMST
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
 
+get_store_widget::(Convert Data f)=>Widget a b c d e->f
+get_store_widget widget=case widget of
+    Store {store}->convert store
+    _->EE.quick_error "get_store_widget" 0
+
 update_store_widget::(Convert Data a,Convert a Data)=>(a->a)->Widget b c d e f->Widget b c d e f
 update_store_widget update widget=case widget of
     Store {store}->Store {store=convert (update (convert store))}

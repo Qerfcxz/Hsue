@@ -101,20 +101,22 @@ loop_event on event_type event engine=case event_type of
         sdl_window_id<-SDLI.sdl_mousebuttonevent_windowid_peek event
         case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on event engine
-            Just window_id->do
-                mouse_button<-SDLI.sdl_mousebuttonevent_button_peek event
-                x<-SDLI.sdl_mousebuttonevent_x_peek event
-                y<-SDLI.sdl_mousebuttonevent_y_peek event
-                loop_event_b on (At {window_id=window_id,action=Click {press=Press_up,mouse_button=to_mouse_button mouse_button,x=x,y=y}}) event engine
+            Just window_id->case intmap_lookup window_id engine.window of
+                Window {adaptive_width,adaptive_height,width,height}->do
+                    mouse_button<-SDLI.sdl_mousebuttonevent_button_peek event
+                    x<-SDLI.sdl_mousebuttonevent_x_peek event
+                    y<-SDLI.sdl_mousebuttonevent_y_peek event
+                    loop_event_b on (At {window_id=window_id,action=Click {press=Press_up,mouse_button=to_mouse_button mouse_button,x=(x-width/2)*(adaptive_width/width),y=(height/2-y)*(adaptive_height/height)}}) event engine
     SDLI.SDL_EVENT_MOUSE_BUTTON_DOWN->do
         sdl_window_id<-SDLI.sdl_mousebuttonevent_windowid_peek event
         case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on event engine
-            Just window_id->do
-                mouse_button<-SDLI.sdl_mousebuttonevent_button_peek event
-                x<-SDLI.sdl_mousebuttonevent_x_peek event
-                y<-SDLI.sdl_mousebuttonevent_y_peek event
-                loop_event_b on (At {window_id=window_id,action=Click {press=Press_down,mouse_button=to_mouse_button mouse_button,x=x,y=y}}) event engine
+            Just window_id->case intmap_lookup window_id engine.window of
+                Window {adaptive_width,adaptive_height,width,height}->do
+                    mouse_button<-SDLI.sdl_mousebuttonevent_button_peek event
+                    x<-SDLI.sdl_mousebuttonevent_x_peek event
+                    y<-SDLI.sdl_mousebuttonevent_y_peek event
+                    loop_event_b on (At {window_id=window_id,action=Click {press=Press_down,mouse_button=to_mouse_button mouse_button,x=(x-width/2)*(adaptive_width/width),y=(height/2-y)*(adaptive_height/height)}}) event engine
     _->if event_type==engine.event_number+1
         then do
             custom<-pop_event event
