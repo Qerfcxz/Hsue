@@ -18,6 +18,7 @@ common warnings
 library
     import:           warnings
     exposed-modules:
+        Extension.Text
         Engine.Animation
         Engine.Atlas
         Engine.Collector
@@ -26,6 +27,7 @@ library
         Engine.Engine
         Engine.Event
         Engine.Helper
+        Engine.Operation
         Engine.Projection
         Engine.Render
         Engine.Request
