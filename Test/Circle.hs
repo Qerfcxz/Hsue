@@ -111,7 +111,12 @@ calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)
 calculate_typesetting row_number article=let total_rows=DF.sum (fmap DSeq.length article) in if row_number>total_rows then let min_down=DF.foldl' (\acc r->case r of {Row {min_down=d}->d; _->acc}) 0 (DF.foldl' (DSeq.><) DSeq.empty article) in let bottom_padding=15 in (0,bottom_padding-min_down) else let base_h=45 in if row_number<20 then (0,base_h) else (0,base_h+fromIntegral (row_number-20)*8)
 
 main_widget_transform::Event ()->My_engine->My_widget->My_widget
-main_widget_transform event engine widget=case widget of
+main_widget_transform event engine widget=case event of
+    At {action=Click {press=Press_down,x,y}}->main_widget_transform_a event engine (fromMaybe widget (click_page x y widget))
+    _->main_widget_transform_a event engine widget
+
+main_widget_transform_a::Event ()->My_engine->My_widget->My_widget
+main_widget_transform_a event engine widget=case widget of
     Vector {vector_widget}->let selected=get_store_widget (vector_widget DV.! 1) in let widget_synced=update_vector_widget 2 (update_store_widget (const selected)) widget in if selected then
         case event of
             Time {}->let scroll_speed=5 in let rot_speed=0.05 in case vector_widget DV.! 0 of
@@ -129,7 +134,6 @@ render_trigger event engine=case event of
     Time {tick}->if tick>0&&mod tick test_time==0
         then let engineWithRequests=create_request Clean_atlas (create_request (Unlock {leaf_id=main_widget_id}) engine) in let (new_engine,_)=update_lookup_projection_widget path_main_widget force_redraw engineWithRequests in new_engine
         else let (bx,by)=engine.custom in let speed=0.01 in let dx=(if DSet.member Key_l engine.key then speed else 0)-(if DSet.member Key_j engine.key then speed else 0) in let dy=(if DSet.member Key_k engine.key then speed else 0)-(if DSet.member Key_i engine.key then speed else 0) in let nx=bx+dx in let ny=by+dy in let engine_moved=engine {custom=(nx,ny),main_id=engine.main_id} in let e1=collect_page Nothing path_main_widget text_collector_id (Self_selector ()) (Index_strategy {seat=0}) engine_moved in let e2=collect_canvas (Point {x=0,y=0}) identity_matrix 1 1 1 1 Nothing canvas_id window_collector_id (Self_selector ()) (Index_strategy {seat=0}) e1 in create_request (Render {window_id=window_id,render_selector=Self_selector (),projection_move=move_window_collector,maybe_sampler_id=Nothing}) (create_request (Shader_canvas {canvas_id=canvas_id,pipeline_id=pipeline_id,uniform=Uniform {size=16,alignment=16,write= \ptr->let p=FP.castPtr ptr::FP.Ptr FCT.CFloat in FS.pokeElemOff p 0 (fromIntegral tick*0.05)>>FS.pokeElemOff p 1 nx>>FS.pokeElemOff p 2 ny>>FS.pokeElemOff p 3 (1200.0/800.0)},maybe_sampler_id=Nothing}) (create_request (Canvas_render {canvas_id=canvas_id,canvas_render_selector=Self_selector (),projection_move=move_text_collector,maybe_sampler_id=Nothing}) e2))
-    At {action=Click {press=Press_down,x,y}}->let (new_engine,_)=update_lookup_projection_widget path_main_widget (\w->fromMaybe w (click_page x y w)) engine in new_engine
     _->engine
 
 main::IO ()
