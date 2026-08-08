@@ -111,20 +111,18 @@ calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat)
 calculate_typesetting row_number article=let total_rows=DF.sum (fmap DSeq.length article) in if row_number>total_rows then let min_down=DF.foldl' (\acc r->case r of {Row {min_down=d}->d; _->acc}) 0 (DF.foldl' (DSeq.><) DSeq.empty article) in let bottom_padding=15 in (0,bottom_padding-min_down) else let base_h=45 in if row_number<20 then (0,base_h) else (0,base_h+fromIntegral (row_number-20)*8)
 
 main_widget_transform::Event ()->My_engine->My_widget->My_widget
-main_widget_transform event engine widget=case event of
-    At {action=Click {press=Press_down,x,y}}->main_widget_transform_a event engine (fromMaybe widget (click_page x y widget))
-    _->main_widget_transform_a event engine widget
-
-main_widget_transform_a::Event ()->My_engine->My_widget->My_widget
-main_widget_transform_a event engine widget=case widget of
-    Vector {vector_widget}->let selected=get_store_widget (vector_widget DV.! 1) in let widget_synced=update_vector_widget 2 (update_store_widget (const selected)) widget in if selected then
-        case event of
-            Time {}->let scroll_speed=5 in let rot_speed=0.05 in case vector_widget DV.! 0 of
-                Vector_visual {arrange,collect_order,size,vector_visual}->let text_visual=vector_visual DV.! 0 in let (tw1,_)=if DSet.member Key_w engine.key then update_text (scroll_text (-scroll_speed)) text_visual else (text_visual,False) in let (tw2,_)=if DSet.member Key_s engine.key then update_text (scroll_text scroll_speed) tw1 else (tw1,False) in let (tw3,_)=if DSet.member Key_a engine.key then update_text scroll_top_text tw2 else (tw2,False) in let (tw4,_)=if DSet.member Key_d engine.key then update_text scroll_bottom_text tw3 else (tw3,False) in let new_vector_visual=vector_visual DV.// [(0,tw4)] in let rotate_theta=(if DSet.member Key_q engine.key then rot_speed else 0)+(if DSet.member Key_e engine.key then -rot_speed else 0) in let new_arrange=if rotate_theta/=0 then let c=cos rotate_theta in let s=sin rotate_theta in let matrix=arrange.matrix in let new_matrix=Matrix {x=matrix.x,y=matrix.y,x_x=matrix.x_x*c+matrix.x_y*s,x_y=matrix.x_y*c-matrix.x_x*s,y_x=matrix.y_x*c+matrix.y_y*s,y_y=matrix.y_y*c-matrix.y_x*s} in arrange {matrix=new_matrix} else arrange in update_vector_widget 0 (const (Vector_visual {arrange=new_arrange,collect_order=collect_order,size=size,vector_visual=new_vector_visual})) widget_synced
+main_widget_transform event engine widget=let clicked_widget=case event of
+        At {action=Click {press=Press_down,x,y}}->fromMaybe widget (click_page x y widget)
+        _->widget
+    in case clicked_widget of
+        Vector {vector_widget}->let selected=view_page_bool clicked_widget False in let widget_synced=update_page_bool (const selected) True clicked_widget in if selected then
+            case event of
+                Time {}->let scroll_speed=5 in let rot_speed=0.05 in case vector_widget DV.! 0 of
+                    Vector_visual {arrange,collect_order,size,vector_visual}->let text_visual=vector_visual DV.! 0 in let (tw1,_)=if DSet.member Key_w engine.key then update_text (scroll_text (-scroll_speed)) text_visual else (text_visual,False) in let (tw2,_)=if DSet.member Key_s engine.key then update_text (scroll_text scroll_speed) tw1 else (tw1,False) in let (tw3,_)=if DSet.member Key_a engine.key then update_text scroll_top_text tw2 else (tw2,False) in let (tw4,_)=if DSet.member Key_d engine.key then update_text scroll_bottom_text tw3 else (tw3,False) in let new_vector_visual=vector_visual DV.// [(0,tw4)] in let rotate_theta=(if DSet.member Key_q engine.key then rot_speed else 0)+(if DSet.member Key_e engine.key then -rot_speed else 0) in let new_arrange=if rotate_theta/=0 then let c=cos rotate_theta in let s=sin rotate_theta in let matrix=arrange.matrix in let new_matrix=Matrix {x=matrix.x,y=matrix.y,x_x=matrix.x_x*c+matrix.x_y*s,x_y=matrix.x_y*c-matrix.x_x*s,y_x=matrix.y_x*c+matrix.y_y*s,y_y=matrix.y_y*c-matrix.y_x*s} in arrange {matrix=new_matrix} else arrange in update_vector_widget 0 (const (Vector_visual {arrange=new_arrange,collect_order=collect_order,size=size,vector_visual=new_vector_visual})) widget_synced
+                    _->widget_synced
                 _->widget_synced
-            _->widget_synced
-        else widget_synced
-    _->widget
+            else widget_synced
+        _->widget
 
 force_redraw::My_widget->My_widget
 force_redraw=id
