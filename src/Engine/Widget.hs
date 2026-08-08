@@ -230,7 +230,7 @@ remove_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id en
 remove_leaf_a::Custom_widget d=>DS.Seq Int->Widget a b c d e->DIM.IntMap (Projection a b c d e)->Int->Engine a b c d e->IO (Engine a b c d e)
 remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
     DS.Empty->all_selector_monad_action remove_widget object (engine {leaf=leaf})
-    _ DS.:|> node_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=intmap_update node_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
+    _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=intmap_update father_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
 
 remove_widget::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 remove_widget widget engine=case widget of
