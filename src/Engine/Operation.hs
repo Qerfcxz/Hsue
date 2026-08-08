@@ -64,3 +64,49 @@ widget_lookup this_widget=case this_widget of
     Widget_mix_trigger {widget}->widget_lookup widget
     Coroutine {index,coroutine_state}->widget_lookup (intmap_lookup index coroutine_state).widget
     _->this_widget
+
+lock_canvas_widget::Widget a b c d e->Widget a b c d e
+lock_canvas_widget widget=case widget of
+    Visual {visual}->Visual {visual=lock_canvas_visual visual}
+    Group_visual {arrange,collect_order,group_visual}->Group_visual {arrange=arrange,collect_order=collect_order,group_visual=fmap lock_canvas_visual group_visual}
+    Vector_visual {arrange,collect_order,size,vector_visual}->Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=fmap lock_canvas_visual vector_visual}
+    _->EE.quick_error "lock_canvas_widget" 0
+
+lock_canvas_visual::Visual->Visual
+lock_canvas_visual visual=case visual of
+    Canvas {arrange,canvas_width,canvas_height,half_width,half_height,canvas_id}->Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=True}
+    _->visual
+
+lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
+lock_widget widget=case widget of
+    Visual {visual}->Visual {visual=lock_visual visual}
+    Group_visual {arrange,collect_order,group_visual}->Group_visual {arrange=arrange,collect_order=collect_order,group_visual=fmap lock_visual group_visual}
+    Vector_visual {arrange,collect_order,size,vector_visual}->Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=fmap lock_visual vector_visual}
+    Custom_widget {custom}->Custom_widget {custom=custom_widget_lock custom}
+    _->widget
+
+lock_visual::Visual->Visual
+lock_visual visual=case visual of
+    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,path}->Picture {arrange=arrange,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}
+    Atlas {arrange,clip_request,path,clip,index}->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=clip,index=index,locked=True}
+    Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=True}
+    _->visual
+
+vector_io_map::Int->(Int->a->b->IO (b,c))->DV.Vector a->DVM.IOVector c->b->IO b
+vector_io_map index action first_vector second_vector value=if index<0 then return value else do
+    (new_value,new_new_value)<-action index (first_vector DV.! index) value
+    DVM.unsafeWrite second_vector index new_new_value
+    vector_io_map (index-1) action first_vector second_vector new_value
+
+combine_arrange::Arrange->Arrange->Arrange
+combine_arrange first_arrange second_arrange=case first_arrange of
+    Arrange {point=first_point,matrix=first_matrix,red=first_red,green=first_green,blue=first_blue,alpha=first_alpha}->case second_arrange of
+        Arrange {point=second_point,matrix=second_matrix,red=second_red,green=second_green,blue=second_blue,alpha=second_alpha}->case first_point of
+            Point {x=first_point_x,y=first_point_y}->case second_point of
+                Point {x=second_point_x,y=second_point_y}->case first_matrix of
+                    Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
+                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let x=second_point_x-first_point_x in let y=second_point_y-first_point_y in Point {x=first_point_x+first_matrix_x+first_matrix_x_x*x+first_matrix_x_y*y,y=first_point_y+first_matrix_y+first_matrix_y_x*x+first_matrix_y_y*y},matrix=Matrix {x=first_matrix_x_x*second_matrix_x+first_matrix_x_y*second_matrix_y+first_matrix_x,y=first_matrix_y_x*second_matrix_x+first_matrix_y_y*second_matrix_y+first_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},red=first_red*second_red,green=first_green*second_green,blue=first_blue*second_blue,alpha=first_alpha*second_alpha}
+
+move_clip::Point->Clip->Clip
+move_clip point clip=case clip of
+    Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->Clip {x=x+point.x,y=y+point.y,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v}

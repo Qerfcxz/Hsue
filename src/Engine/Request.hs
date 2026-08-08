@@ -21,14 +21,17 @@ import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
+import qualified Control.Monad.IO.Class as CMIOC
+import qualified Control.Monad.Trans.State as CMTS
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
-import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
+import qualified Data.Vector as DV
+import qualified Data.Vector.Mutable as DVM
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -130,7 +133,7 @@ do_request request engine=case request of
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
         return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update lock_widget)) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
     Unlock {leaf_id}->do
-        (new_engine,leaf)<-DFC.getCompose (intmap_functor_update leaf_id (functor_update_projection_object (\widget->DFC.Compose {getCompose=for_unlock leaf_id widget engine})) engine.leaf)
+        (leaf,new_engine)<-CMTS.runStateT (intmap_functor_update leaf_id (functor_update_projection_object (all_selector_applicative_update (for_unlock leaf_id))) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
     Load_charset {charset}->do
         new_engine<-update_font charset engine
@@ -161,73 +164,48 @@ do_request request engine=case request of
         new_engine<-custom_request custom engine
         return (new_engine,False)
 
-lock_canvas_widget::Widget a b c d e->Widget a b c d e
-lock_canvas_widget widget=case widget of
-    Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
-        Canvas {width,height,half_width,half_height,canvas_id}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {width=width,height=height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=True}}
-        _->EE.quick_error "lock_canvas_widget" 0
-    _->EE.quick_error "lock_canvas_widget" 1
+for_unlock::Custom_widget d=>Int->Widget a b c d e->CMTS.StateT (Engine a b c d e) IO (Widget a b c d e)
+for_unlock leaf_id widget=case widget of
+    Visual {visual}->do
+        engine<-CMTS.get
+        (new_engine,new_visual)<-CMIOC.liftIO (for_unlock_visual leaf_id visual engine)
+        CMTS.put new_engine
+        return (Visual {visual=new_visual})
+    Group_visual {arrange,collect_order,group_visual}->do
+        engine<-CMTS.get
+        (new_engine,new_group_visual)<-CMIOC.liftIO (intmap_monad_map (\_ visual this_engine->for_unlock_visual leaf_id visual this_engine) group_visual engine)
+        CMTS.put new_engine
+        return (Group_visual {arrange=arrange,collect_order=collect_order,group_visual=new_group_visual})
+    Vector_visual {arrange,collect_order,size,vector_visual}->do
+        engine<-CMTS.get
+        new_vector_visual<-DVM.new size
+        new_engine<-CMIOC.liftIO (vector_io_map (size-1) (\_ visual this_engine->for_unlock_visual leaf_id visual this_engine) vector_visual new_vector_visual engine)
+        new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
+        CMTS.put new_engine
+        return (Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=new_new_vector_visual})
+    Custom_widget {custom}->do
+        engine<-CMTS.get
+        (new_engine,new_custom)<-CMIOC.liftIO (custom_widget_unlock custom engine)
+        CMTS.put new_engine
+        return (Custom_widget {custom=new_custom})
+    _->return widget
 
-lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
-lock_widget widget=case widget of
-    Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
-        Picture {half_width,half_height,min_u,min_v,max_u,max_v,path}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Picture {half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}}
-        Atlas {clip_request,path,clip,index}->Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Atlas {clip_request=clip_request,path=path,clip=clip,index=index,locked=True}}
-        _->widget
-    Text {origin,matrix,half_width,half_height,y,min_y,max_y,article,charset}->Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=True}
-    Custom_widget {custom}->Custom_widget {custom=custom_widget_lock custom}
-    _->widget
-
-for_unlock::Custom_widget d=>Int->Widget a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
-for_unlock leaf_id this_widget engine=case this_widget of
-    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->do
-        (new_engine,new_group_widget)<-DIM.foldlWithKey' (\action this_index widget->intmap_monad_action this_index (for_unlock leaf_id widget) action) (return (engine,DIM.empty)) group_widget
-        return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=new_group_widget})
-    Widget_trigger {next,widget_trigger,widget}->do
-        (new_engine,new_widget)<-for_unlock leaf_id widget engine
-        return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget})
-    Widget_io_trigger {next,widget_io_trigger,widget}->do
-        (new_engine,new_widget)<-for_unlock leaf_id widget engine
-        return (new_engine,Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget})
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->do
-        (new_engine,new_widget)<-for_unlock leaf_id widget engine
-        return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget})
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->do
-        (new_engine,new_coroutine_state)<-DIM.foldlWithKey' (\action this_index single_coroutine_state->intmap_monad_action this_index (\this_engine->for_unlock_coroutine leaf_id this_engine single_coroutine_state) action) (return (engine,DIM.empty)) coroutine_state
-        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
-    Visual {origin,matrix,red,green,blue,alpha,visual}->case visual of
-        Picture {path,locked}->if locked
-            then do
-                (new_engine,new_visual)<-create_picture path engine
-                return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
-            else return (engine,this_widget)
-        Atlas {clip_request,path,index,locked}->if locked
-            then do
-                (new_engine,new_visual)<-create_atlas index clip_request path engine
-                return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=new_visual})
-            else return (engine,this_widget)
-        Canvas {width,height,half_width,half_height,canvas_id,locked}->if locked
-            then do
-                texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
-                temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
-                return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas},Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=Canvas {width=width,height=height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=False}})
-            else return (engine,this_widget)
-        _->return (engine,this_widget)
-    Text {origin,matrix,half_width,half_height,y,min_y,max_y,article,charset,locked}->if locked
+for_unlock_visual::Int->Visual->Engine a b c d e->IO (Engine a b c d e,Visual)
+for_unlock_visual leaf_id visual engine=case visual of
+    Picture {arrange,path,locked}->if locked then create_picture arrange path engine else return (engine,visual)
+    Atlas {arrange,clip_request,path,index,locked}->if locked then create_atlas arrange clip_request path index engine else return (engine,visual)
+    Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset,locked}->if locked
         then do
             new_engine<-update_font charset engine
-            return (new_engine,Text {origin=origin,matrix=matrix,half_width=half_width,half_height=half_height,y=y,min_y=min_y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
-        else return (engine,this_widget)
-    Custom_widget {custom}->do
-        (new_engine,new_custom)<-custom_widget_unlock custom engine
-        return (new_engine,Custom_widget {custom=new_custom})
-    _->return (engine,this_widget)
-
-for_unlock_coroutine::Custom_widget d=>Int->Engine a b c d e->Coroutine_state a b c d e->IO (Engine a b c d e,Coroutine_state a b c d e)
-for_unlock_coroutine leaf_id engine coroutine_state=case coroutine_state of
-    Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->do
-        (new_engine,new_widget)<-for_unlock leaf_id widget engine
-        return (new_engine,Coroutine_state {widget=new_widget,variable=variable,user_variable=user_variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index})
+            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
+        else return (engine,visual)
+    Canvas {arrange,canvas_width,canvas_height,half_width,half_height,canvas_id,locked}->if locked
+        then do
+            texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+            temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+            return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=False})
+        else return (engine,visual)
+    _->return (engine,visual)
 
 update_article::DIM.IntMap Font->Row->Row
 update_article font row=case row of

@@ -7,6 +7,7 @@ module Engine.Widget where
 import Engine.Atlas
 import Engine.Container
 import Engine.Coroutine
+import Engine.Operation
 import Engine.Projection
 import Engine.Selector
 import Engine.Text
@@ -100,14 +101,17 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
         return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
-    Visual_request {origin,matrix,red,green,blue,alpha,visual_request}->do
+    Visual_request {visual_request}->do
         (new_engine,visual)<-create_visual leaf_id visual_request engine
-        return (new_engine,Visual {origin=origin,matrix=matrix,red=red,green=green,blue=blue,alpha=alpha,visual=visual})
-    Text_request {origin,matrix,width,height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=height/2 in if load
-        then do
-            new_engine<-update_font charset engine
-            return (new_engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=half_height,y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {origin=origin,matrix=matrix,half_width=width/2,half_height=half_height,y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
+        return (new_engine,Visual {visual=visual})
+    Group_visual_request {arrange,collect_order,group_visual_request}->do
+        (new_engine,group_visual)<-intmap_monad_map (\_ visual_request this_engine->create_visual leaf_id visual_request this_engine) group_visual_request engine
+        return (new_engine,Group_visual {arrange=arrange,collect_order=collect_order,group_visual=group_visual})
+    Vector_visual_request {arrange,collect_order,vector_visual_request}->let size=DV.length vector_visual_request in do
+        new_vector_visual<-DVM.new size
+        new_engine<-vector_io_map (size-1) (\_ visual_request this_engine->create_visual leaf_id visual_request this_engine) vector_visual_request new_vector_visual engine
+        new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
+        return (new_engine,Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=new_new_vector_visual})
     Custom_widget_request {custom}->do
         (new_engine,new_custom)<-custom_widget_request custom engine
         return (new_engine,Custom_widget {custom=new_custom})
@@ -133,24 +137,29 @@ from_insert_widget_request leaf_id min_index max_index transform insert_widget_r
 
 create_visual::Int->Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
 create_visual leaf_id visual_request engine=case visual_request of
-    Triangle_request {first_point,second_point,third_point}->return (engine,Triangle {first_point=first_point,second_point=second_point,third_point=third_point})
-    Convex_polygon_request {point}->return (engine,Convex_polygon {point=point})
-    Regular_polygon_request {number,radius,angle}->return (engine,Regular_polygon {number=number,radius=radius,angle=angle})
-    Picture_request {path}->create_picture path engine
-    Large_picture_request {path}->do
+    Triangle_request {arrange,first_point,second_point,third_point}->return (engine,Triangle {arrange=arrange,first_point=first_point,second_point=second_point,third_point=third_point})
+    Convex_polygon_request {arrange,point_set}->return (engine,Convex_polygon {arrange=arrange,point_set=point_set})
+    Regular_polygon_request {arrange,number,radius,angle}->return (engine,Regular_polygon {arrange=arrange,number=number,radius=radius,angle=angle})
+    Picture_request {arrange,path}->create_picture arrange path engine
+    Large_picture_request {arrange,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
-    Atlas_request {clip_request,path}->create_atlas 0 clip_request path engine
-    Large_atlas_request {clip_request,path}->do
+        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
+    Atlas_request {arrange,clip_request,path}->create_atlas arrange clip_request path 0 engine
+    Large_atlas_request {arrange,clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
-    Animation_request {min_delay,width,height,padding,path}->create_animation min_delay width height padding path engine
-    Canvas_request {width,height,maybe_canvas_id}->do
-        texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
-        temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
+    Animation_request {arrange,min_delay,animation_width,animation_height,padding,path}->create_animation arrange min_delay animation_width animation_height padding path engine
+    Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
+        then do
+            new_engine<-update_font charset engine
+            return (new_engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
+    Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do
+        texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
+        temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=engine.canvas_id,locked=False})
-            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {width=width,height=height,half_width=fromIntegral width/2,half_height=fromIntegral height/2,canvas_id=canvas_id,locked=False})
+            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id,locked=False})
+            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id,locked=False})
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -160,11 +169,11 @@ do_image action path engine=do
     SDLF.sdl_release_gpu_texture engine.device texture
     return (engine {atlas=atlas},action width height left down right up)
 
-create_picture::String->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_picture path engine=do_image (\width height left down right up->Picture {half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
+create_picture::Arrange->String->Engine a b c d e->IO (Engine a b c d e,Visual)
+create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
 
-create_atlas::Int->DS.Seq Clip_request->String->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_atlas index clip_request path engine=do_image (\width height left down right up->Atlas {clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),index=index,locked=False}) path engine
+create_atlas::Arrange->DS.Seq Clip_request->String->Int->Engine a b c d e->IO (Engine a b c d e,Visual)
+create_atlas arrange clip_request path index engine=do_image (\width height left down right up->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),index=index,locked=False}) path engine
 
 create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_atlas_a width height this_x this_y reciprocal_width reciprocal_height clip_request=case clip_request of
@@ -174,8 +183,8 @@ create_large_atlas::FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_large_atlas width height clip_request=case clip_request of
     Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
-create_animation::FCT.CFloat->DW.Word32->DW.Word32->Int->String->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_animation min_delay width height padding path engine=with_string path $ \this_path->do
+create_animation::Arrange->FCT.CFloat->DW.Word32->DW.Word32->Int->String->Engine a b c d e->IO (Engine a b c d e,Visual)
+create_animation arrange min_delay width height padding path engine=with_string path $ \this_path->do
     ptr_animation<-SDLF.img_load_animation this_path
     catch_null ptr_animation
     animation<-FS.peek ptr_animation
@@ -194,7 +203,7 @@ create_animation min_delay width height padding path engine=with_string path $ \
             delay<-DVS.generateM count (fmap (\this_delay->max min_delay (fromIntegral this_delay*millisecond)) . FS.peekElemOff img_delays)
             new_engine<-create_animation_a img_frames width height padding new_width size frame_width frame_height pack_width pack_height width_number number count 0 engine.album_id engine
             SDLF.img_free_animation ptr_animation
-            return (new_engine,Animation {delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,reciprocal_width=1/fromIntegral width,reciprocal_height=1/fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
+            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,reciprocal_width=1/fromIntegral width,reciprocal_height=1/fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
 
 create_animation_a::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->DW.Word32->DW.Word32->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Engine a b c d e->IO (Engine a b c d e)
 create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count index album_id engine=if count<=index then return engine else do
@@ -225,21 +234,26 @@ remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
 
 remove_widget::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 remove_widget widget engine=case widget of
-    Visual {visual}->case visual of
-        Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
-            SDLF.sdl_release_gpu_texture engine.device single_album.texture
-            return (engine {album=album})
-        Large_atlas {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
-            SDLF.sdl_release_gpu_texture engine.device single_album.texture
-            return (engine {album=album})
-        Animation {album_number,album_id}->do
-            new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
-            return (engine {album=new_album})
-        Canvas {canvas_id,locked}->if locked then return engine else let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
-            clean_canvas engine.device single_canvas
-            return (engine {canvas=canvas})
-        _->return engine
+    Visual {visual}->remove_visual visual engine
+    Group_visual {group_visual}->DF.foldlM (flip remove_visual) engine group_visual
+    Vector_visual {vector_visual}->DF.foldlM (flip remove_visual) engine vector_visual
     Custom_widget {custom}->custom_widget_remove custom engine
+    _->return engine
+
+remove_visual::Visual->Engine a b c d e->IO (Engine a b c d e)
+remove_visual visual engine=case visual of
+    Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
+        SDLF.sdl_release_gpu_texture engine.device single_album.texture
+        return (engine {album=album})
+    Large_atlas {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
+        SDLF.sdl_release_gpu_texture engine.device single_album.texture
+        return (engine {album=album})
+    Animation {album_number,album_id}->do
+        new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
+        return (engine {album=new_album})
+    Canvas {canvas_id,locked}->if locked then return engine else let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
+        clean_canvas engine.device single_canvas
+        return (engine {canvas=canvas})
     _->return engine
 
 clean_canvas::FP.Ptr SDLT.SDL_GPUDevice->Canvas->IO ()

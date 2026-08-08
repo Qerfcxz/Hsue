@@ -17,6 +17,7 @@ import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
+import qualified Data.Vector as DV
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
@@ -119,10 +120,15 @@ for_canvas_widget_render_a projection_path selector engine action=selector_monad
 
 for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render_b widget action engine=case widget of
-    Visual {visual}->case visual of
-        Canvas {half_width,half_height,canvas_id,locked}->if locked then EE.quick_error "for_canvas_widget_render_b" 0 else action half_width half_height canvas_id engine
-        _->EE.quick_error "for_canvas_widget_render_b" 1
-    _->EE.quick_error "for_canvas_widget_render_b" 2
+    Visual {visual}->for_canvas_widget_render_c visual action engine
+    Group_visual {collect_order,group_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (intmap_lookup index group_visual) action this_engine) engine collect_order
+    Vector_visual {collect_order,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! index) action this_engine) engine collect_order
+    _->EE.quick_error "for_canvas_widget_render_b" 0
+
+for_canvas_widget_render_c::Visual->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
+for_canvas_widget_render_c visual action engine=case visual of
+    Canvas {half_width,half_height,canvas_id,locked}->if locked then EE.quick_error "for_canvas_widget_render_c" 0 else action half_width half_height canvas_id engine
+    _->return engine
 
 update_buffer::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUTransferBuffer->Int->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO Bool
 update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer transfer_buffer vertex_size index_size parameter_size vertex index parameter=let vertex_length=DS.length vertex in let index_length=DS.length index in let parameter_length=DS.length parameter in if vertex_length==0||index_length==0||parameter_length==0 then return False else let unit_vertex=FS.sizeOf (undefined::Vertex) in let unit_index=FS.sizeOf (undefined::DW.Word32) in let unit_parameter=FS.sizeOf (undefined::Parameter) in let new_vertex_size=vertex_length*unit_vertex in let new_index_size=index_length*unit_index in let new_parameter_size=parameter_length*unit_parameter in if vertex_size<new_vertex_size||index_size<new_index_size||parameter_size<new_parameter_size then EE.quick_error "update_buffer" 0 else do

@@ -68,6 +68,14 @@ intmap_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
     _->EE.quick_error "intmap_functor_update_a" 0
 
+intmap_monad_map::Monad c=>(Int->a->b->c (b,d))->DIM.IntMap a->b->c (b,DIM.IntMap d)
+intmap_monad_map action intmap value=DIM.foldlWithKey' (\this_action index this_value->this_action>>=intmap_monad_map_a index action this_value) (pure (value,DIM.empty)) intmap
+
+intmap_monad_map_a::Monad c=>Int->(Int->a->b->c (b,d))->a->(b,DIM.IntMap d)->c (b,DIM.IntMap d)
+intmap_monad_map_a index action first_value (second_value,intmap)=do
+    (new_second_value,new_first_value)<-action index first_value second_value
+    return (new_second_value,intmap_insert index new_first_value intmap)
+
 intmap_applicative_action_safe::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
 intmap_applicative_action_safe action intmap=DIM.traverseWithKey (\key value->intmap_applicative_action_a key action intmap value)
 
