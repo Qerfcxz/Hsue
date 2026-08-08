@@ -41,21 +41,10 @@ create_page_request next logic page_request=case page_request of
 create_page_request_a::(Event a->Engine b a c d e->Widget b a c d e->Widget b a c d e)->Event a->Engine b a c d e->Widget b a c d e->(Widget b a c d e,Engine b a c d e->Engine b a c d e)
 create_page_request_a logic event engine widget=(logic event engine widget,id)
 
-view_page_bool::Widget a b c d e->Bool->Bool
-view_page_bool this_widget which=case this_widget of
-    Widget_trigger {widget}->case widget of
-        Vector {vector_widget}->case vector_widget DV.! (if which then 2 else 1) of
-            Store {store}->convert store
-            _->EE.quick_error "view_page_bool" 0
-        _->EE.quick_error "view_page_bool" 1
-    _->EE.quick_error "view_page_bool" 2
-
 click_page::FCT.CFloat->FCT.CFloat->Widget a b c d e->Maybe (Widget a b c d e)
-click_page x y this_widget=case this_widget of
-    Widget_trigger {next,widget_trigger,widget}->case widget of
-        Vector {vector_widget}->Just (Widget_trigger {next=next,widget_trigger=widget_trigger,widget=update_vector_widget 1 (update_store_widget (const (click_page_a x y (vector_widget DV.! 0)))) widget})
-        _->EE.quick_error "click_page" 0
-    _->EE.quick_error "click_page" 1
+click_page x y widget=case widget of
+    Vector {vector_widget}->Just (update_vector_widget 1 (update_store_widget (const (click_page_a x y (vector_widget DV.! 0)))) widget)
+    _->EE.quick_error "click_page" 0
 
 click_page_a::FCT.CFloat->FCT.CFloat->Widget a b c d e->Bool
 click_page_a x y widget=case widget of
@@ -65,10 +54,15 @@ click_page_a x y widget=case widget of
         _->EE.quick_error "click_page_a" 0
     _->EE.quick_error "click_page_a" 1
 
+view_page_bool::Widget a b c d e->Bool->Bool
+view_page_bool widget which=case widget of
+    Vector {vector_widget}->case vector_widget DV.! (if which then 2 else 1) of
+        Store {store}->convert store
+        _->EE.quick_error "view_page_bool" 0
+    _->EE.quick_error "view_page_bool" 1
+
 update_page_bool::(Bool->Bool)->Bool->Widget a b c d e->Widget a b c d e
-update_page_bool update which this_widget=case this_widget of
-    Widget_trigger {next,widget_trigger,widget}->let index=if which then 2 else 1 in Widget_trigger {next=next,widget_trigger=widget_trigger,widget=update_vector_widget index (update_store_widget update) widget}
-    _->EE.quick_error "update_page_bool" 0
+update_page_bool update which widget=let index=if which then 2 else 1 in update_vector_widget index (update_store_widget update) widget
 
 view_page::Widget a b c d e->Widget a b c d e
 view_page this_widget=case this_widget of
