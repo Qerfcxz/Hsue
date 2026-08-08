@@ -7,7 +7,6 @@ module Engine.Widget where
 import Engine.Atlas
 import Engine.Container
 import Engine.Coroutine
-import Engine.Operation
 import Engine.Projection
 import Engine.Selector
 import Engine.Text

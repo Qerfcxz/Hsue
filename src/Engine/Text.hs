@@ -11,6 +11,7 @@ import Engine.Underlying
 import qualified MSDF.Function as MSDFF
 import qualified MSDF.Type as MSDFT
 import qualified SDL.Function as SDLF
+import qualified Error.Error as EE
 import qualified Data.Char as DC
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
@@ -114,3 +115,18 @@ update_font_d x y reciprocal_width reciprocal_height msdf_glyph msdf_count index
     single_msdf_glyph<-FS.peekElemOff msdf_glyph index
     case single_msdf_glyph of
         MSDFT.MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_left,msdf_plane_down,msdf_plane_right,msdf_plane_up,msdf_atlas_left,msdf_atlas_down,msdf_atlas_right,msdf_atlas_up}->update_font_d x y reciprocal_width reciprocal_height msdf_glyph msdf_count (index+1) (DIM.insert (fromIntegral msdf_unicode) (Glyph {advance=msdf_advance,left=msdf_plane_left,down=msdf_plane_down,right=msdf_plane_right,up=msdf_plane_up,min_u=(x+msdf_atlas_left)*reciprocal_width,min_v=(y+msdf_atlas_down)*reciprocal_height,max_u=(x+msdf_atlas_right)*reciprocal_width,max_v=(y+msdf_atlas_up)*reciprocal_height}) glyph)
+
+scroll_text::FCT.CFloat->Visual->Visual
+scroll_text scroll visual=case visual of
+    Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y (min (max min_y max_y) (current_y+scroll)),min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
+    _->EE.quick_error "scroll_text" 0
+
+scroll_top_text::Visual->Visual
+scroll_top_text visual=case visual of
+    Text {arrange,half_width,half_height,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=min_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
+    _->EE.quick_error "scroll_top_text" 0
+
+scroll_bottom_text::Visual->Visual
+scroll_bottom_text visual=case visual of
+    Text {arrange,half_width,half_height,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y max_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
+    _->EE.quick_error "scroll_bottom_text" 0

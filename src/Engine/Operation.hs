@@ -26,18 +26,18 @@ update_store_widget update widget=case widget of
 
 update_vector_widget::Int->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 update_vector_widget this_index update widget=case widget of
-    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (transform_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index (update (vector_widget DV.! this_index))) vector_widget)}
+    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index (update (vector_widget DV.! this_index))) vector_widget)}
     _->EE.quick_error "update_vector_widget" 0
 
 default_update_vector_widget::(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 default_update_vector_widget update widget=case widget of
-    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (transform_vector_widget (\this_vector_widget->DVM.write this_vector_widget index (update (vector_widget DV.! index))) vector_widget)}
+    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget index (update (vector_widget DV.! index))) vector_widget)}
     _->EE.quick_error "default_update_vector_widget" 0
 
-transform_vector_widget::DVM.PrimMonad a=>(DVM.MVector (DVM.PrimState a) (Widget b c d e f)->a ())->DV.Vector (Widget b c d e f)->a (DV.Vector (Widget b c d e f))
-transform_vector_widget function vector_widget=do
+action_vector_widget::DVM.PrimMonad a=>(DVM.MVector (DVM.PrimState a) (Widget b c d e f)->a ())->DV.Vector (Widget b c d e f)->a (DV.Vector (Widget b c d e f))
+action_vector_widget action vector_widget=do
     new_vector_widget<-DV.thaw vector_widget
-    function new_vector_widget
+    action new_vector_widget
     DV.unsafeFreeze new_vector_widget
 
 update_group_widget::Int->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
@@ -91,22 +91,3 @@ lock_visual visual=case visual of
     Atlas {arrange,clip_request,path,clip,index}->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=clip,index=index,locked=True}
     Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=True}
     _->visual
-
-vector_io_map::Int->(Int->a->b->IO (b,c))->DV.Vector a->DVM.IOVector c->b->IO b
-vector_io_map index action first_vector second_vector value=if index<0 then return value else do
-    (new_value,new_new_value)<-action index (first_vector DV.! index) value
-    DVM.unsafeWrite second_vector index new_new_value
-    vector_io_map (index-1) action first_vector second_vector new_value
-
-combine_arrange::Arrange->Arrange->Arrange
-combine_arrange first_arrange second_arrange=case first_arrange of
-    Arrange {point=first_point,matrix=first_matrix,red=first_red,green=first_green,blue=first_blue,alpha=first_alpha}->case second_arrange of
-        Arrange {point=second_point,matrix=second_matrix,red=second_red,green=second_green,blue=second_blue,alpha=second_alpha}->case first_point of
-            Point {x=first_point_x,y=first_point_y}->case second_point of
-                Point {x=second_point_x,y=second_point_y}->case first_matrix of
-                    Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
-                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let x=second_point_x-first_point_x in let y=second_point_y-first_point_y in Point {x=first_point_x+first_matrix_x+first_matrix_x_x*x+first_matrix_x_y*y,y=first_point_y+first_matrix_y+first_matrix_y_x*x+first_matrix_y_y*y},matrix=Matrix {x=first_matrix_x_x*second_matrix_x+first_matrix_x_y*second_matrix_y+first_matrix_x,y=first_matrix_y_x*second_matrix_x+first_matrix_y_y*second_matrix_y+first_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},red=first_red*second_red,green=first_green*second_green,blue=first_blue*second_blue,alpha=first_alpha*second_alpha}
-
-move_clip::Point->Clip->Clip
-move_clip point clip=case clip of
-    Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->Clip {x=x+point.x,y=y+point.y,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v}

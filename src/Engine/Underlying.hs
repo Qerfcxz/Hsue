@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Underlying where
 
@@ -11,6 +12,8 @@ import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
+import qualified Data.Vector as DV
+import qualified Data.Vector.Mutable as DVM
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -47,6 +50,25 @@ seq_poke_array_a size value ptr=do
 
 triple_reverse::(a,b,c)->(c,b,a)
 triple_reverse (a,b,c)=(c,b,a)
+
+vector_io_map::Int->(Int->a->b->IO (b,c))->DV.Vector a->DVM.IOVector c->b->IO b
+vector_io_map index action first_vector second_vector value=if index<0 then return value else do
+    (new_value,new_new_value)<-action index (first_vector DV.! index) value
+    DVM.unsafeWrite second_vector index new_new_value
+    vector_io_map (index-1) action first_vector second_vector new_value
+
+move_clip::Point->Clip->Clip
+move_clip point clip=case clip of
+    Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->Clip {x=x+point.x,y=y+point.y,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v}
+
+combine_arrange::Arrange->Arrange->Arrange
+combine_arrange first_arrange second_arrange=case first_arrange of
+    Arrange {point=first_point,matrix=first_matrix,red=first_red,green=first_green,blue=first_blue,alpha=first_alpha}->case second_arrange of
+        Arrange {point=second_point,matrix=second_matrix,red=second_red,green=second_green,blue=second_blue,alpha=second_alpha}->case first_point of
+            Point {x=first_point_x,y=first_point_y}->case second_point of
+                Point {x=second_point_x,y=second_point_y}->case first_matrix of
+                    Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
+                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let x=second_point_x-first_point_x in let y=second_point_y-first_point_y in Point {x=first_point_x+first_matrix_x+first_matrix_x_x*x+first_matrix_x_y*y,y=first_point_y+first_matrix_y+first_matrix_y_x*x+first_matrix_y_y*y},matrix=Matrix {x=first_matrix_x_x*second_matrix_x+first_matrix_x_y*second_matrix_y+first_matrix_x,y=first_matrix_y_x*second_matrix_x+first_matrix_y_y*second_matrix_y+first_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},red=first_red*second_red,green=first_green*second_green,blue=first_blue*second_blue,alpha=first_alpha*second_alpha}
 
 to_extended::FCT.CFloat->Extended
 to_extended number=Finite {number=number}

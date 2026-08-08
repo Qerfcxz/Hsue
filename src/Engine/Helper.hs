@@ -28,6 +28,9 @@ trigger_selector this_maybe bounded=Trigger_selector {maybe_value=if this_maybe 
 default_selector::Bool->Bool->Selector ()
 default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
 
+origin::Point
+origin=Point {x=0,y=0}
+
 fit_matrix::Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
 fit_matrix engine window_id widget_width widget_height width height=let window=intmap_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
