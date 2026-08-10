@@ -2,6 +2,8 @@
 
 module SDL.Type where
 
+data SDL_Cursor
+
 data SDL_Window
 
 data SDL_GPUDevice

@@ -193,5 +193,14 @@ foreign import ccall unsafe "SDL_RegisterEvents"
 foreign import ccall unsafe "SDL_GetWindowID"
     sdl_get_window_id::Ptr SDL_Window->IO Word32
 
+foreign import ccall unsafe "SDL_CreateSystemCursor"
+    sdl_create_system_cursor::Word32->IO (Ptr SDL_Cursor)
+
+foreign import ccall unsafe "SDL_SetCursor"
+    sdl_set_cursor::Ptr SDL_Cursor->IO CBool
+
+foreign import ccall unsafe "SDL_DestroyCursor"
+    sdl_destroy_cursor::Ptr SDL_Cursor->IO ()
+
 foreign import ccall "wrapper"
     wrapper::(Ptr ()->Word32->Word64->IO Word64)->IO (FunPtr (Ptr ()->Word32->Word64->IO Word64))

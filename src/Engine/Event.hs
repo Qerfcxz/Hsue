@@ -117,6 +117,17 @@ loop_event on event_type event engine=case event_type of
                     x<-SDLI.sdl_mousebuttonevent_x_peek event
                     y<-SDLI.sdl_mousebuttonevent_y_peek event
                     loop_event_b on (At {window_id=window_id,action=Click {press=Press_down,mouse_button=to_mouse_button mouse_button,x=(x-width/2)*(adaptive_width/width),y=(height/2-y)*(adaptive_height/height)}}) event engine
+    SDLI.SDL_EVENT_MOUSE_MOTION->do
+        sdl_window_id<-SDLI.sdl_mousemotionevent_windowid_peek event
+        case DM.lookup sdl_window_id engine.window_map of
+            Nothing->loop_event_a on event engine
+            Just window_id->case intmap_lookup window_id engine.window of
+                Window {adaptive_width,adaptive_height,width,height}->do
+                    x<-SDLI.sdl_mousemotionevent_x_peek event
+                    y<-SDLI.sdl_mousemotionevent_y_peek event
+                    xrel<-SDLI.sdl_mousemotionevent_xrel_peek event
+                    yrel<-SDLI.sdl_mousemotionevent_yrel_peek event
+                    loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Move {x=(x-width/2)*scale_x,y=(height/2-y)*scale_y,delta_x=xrel*scale_x,delta_y=(-yrel)*scale_y}}) event engine
     _->if event_type==engine.event_number+1
         then do
             custom<-pop_event event

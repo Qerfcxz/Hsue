@@ -122,7 +122,7 @@ for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engi
 for_canvas_widget_render_b widget action engine=case widget of
     Visual {visual}->for_canvas_widget_render_c visual action engine
     Group_visual {collect_order,group_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (intmap_lookup index group_visual) action this_engine) engine collect_order
-    Vector_visual {collect_order,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! index) action this_engine) engine collect_order
+    Vector_visual {collect_order,size,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! catch_out 0 size index) action this_engine) engine collect_order
     _->EE.quick_error "for_canvas_widget_render_b" 0
 
 for_canvas_widget_render_c::Visual->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)

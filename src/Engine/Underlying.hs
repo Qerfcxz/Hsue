@@ -19,6 +19,9 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
+catch_out::Ord a=>a->a->a->a
+catch_out min_value max_value value=if value<min_value||max_value<=value then EE.quick_error "catch_out" 0 else value
+
 catch_false::IO FCT.CBool->IO ()
 catch_false io=do
     value<-io

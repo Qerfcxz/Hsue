@@ -8,6 +8,7 @@ import Engine.Container
 import Engine.Projection
 import Engine.Selector
 import Engine.Type
+import Engine.Underlying
 import qualified Error.Error as EE
 import qualified Control.Monad.ST as CMST
 import qualified Data.Foldable as DF
@@ -285,9 +286,9 @@ step_coroutine_a linear_coroutine main_index clone_index this_code_index program
     Linear_clone {int_index,clone_number,int}->do
         DVUM.write variable (int_index+clone_index) int
         let new_code_index=this_code_index+1 in let (new_program_counter,new_newborn_main_index_group,new_program_counter_index)=run_clone int clone_number (clone_index+clone_number) new_code_index program_counter_index newborn_main_index_group program_counter in step_coroutine_a linear_coroutine main_index clone_index new_code_index new_program_counter_index index_group_index survived_main_index_group new_newborn_main_index_group main_index_group index_group new_program_counter layout user_variable variable updater update event engine widget
-    Linear_wake_group {int_index,dynamic_int,int}->let new_int=dynamic_int.dynamic_int (user_variable_getter user_variable layout clone_index) event engine widget in if new_int<0||int<=new_int then EE.quick_error "step_coroutine_a" 0 else do
-        new_new_int<-DVUM.read variable (int_index+clone_index)
-        let new_index_group_index=new_new_int+new_int in let (new_index_group,maybe_single_index_group)=intmap_delete_maybe_lookup new_index_group_index index_group in case maybe_single_index_group of
+    Linear_wake_group {int_index,dynamic_int,int}->do
+        new_int<-DVUM.read variable (int_index+clone_index)
+        let new_index_group_index=new_int+catch_out 0 int (dynamic_int.dynamic_int (user_variable_getter user_variable layout clone_index) event engine widget) in let (new_index_group,maybe_single_index_group)=intmap_delete_maybe_lookup new_index_group_index index_group in case maybe_single_index_group of
             Nothing->step_coroutine_a linear_coroutine main_index clone_index (this_code_index+1) program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget
             Just single_index_group->do
                 (new_widget,new_engine,new_update,new_variable,new_user_variable,new_program_counter,new_new_index_group,new_survived_main_index_group,new_new_index_group_index,new_program_counter_index)<-step_coroutine linear_coroutine program_counter_index index_group_index DS.empty DS.empty single_index_group new_index_group program_counter layout user_variable variable updater DS.empty event engine widget
@@ -306,7 +307,7 @@ step_coroutine_a linear_coroutine main_index clone_index this_code_index program
         DVUM.write variable (first_int_index+clone_index) index_group_index
         DVUM.write variable (second_int_index+clone_index) int
         let (new_program_counter,new_index_group,new_program_counter_index,new_newborn_main_index_group)=run_create_active_group group_code_index int 0 clone_index program_counter_index index_group_index newborn_main_index_group index_group program_counter in step_coroutine_a linear_coroutine main_index clone_index (this_code_index+1) new_program_counter_index (index_group_index+int) survived_main_index_group new_newborn_main_index_group main_index_group new_index_group new_program_counter layout user_variable variable updater update event engine widget
-    Linear_dynamic_clone {int_index,code_index,clone_number,dynamic_int,int}->let new_int=dynamic_int.dynamic_int (user_variable_getter user_variable layout clone_index) event engine widget-1 in if new_int<0 then step_coroutine_a linear_coroutine main_index clone_index code_index program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget else if int<new_int then EE.quick_error "step_coroutine_a" 1 else do
+    Linear_dynamic_clone {int_index,code_index,clone_number,dynamic_int,int}->let new_int=dynamic_int.dynamic_int (user_variable_getter user_variable layout clone_index) event engine widget-1 in if new_int<0 then step_coroutine_a linear_coroutine main_index clone_index code_index program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget else if int<new_int then EE.quick_error "step_coroutine_a" 0 else do
         DVUM.write variable (int_index+clone_index) new_int
         let new_code_index=this_code_index+1 in let (new_program_counter,new_newborn_main_index_group,new_program_counter_index)=run_clone new_int clone_number (clone_index+clone_number) new_code_index program_counter_index newborn_main_index_group program_counter in step_coroutine_a linear_coroutine main_index clone_index new_code_index new_program_counter_index index_group_index survived_main_index_group new_newborn_main_index_group main_index_group index_group new_program_counter layout user_variable variable updater update event engine widget
 

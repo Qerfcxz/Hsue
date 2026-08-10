@@ -136,6 +136,7 @@ from_insert_widget_request leaf_id min_index max_index transform insert_widget_r
 
 create_visual::Int->Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
 create_visual leaf_id visual_request engine=case visual_request of
+    Rectangle_request {arrange,rectangle_width,rectangle_height}->return (engine,Rectangle {arrange=arrange,half_width=rectangle_width/2,half_height=rectangle_height/2})
     Triangle_request {arrange,first_point,second_point,third_point}->return (engine,Triangle {arrange=arrange,first_point=first_point,second_point=second_point,third_point=third_point})
     Convex_polygon_request {arrange,point_set}->return (engine,Convex_polygon {arrange=arrange,point_set=point_set})
     Regular_polygon_request {arrange,number,radius,angle}->return (engine,Regular_polygon {arrange=arrange,number=number,radius=radius,angle=angle})
@@ -146,7 +147,7 @@ create_visual leaf_id visual_request engine=case visual_request of
     Atlas_request {arrange,clip_request,path}->create_atlas arrange clip_request path 0 engine
     Large_atlas_request {arrange,clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=DVS.fromListN (DS.length clip_request) (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
+        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),size=size,album_id=engine.album_id,index=0})
     Animation_request {arrange,min_delay,animation_width,animation_height,padding,path}->create_animation arrange min_delay animation_width animation_height padding path engine
     Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
@@ -172,7 +173,7 @@ create_picture::Arrange->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
 
 create_atlas::Arrange->DS.Seq Clip_request->String->Int->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_atlas arrange clip_request path index engine=do_image (\width height left down right up->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=DVS.fromListN (DS.length clip_request) (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),index=index,locked=False}) path engine
+create_atlas arrange clip_request path index engine=do_image (\width height left down right up->let size=DS.length clip_request in Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=DVS.fromListN size (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),size=size,index=index,locked=False}) path engine
 
 create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_atlas_a width height this_x this_y reciprocal_width reciprocal_height clip_request=case clip_request of

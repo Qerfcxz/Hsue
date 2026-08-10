@@ -9,6 +9,8 @@ import Engine.Type
 import Engine.Underlying
 import qualified SDL.Function as SDLF
 import qualified Data.ByteString as DBS
+import qualified Data.Foldable as DF
+import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
@@ -27,6 +29,9 @@ trigger_selector this_maybe bounded=Trigger_selector {maybe_value=if this_maybe 
 
 default_selector::Bool->Bool->Selector ()
 default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
+
+simple_calculate_typesetting::FCT.CFloat->FCT.CFloat->Int->DS.Seq (DS.Seq Row)->(FCT.CFloat,FCT.CFloat)
+simple_calculate_typesetting height line_spacing row_number article=let new_row_number=DF.sum (fmap DS.length article) in if new_row_number==0||new_row_number<row_number then (0,0) else if row_number==1 then (0,(height-fromIntegral (new_row_number-1)*line_spacing)/2) else (0,line_spacing)
 
 origin::Point
 origin=Point {x=0,y=0}

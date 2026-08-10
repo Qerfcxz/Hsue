@@ -7,6 +7,7 @@ module Engine.Operation where
 
 import Engine.Container
 import Engine.Type
+import Engine.Underlying
 import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
 import qualified Control.Monad.ST as CMST
@@ -26,12 +27,12 @@ update_store_widget update widget=case widget of
 
 update_vector_widget::Int->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 update_vector_widget this_index update widget=case widget of
-    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index (update (vector_widget DV.! this_index))) vector_widget)}
+    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget (catch_out 0 size this_index) (update (vector_widget DV.! this_index))) vector_widget)}
     _->EE.quick_error "update_vector_widget" 0
 
 default_update_vector_widget::(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 default_update_vector_widget update widget=case widget of
-    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget index (update (vector_widget DV.! index))) vector_widget)}
+    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget (catch_out 0 size index) (update (vector_widget DV.! index))) vector_widget)}
     _->EE.quick_error "default_update_vector_widget" 0
 
 action_vector_widget::DVM.PrimMonad a=>(DVM.MVector (DVM.PrimState a) (Widget b c d e f)->a ())->DV.Vector (Widget b c d e f)->a (DV.Vector (Widget b c d e f))
@@ -58,7 +59,7 @@ get_sdl_pipeline pipeline=case pipeline of
 widget_lookup::Widget a b c d e->Widget a b c d e
 widget_lookup this_widget=case this_widget of
     Group {index,group_widget}->widget_lookup (intmap_lookup index group_widget)
-    Vector {index,vector_widget}->widget_lookup (vector_widget DV.! index)
+    Vector {index,size,vector_widget}->widget_lookup (vector_widget DV.! catch_out 0 size index)
     Widget_trigger {widget}->widget_lookup widget
     Widget_io_trigger {widget}->widget_lookup widget
     Widget_mix_trigger {widget}->widget_lookup widget
@@ -88,6 +89,6 @@ lock_widget widget=case widget of
 lock_visual::Visual->Visual
 lock_visual visual=case visual of
     Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,path}->Picture {arrange=arrange,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}
-    Atlas {arrange,clip_request,path,clip,index}->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=clip,index=index,locked=True}
+    Atlas {arrange,clip_request,path,clip,size,index}->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=clip,size=size,index=index,locked=True}
     Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=True}
     _->visual

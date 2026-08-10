@@ -32,6 +32,7 @@ import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
+import qualified Data.Word as DW
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -129,6 +130,9 @@ do_request request engine=case request of
     Remove_sampler {sampler_id}->let (sampler,single_sampler)=intmap_delete_lookup sampler_id engine.sampler in do
         SDLF.sdl_release_gpu_sampler engine.device single_sampler
         return (engine {sampler=sampler},False)
+    Set_system_cursor {system_cursor}->do
+        catch_false (SDLF.sdl_set_cursor (map_lookup system_cursor engine.system_cursor_map))
+        return (engine,False)
     Clean_atlas->let initial_album=intmap_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas engine.width engine.height) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
         return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update lock_widget)) engine.leaf,font=DIM.empty,u=fromIntegral (left+right)*engine.reciprocal_width/2,v=fromIntegral (down+up)*engine.reciprocal_height/2},False)
@@ -163,6 +167,11 @@ do_request request engine=case request of
     Custom_request {custom}->do
         new_engine<-custom_request custom engine
         return (new_engine,False)
+
+from_system_cursor::System_cursor->DW.Word32
+from_system_cursor system_cursor=case system_cursor of
+    System_cursor_default->SDLI.sdl_system_cursor_default
+    System_cursor_pointer->SDLI.sdl_system_cursor_pointer
 
 for_unlock::Custom_widget d=>Int->Widget a b c d e->CMTS.StateT (Engine a b c d e) IO (Widget a b c d e)
 for_unlock leaf_id widget=case widget of

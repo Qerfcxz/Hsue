@@ -784,6 +784,12 @@ sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
 sdl_window_always_on_top::Word64
 sdl_window_always_on_top=(#const SDL_WINDOW_ALWAYS_ON_TOP)
 
+sdl_system_cursor_default::Word32
+sdl_system_cursor_default=(#const SDL_SYSTEM_CURSOR_DEFAULT)
+
+sdl_system_cursor_pointer::Word32
+sdl_system_cursor_pointer=(#const SDL_SYSTEM_CURSOR_POINTER)
+
 sdl_pixelformat_rgba32::Word32
 sdl_pixelformat_rgba32=(#const SDL_PIXELFORMAT_RGBA32)
 
@@ -822,6 +828,21 @@ sdl_mousebuttonevent_x_peek ptr=(#peek SDL_MouseButtonEvent,x) ptr
 
 sdl_mousebuttonevent_y_peek::Ptr ()->IO CFloat
 sdl_mousebuttonevent_y_peek ptr=(#peek SDL_MouseButtonEvent,y) ptr
+
+sdl_mousemotionevent_windowid_peek::Ptr ()->IO Word32
+sdl_mousemotionevent_windowid_peek ptr=(#peek SDL_MouseMotionEvent,windowID) ptr
+
+sdl_mousemotionevent_x_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_x_peek ptr=(#peek SDL_MouseMotionEvent,x) ptr
+
+sdl_mousemotionevent_y_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_y_peek ptr=(#peek SDL_MouseMotionEvent,y) ptr
+
+sdl_mousemotionevent_xrel_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_xrel_peek ptr=(#peek SDL_MouseMotionEvent,xrel) ptr
+
+sdl_mousemotionevent_yrel_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_yrel_peek ptr=(#peek SDL_MouseMotionEvent,yrel) ptr
 
 sdl_keyboardevent_windowid_peek::Ptr ()->IO Word32
 sdl_keyboardevent_windowid_peek ptr=(#peek SDL_KeyboardEvent,windowID) ptr
@@ -867,6 +888,9 @@ pattern SDL_BUTTON_RIGHT=(#const SDL_BUTTON_RIGHT)
 
 pattern SDL_EVENT_KEY_UP::Word32
 pattern SDL_EVENT_KEY_UP=(#const SDL_EVENT_KEY_UP)
+
+pattern SDL_EVENT_MOUSE_MOTION::Word32
+pattern SDL_EVENT_MOUSE_MOTION=(#const SDL_EVENT_MOUSE_MOTION)
 
 pattern SDL_EVENT_KEY_DOWN::Word32
 pattern SDL_EVENT_KEY_DOWN=(#const SDL_EVENT_KEY_DOWN)
