@@ -18,6 +18,9 @@ common warnings
 library
     import:           warnings
     exposed-modules:
+        Extension.Button
+        Extension.Common
+        Extension.Integration
         Extension.Page
         Extension.Type
         Engine.Animation
