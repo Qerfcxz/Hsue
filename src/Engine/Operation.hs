@@ -92,3 +92,16 @@ lock_visual visual=case visual of
     Atlas {arrange,clip_request,path,clip,size,index}->Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=clip,size=size,index=index,locked=True}
     Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=True}
     _->visual
+
+{-# INLINE get_store_widget #-}
+{-# INLINE update_store_widget #-}
+{-# INLINE update_vector_widget #-}
+{-# INLINE default_update_vector_widget #-}
+{-# INLINE action_vector_widget #-}
+{-# INLINE update_group_widget #-}
+{-# INLINE default_update_group_widget #-}
+{-# INLINE get_sdl_pipeline #-}
+{-# INLINE lock_canvas_widget #-}
+{-# INLINE lock_canvas_visual #-}
+{-# INLINE lock_widget #-}
+{-# INLINE lock_visual #-}

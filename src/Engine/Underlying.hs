@@ -90,3 +90,17 @@ nanosecond=1000000000
 
 millisecond::Num a=>a
 millisecond=1000000
+
+{-# INLINE catch_out #-}
+{-# INLINE catch_false #-}
+{-# INLINE catch_zero #-}
+{-# INLINE catch_null #-}
+{-# INLINE return_catch_null #-}
+{-# INLINE triple_reverse #-}
+{-# INLINE move_clip #-}
+{-# INLINE combine_arrange #-}
+{-# INLINE to_extended #-}
+{-# INLINE from_extended #-}
+{-# INLINE mebibyte #-}
+{-# INLINE nanosecond #-}
+{-# INLINE millisecond #-}

@@ -104,3 +104,20 @@ intset_delete key intset=if DIS.member key intset then DIS.delete key intset els
 
 intset_monad_fold::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
 intset_monad_fold transform=DIS.foldr (\key update value->transform key value>>=update) return
+
+{-# INLINE map_lookup #-}
+{-# INLINE map_insert #-}
+{-# INLINE map_delete #-}
+{-# INLINE intmap_lookup #-}
+{-# INLINE intmap_insert #-}
+{-# INLINE intmap_insert_maybe_lookup #-}
+{-# INLINE intmap_delete #-}
+{-# INLINE intmap_delete_lookup #-}
+{-# INLINE intmap_delete_maybe_lookup #-}
+{-# INLINE intmap_update #-}
+{-# INLINE intmap_update_safe #-}
+{-# INLINE intmap_update_lookup #-}
+{-# INLINE intmap_functor_update #-}
+{-# INLINE intmap_functor_update_a #-}
+{-# INLINE intset_insert #-}
+{-# INLINE intset_delete #-}

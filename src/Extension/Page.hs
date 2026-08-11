@@ -87,3 +87,6 @@ maybe_collect_update_page maybe_border projection_path leaf_id selector collect_
 
 collect_page::Custom_widget e=>Maybe (Border FCT.CFloat)->Projection_path->Int->Selector a->Insert_strategy->Engine b c d e f->Engine b c d e f
 collect_page maybe_border projection_path leaf_id selector collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const (collect_a (to_collect engine.u engine.v maybe_border (view_page (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
+
+{-# INLINE view_page_bool #-}
+{-# INLINE update_page_bool #-}

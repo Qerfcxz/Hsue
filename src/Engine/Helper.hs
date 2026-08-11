@@ -65,3 +65,13 @@ quick_create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine
 quick_create_engine state main_id projection_strategy max_picture_size max_vertex_size max_index_size max_parameter_size maybe_interval padding width height font_size pixel_range sampler_create_info blend_state=case maybe_interval of
     Nothing->create_engine state main_id projection_strategy (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) 0 0 0 0 Nothing 0 padding width height font_size pixel_range sampler_create_info blend_state
     Just interval->create_engine state main_id projection_strategy (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) 0 0 0 0 (Just (div nanosecond interval)) 0 padding width height font_size pixel_range sampler_create_info blend_state
+
+{-# INLINE self_selector #-}
+{-# INLINE all_selector #-}
+{-# INLINE trigger_selector #-}
+{-# INLINE default_selector #-}
+{-# INLINE simple_calculate_typesetting #-}
+{-# INLINE origin #-}
+{-# INLINE fit_matrix #-}
+{-# INLINE fit_window_matrix #-}
+{-# INLINE identity_matrix #-}

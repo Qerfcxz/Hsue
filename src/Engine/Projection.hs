@@ -104,3 +104,19 @@ functor_lookup_projection_widget::Functor f=>Projection_path->(Widget a b c d e-
 functor_lookup_projection_widget projection_path update engine=case projection_path of
     Object_path {leaf_id}->fmap (\leaf->engine {leaf=leaf}) (intmap_functor_update leaf_id (functor_update_projection_object update) engine.leaf)
     _->fmap (const engine) (update (lookup_projection_widget projection_path engine))
+
+{-# INLINE create_projection_image #-}
+{-# INLINE create_projection_image_safe #-}
+{-# INLINE remove_projection_image #-}
+{-# INLINE remove_projection_image_safe #-}
+{-# INLINE insert_projection_object #-}
+{-# INLINE update_projection_object #-}
+{-# INLINE functor_update_projection_object #-}
+{-# INLINE lookup_projection #-}
+{-# INLINE lookup_projection_object #-}
+{-# INLINE lookup_projection_image #-}
+{-# INLINE lookup_projection_image_safe #-}
+{-# INLINE lookup_projection_widget #-}
+{-# INLINE update_lookup_projection_widget #-}
+{-# INLINE update_lookup_projection_widget_a #-}
+{-# INLINE functor_lookup_projection_widget #-}

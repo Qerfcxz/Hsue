@@ -68,3 +68,12 @@ msdf_output_peek ptr=do
 
 msdf_output_poke::Ptr MSDF_Output->MSDF_Output->IO ()
 msdf_output_poke _ _=quick_error "msdf_output_poke" 0
+
+{-# INLINE msdf_glyph_size_of #-}
+{-# INLINE msdf_glyph_alignment #-}
+{-# INLINE msdf_glyph_peek #-}
+{-# INLINE msdf_glyph_poke #-}
+{-# INLINE msdf_output_size_of #-}
+{-# INLINE msdf_output_alignment #-}
+{-# INLINE msdf_output_peek #-}
+{-# INLINE msdf_output_poke #-}
