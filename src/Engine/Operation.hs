@@ -27,12 +27,12 @@ update_store_widget update widget=case widget of
 
 update_vector_widget::Int->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 update_vector_widget this_index update widget=case widget of
-    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget (catch_out 0 size this_index) (update (vector_widget DV.! this_index))) vector_widget)}
+    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->let new_index=catch_out 0 size this_index in DVM.write this_vector_widget new_index (update (vector_widget DV.! new_index))) vector_widget)}
     _->EE.quick_error "update_vector_widget" 0
 
 default_update_vector_widget::(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 default_update_vector_widget update widget=case widget of
-    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget (catch_out 0 size index) (update (vector_widget DV.! index))) vector_widget)}
+    Vector {index,size,vector_widget}->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->let new_index=catch_out 0 size index in DVM.write this_vector_widget new_index (update (vector_widget DV.! new_index))) vector_widget)}
     _->EE.quick_error "default_update_vector_widget" 0
 
 action_vector_widget::DVM.PrimMonad a=>(DVM.MVector (DVM.PrimState a) (Widget b c d e f)->a ())->DV.Vector (Widget b c d e f)->a (DV.Vector (Widget b c d e f))

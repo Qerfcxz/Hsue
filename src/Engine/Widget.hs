@@ -37,7 +37,7 @@ from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {lea
 from_same_insert_widget_a::DS.Seq Insert_strategy->Widget a b c d e->Widget a b c d e->Widget a b c d e
 from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_length user_variable_length widget) coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_size user_variable_size widget) coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=layout_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->EE.quick_error "from_same_insert_widget_a" 0
 
 from_same_insert_widget_b::Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
@@ -54,7 +54,7 @@ from_insert_widget leaf_id insert_widget engine=engine {leaf=intmap_update leaf_
 from_insert_widget_a::DS.Seq (Insert (Widget a b c d e))->Widget a b c d e->Widget a b c d e
 from_insert_widget_a insert_widget widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_insert_widget_b min_index max_index id insert_widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_length,user_variable_length,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_length user_variable_length) insert_widget coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_size user_variable_size) insert_widget coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=layout_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->EE.quick_error "from_insert_widget_a" 0
 
 from_insert_widget_b::Int->Int->(Widget a b c d e->f)->DS.Seq (Insert (Widget a b c d e))->DIM.IntMap f->(DIM.IntMap f,Int,Int)
@@ -95,9 +95,9 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (linear_coroutine,layout,variable_length,user_variable_length)=let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in from_coroutine (to_coroutine coroutine_sequence) int in do
-        (new_engine,coroutine_state,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index (init_coroutine_state variable_length user_variable_length) insert_widget_request DIM.empty engine
-        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_length=variable_length,user_variable_length=user_variable_length,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
+    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in let (linear_coroutine,layout,variable_size,user_variable_size)=from_coroutine (to_coroutine coroutine_sequence) int in do
+        (new_engine,coroutine_state,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index (init_coroutine_state variable_size user_variable_size) insert_widget_request DIM.empty engine
+        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=int,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {visual_request}->do
@@ -142,11 +142,11 @@ create_visual leaf_id visual_request engine=case visual_request of
     Regular_polygon_request {arrange,number,radius,angle}->return (engine,Regular_polygon {arrange=arrange,number=number,radius=radius,angle=angle})
     Picture_request {arrange,path}->create_picture arrange path engine
     Large_picture_request {arrange,path}->do
-        (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
+        (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
     Atlas_request {arrange,clip_request,path}->create_atlas arrange clip_request path 0 engine
     Large_atlas_request {arrange,clip_request,path}->do
-        (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
+        (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),size=size,album_id=engine.album_id,index=0})
     Animation_request {arrange,min_delay,animation_width,animation_height,padding,path}->create_animation arrange min_delay animation_width animation_height padding path engine
     Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
@@ -163,7 +163,7 @@ create_visual leaf_id visual_request engine=case visual_request of
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
-    (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.picture_size path
+    (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
     let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
     copy_texture engine.device texture engine.texture left down width height
     SDLF.sdl_release_gpu_texture engine.device texture
@@ -190,7 +190,7 @@ create_animation arrange min_delay width height padding path engine=with_string 
     animation<-FS.peek ptr_animation
     case animation of
         SDLI.IMG_Animation {img_w,img_h,img_count,img_frames,img_delays}->let new_width=fromIntegral width in let new_height=fromIntegral height in let size=4*new_width*new_height in do
-            CM.when (engine.picture_size<fromIntegral size) (EE.quick_error "create_animation" 0)
+            CM.when (engine.max_picture_size<fromIntegral size) (EE.quick_error "create_animation" 0)
             let frame_width=fromIntegral img_w
             let frame_height=fromIntegral img_h
             let pack_width=frame_width+2*padding

@@ -95,7 +95,7 @@ update_font_b font_id path charset engine=if DIS.null charset then return engine
     msdf_output<-FS.peek ptr_msdf_output
     case msdf_output of
         MSDFT.MSDF_Output {msdf_pixel,msdf_width,msdf_height,msdf_descent,msdf_ascent,msdf_glyph,msdf_count}->let new_msdf_width=fromIntegral msdf_width in let new_msdf_height=fromIntegral msdf_height in do
-            texture<-from_pixel engine.device engine.picture_transfer_buffer engine.picture_size msdf_pixel new_msdf_width new_msdf_height
+            texture<-from_pixel engine.device engine.picture_transfer_buffer engine.max_picture_size msdf_pixel new_msdf_width new_msdf_height
             let (atlas,left,down,_,_)=atlas_insert new_msdf_width new_msdf_height engine.padding engine.atlas
             copy_texture engine.device texture engine.texture left down new_msdf_width new_msdf_height
             SDLF.sdl_release_gpu_texture engine.device texture
