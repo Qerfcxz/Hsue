@@ -101,14 +101,14 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
     Visual_request {visual_request}->do
-        (new_engine,visual)<-create_visual leaf_id visual_request engine
+        (new_engine,visual)<-create_visual visual_request engine
         return (new_engine,Visual {visual=visual})
     Group_visual_request {arrange,collect_order,group_visual_request}->do
-        (new_engine,group_visual)<-intmap_monad_map (\_ visual_request this_engine->create_visual leaf_id visual_request this_engine) group_visual_request engine
+        (new_engine,group_visual)<-intmap_monad_map (\_ visual_request this_engine->create_visual visual_request this_engine) group_visual_request engine
         return (new_engine,Group_visual {arrange=arrange,collect_order=collect_order,group_visual=group_visual})
     Vector_visual_request {arrange,collect_order,vector_visual_request}->let size=DV.length vector_visual_request in do
         new_vector_visual<-DVM.new size
-        new_engine<-vector_io_map (size-1) (\_ visual_request this_engine->create_visual leaf_id visual_request this_engine) vector_visual_request new_vector_visual engine
+        new_engine<-vector_io_map (size-1) (\_ visual_request this_engine->create_visual visual_request this_engine) vector_visual_request new_vector_visual engine
         new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
         return (new_engine,Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=new_new_vector_visual})
     Custom_widget_request {custom}->do
@@ -134,8 +134,8 @@ from_insert_widget_request leaf_id min_index max_index transform insert_widget_r
                 Max_strategy->from_insert_widget_request leaf_id min_index (max_index+1) transform other_insert (intmap_insert max_index (transform widget) intmap) new_engine
                 Index_strategy {seat}->if seat<=min_index then from_insert_widget_request leaf_id (seat-1) max_index transform other_insert (intmap_insert seat (transform widget) intmap) new_engine else if max_index<=seat then from_insert_widget_request leaf_id min_index (seat+1) transform other_insert (intmap_insert seat (transform widget) intmap) new_engine else from_insert_widget_request leaf_id min_index max_index transform other_insert (intmap_insert seat (transform widget) intmap) new_engine
 
-create_visual::Int->Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_visual leaf_id visual_request engine=case visual_request of
+create_visual::Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
+create_visual visual_request engine=case visual_request of
     Rectangle_request {arrange,rectangle_width,rectangle_height}->return (engine,Rectangle {arrange=arrange,half_width=rectangle_width/2,half_height=rectangle_height/2})
     Triangle_request {arrange,first_point,second_point,third_point}->return (engine,Triangle {arrange=arrange,first_point=first_point,second_point=second_point,third_point=third_point})
     Convex_polygon_request {arrange,point_set}->return (engine,Convex_polygon {arrange=arrange,point_set=point_set})
@@ -158,8 +158,8 @@ create_visual leaf_id visual_request engine=case visual_request of
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id,locked=False})
-            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture,leaf_id=leaf_id}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id,locked=False})
+            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
+            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -251,7 +251,7 @@ remove_visual visual engine=case visual of
     Animation {album_number,album_id}->do
         new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
         return (engine {album=new_album})
-    Canvas {canvas_id,locked}->if locked then return engine else let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
+    Canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
         clean_canvas engine.device single_canvas
         return (engine {canvas=canvas})
     _->return engine

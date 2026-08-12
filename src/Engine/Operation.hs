@@ -66,18 +66,6 @@ widget_lookup this_widget=case this_widget of
     Coroutine {index,coroutine_state}->widget_lookup (intmap_lookup index coroutine_state).widget
     _->this_widget
 
-lock_canvas_widget::Widget a b c d e->Widget a b c d e
-lock_canvas_widget widget=case widget of
-    Visual {visual}->Visual {visual=lock_canvas_visual visual}
-    Group_visual {arrange,collect_order,group_visual}->Group_visual {arrange=arrange,collect_order=collect_order,group_visual=fmap lock_canvas_visual group_visual}
-    Vector_visual {arrange,collect_order,size,vector_visual}->Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=fmap lock_canvas_visual vector_visual}
-    _->EE.quick_error "lock_canvas_widget" 0
-
-lock_canvas_visual::Visual->Visual
-lock_canvas_visual visual=case visual of
-    Canvas {arrange,canvas_width,canvas_height,half_width,half_height,canvas_id}->Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=half_width,half_height=half_height,canvas_id=canvas_id,locked=True}
-    _->visual
-
 lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e
 lock_widget widget=case widget of
     Visual {visual}->Visual {visual=lock_visual visual}
@@ -101,7 +89,5 @@ lock_visual visual=case visual of
 {-# INLINE update_group_widget #-}
 {-# INLINE default_update_group_widget #-}
 {-# INLINE get_sdl_pipeline #-}
-{-# INLINE lock_canvas_widget #-}
-{-# INLINE lock_canvas_visual #-}
 {-# INLINE lock_widget #-}
 {-# INLINE lock_visual #-}

@@ -127,7 +127,7 @@ for_canvas_widget_render_b widget action engine=case widget of
 
 for_canvas_widget_render_c::Visual->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render_c visual action engine=case visual of
-    Canvas {half_width,half_height,canvas_id,locked}->if locked then EE.quick_error "for_canvas_widget_render_c" 0 else action half_width half_height canvas_id engine
+    Canvas {half_width,half_height,canvas_id}->action half_width half_height canvas_id engine
     _->return engine
 
 update_buffer::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUTransferBuffer->Int->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO Bool
