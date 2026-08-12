@@ -1,16 +1,11 @@
 cabal-version:      3.0
 name:               Hsue
 version:            0.1.0.0
--- synopsis:
--- description:
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Qerfcxz
--- maintainer:
--- copyright:
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
--- extra-source-files:
 
 common warnings
     ghc-options: -Wall
@@ -43,8 +38,6 @@ library
         SDL.Include
         SDL.Type
         Error.Error
-    -- other-modules:
-    -- other-extensions:
     build-depends:
         base ^>=4.18.3.0,
         bytestring ==0.12.2.0,
@@ -52,25 +45,6 @@ library
         text ==2.1.4,
         transformers ==0.6.3.0,
         vector ==0.13.2.0
-    hs-source-dirs:   src
-    default-language: Haskell2010
-
-executable Hsue
-    import:           warnings
-    main-is:          Main.hs
-    ghc-options:
-        -threaded
-        -with-rtsopts=-N
-    -- other-modules:
-    -- other-extensions:
-    build-depends:
-        base ^>=4.18.3.0,
-        bytestring ==0.12.2.0,
-        containers ==0.8,
-        text ==2.1.4,
-        transformers ==0.6.3.0,
-        vector ==0.13.2.0,
-        Hsue
     extra-libraries:
         msdf
         msdf-atlas-gen
@@ -85,5 +59,5 @@ executable Hsue
         C:\D\MSYS2\mingw64\lib
         C:\D\msdf-atlas-gen-master\build
         C:\D\msdf-atlas-gen-master\build\msdfgen
-    hs-source-dirs:   app
+    hs-source-dirs:   src
     default-language: Haskell2010
