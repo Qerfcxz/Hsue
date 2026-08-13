@@ -27,6 +27,11 @@ Hsue is an exploration of how to build a high-performance, modern UI framework u
 *   **"Projection" Caching & Adaptive Windowing:** Snapshot caching for the UI tree (`Projection a = Without object | With object image`) freezes hierarchical matrix transforms to minimize redundant traversals. Paired with aspect-ratio-preserving adaptive window scaling (`adaptive_window`).
 *   **Dynamic Atlas & Animation Subsystem:** Includes a built-in BSP rectangle packing packer for dynamic texture atlases, alongside native support for multi-frame animated sprites via `SDL_image` (`IMG_LoadAnimation`).
 
+## 📦 Ecosystem & Extension Widgets
+
+For high-level, ready-to-use UI controls built on top of Hsue (such as Buttons, Pages, and Sliders), check out the extension library:
+* **[Hsue-Extension](https://github.com/Qerfcxz/Hsue-Extension)**: Out-of-the-box integrated widget components designed for Hsue.
+
 ---
 
 <a id="中文"></a>
@@ -51,3 +56,8 @@ Hsue 旨在探索如何用纯函数式编程的理念，构建一个现代、高
 *   **延迟请求队列 (Request System):** 严格隔离副作用与状态变更。Widget 仅需发送 `Request` 意图（如渲染、节点增删、图集重建、字符集加载等），由引擎主循环统一消费队列，保持清晰单向的数据流。
 *   **“投影”缓存与自适应窗口:** UI 树快照机制 (`Projection`) 能将父节点的仿射变换计算“冻结”并缓存，避免跨帧重复计算；配合设计分辨率自适应缩放逻辑 (`adaptive_window`)，轻松应对窗口拉伸与分辨率变化。
 *   **动态图集与动画子系统:** 内置基于二叉空间分割（BSP）的矩形打包算法，运行时自动合并小图；同时原生支持基于 `SDL_image` 的多帧 Sequence 动态图集与动画播放 (`Animation`)。
+
+## 📦 生态与扩展控件
+
+若需要基于 Hsue 构建的高阶开箱即用 UI 控件（如按钮、滚动页面、滑块等），请参阅扩展库：
+* **[Hsue-Extension](https://github.com/Qerfcxz/Hsue-Extension)**: 专为 Hsue 打造的开箱即用集成控件库。
