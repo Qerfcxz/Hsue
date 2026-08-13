@@ -28,3 +28,7 @@ step_animation_visual loop time visual=case visual of
 
 step_animation_b::Bool->DVS.Vector FCT.CFloat->Int->Int->FCT.CFloat->(Int,FCT.CFloat)
 step_animation_b loop delay count index moment=let single_delay=delay DVS.! index in if moment<single_delay then (index,moment) else let new_moment=moment-single_delay in let new_index=index+1 in if count<=new_index then if loop then step_animation_b loop delay count 0 new_moment else (count-1,single_delay) else step_animation_b loop delay count new_index new_moment
+
+{-# INLINE step_animation #-}
+{-# INLINE step_animation_a #-}
+{-# INLINE step_animation_visual #-}

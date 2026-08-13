@@ -127,6 +127,13 @@ do_request request engine=case request of
     Remove_sampler {sampler_id}->let (sampler,single_sampler)=intmap_delete_lookup sampler_id engine.sampler in do
         SDLF.sdl_release_gpu_sampler engine.device single_sampler
         return (engine {sampler=sampler},False)
+    Set_window_icon {window_id,path}->case intmap_lookup window_id engine.window of
+        Window {sdl_window}->with_string path $ \this_path->do
+            surface<-SDLF.img_load this_path
+            catch_null surface
+            catch_false (SDLF.sdl_set_window_icon sdl_window surface)
+            SDLF.sdl_destroy_surface surface
+            return (engine,False)
     Set_system_cursor {system_cursor}->do
         catch_false (SDLF.sdl_set_cursor (map_lookup system_cursor engine.system_cursor_map))
         return (engine,False)
@@ -234,3 +241,9 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
         SDLF.sdl_end_gpu_render_pass render_pass
         catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
         return (engine {canvas=DIM.insert canvas_id canvas engine.canvas},False)
+
+{-# INLINE create_request #-}
+{-# INLINE from_system_cursor #-}
+{-# INLINE for_unlock #-}
+{-# INLINE update_article #-}
+{-# INLINE update_article_a #-}

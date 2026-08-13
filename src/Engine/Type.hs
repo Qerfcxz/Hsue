@@ -195,7 +195,7 @@ data Widget a b c d e=Group {initial_min_index::Int,min_index::Int,initial_max_i
 
 data Widget_request a b c d e=Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert (Widget_request a b c d e))}|Vector_request {index::Int,vector_widget_request::DSeq.Seq (Widget_request a b c d e)}|Trigger_request {next::Event b->Engine a b c d e->Maybe Int,trigger::Event b->Engine a b c d e->Engine a b c d e}|Io_trigger_request {next::Event b->Engine a b c d e->Maybe Int,io_trigger::Event b->Engine a b c d e->IO (Engine a b c d e)}|Mix_trigger_request {next::Event b->Engine a b c d e->Maybe Int,mix_trigger::Event b->(Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool}|Widget_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e),widget_request::Widget_request a b c d e}|Widget_io_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_io_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->IO (Engine a b c d e)),widget_request::Widget_request a b c d e}|Widget_mix_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_mix_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool,widget_request::Widget_request a b c d e}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DSeq.Seq (Insert (Widget_request a b c d e)),raw_coroutine::Raw_coroutine a b c d e (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {visual_request::Visual_request}|Group_visual_request {arrange::Arrange,collect_order::DSeq.Seq Int,group_visual_request::DIM.IntMap Visual_request}|Vector_visual_request {arrange::Arrange,collect_order::DSeq.Seq Int,vector_visual_request::DV.Vector Visual_request}|Custom_widget_request {custom::e}
 
-data Request a b c d e=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a b c d e}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a b c d e->Event b->Event b,widget_transform::Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::String}|Remove_shader {shader_id::Int}|Create_pipeline {pipeline_id::Int,maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,blend_state::Blend_state}|Remove_pipeline {pipeline_id::Int}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int}|Set_system_cursor {system_cursor::System_cursor}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int}|Io {io::Engine a b c d e->IO (Engine a b c d e)}|Custom_request {custom::c}
+data Request a b c d e=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a b c d e}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a b c d e->Event b->Event b,widget_transform::Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::String}|Remove_shader {shader_id::Int}|Create_pipeline {pipeline_id::Int,maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,blend_state::Blend_state}|Remove_pipeline {pipeline_id::Int}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int}|Set_window_icon {window_id::Int,path::String}|Set_system_cursor {system_cursor::System_cursor}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int}|Io {io::Engine a b c d e->IO (Engine a b c d e)}|Custom_request {custom::c}
 
 data Coroutine_state a b c d e=Coroutine_state {widget::Widget a b c d e,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DSeq.Seq Int),main_index_group::DSeq.Seq Int,index_group_index::Int,program_counter_index::Int}
 
@@ -277,13 +277,13 @@ data Sampler_address_mode=Sampler_address_mode_repeat|Sampler_address_mode_mirro
 
 data Sampler_create_info=Sampler_create_info {min_filter::Filter,mag_filter::Filter,mipmap_mode::Sampler_mipmap_mode,address_mode_u::Sampler_address_mode,address_mode_v::Sampler_address_mode,address_mode_w::Sampler_address_mode}
 
-data Action=Close|Resize {width::FCT.CFloat,height::FCT.CFloat}|Press {press::Press,change::Key,maintain::DSet.Set Key}|Click {press::Press,mouse_button::Mouse_button,x::FCT.CFloat,y::FCT.CFloat}|Move {x::FCT.CFloat,y::FCT.CFloat,delta_x::FCT.CFloat,delta_y::FCT.CFloat}
+data Action=Close|Resize {width::FCT.CFloat,height::FCT.CFloat}|Press {press::Press,change::Key,maintain::DSet.Set Key}|Click {press::Press,mouse_button::Mouse_button,x::FCT.CFloat,y::FCT.CFloat}|Move {x::FCT.CFloat,y::FCT.CFloat,delta_x::FCT.CFloat,delta_y::FCT.CFloat}|Scroll {x::FCT.CFloat,y::FCT.CFloat,delta_x::FCT.CFloat,delta_y::FCT.CFloat}
 
 data Press=Press_up|Press_down
 
 data Mouse_button=Mouse_button_unknown|Mouse_button_left|Mouse_button_middle|Mouse_button_right
 
-data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z deriving (Eq,Ord)
+data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j|Key_k|Key_l|Key_m|Key_n|Key_o|Key_p|Key_q|Key_r|Key_s|Key_t|Key_u|Key_v|Key_w|Key_x|Key_y|Key_z|Key_left|Key_down|Key_right|Key_up|Key_page_down|Key_page_up deriving (Eq,Ord)
 
 data System_cursor=System_cursor_default|System_cursor_pointer deriving (Eq,Ord)
 
@@ -420,7 +420,7 @@ parameter_poke ptr parameter=case parameter of
         FS.pokeByteOff ptr 40 border_right
         FS.pokeByteOff ptr 44 border_up
 
-data Data=Data_bool {bool::Bool}|Data_int {int::Int}
+data Data=Data_bool {bool::Bool}|Data_int {int::Int}|Data_c_float {c_float::FCT.CFloat}
 
 class Convert a b where
     convert::a->b
@@ -452,6 +452,20 @@ instance Convert Int Data where
 
 int_data_convert::Int->Data
 int_data_convert int=Data_int {int=int}
+
+instance Convert Data FCT.CFloat where
+    convert=data_c_float_convert
+
+data_c_float_convert::Data->FCT.CFloat
+data_c_float_convert store=case store of
+    Data_c_float {c_float}->c_float
+    _->EE.quick_error "data_c_float_convert" 0
+
+instance Convert FCT.CFloat Data where
+    convert=c_float_data_convert
+
+c_float_data_convert::FCT.CFloat->Data
+c_float_data_convert c_float=Data_c_float {c_float=c_float}
 
 class Custom_request a where
     custom_request::a->Engine b c a d e->IO (Engine b c a d e)
@@ -522,3 +536,5 @@ class Custom_widget_request a where
 {-# INLINE bool_data_convert #-}
 {-# INLINE data_int_convert #-}
 {-# INLINE int_data_convert #-}
+{-# INLINE data_c_float_convert #-}
+{-# INLINE c_float_data_convert #-}

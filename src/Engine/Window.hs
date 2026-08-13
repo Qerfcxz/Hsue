@@ -48,4 +48,7 @@ from_window_flag window_flag=case window_flag of
     Window_always_on_top->SDLI.sdl_window_always_on_top
 
 {-# INLINE adaptive_window #-}
+{-# INLINE create_adaptive_window_trigger_request #-}
+{-# INLINE create_adaptive_window_trigger_request_a #-}
+{-# INLINE create_adaptive_window_trigger_request_b #-}
 {-# INLINE from_window_flag #-}

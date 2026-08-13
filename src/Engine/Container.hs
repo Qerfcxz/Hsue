@@ -119,5 +119,13 @@ intset_monad_fold transform=DIS.foldr (\key update value->transform key value>>=
 {-# INLINE intmap_update_lookup #-}
 {-# INLINE intmap_functor_update #-}
 {-# INLINE intmap_functor_update_a #-}
+{-# INLINE intmap_monad_map #-}
+{-# INLINE intmap_monad_map_a #-}
+{-# INLINE intmap_applicative_action_safe #-}
+{-# INLINE intmap_applicative_action #-}
+{-# INLINE intmap_applicative_action_a #-}
+{-# INLINE intmap_monad_action #-}
+{-# INLINE intmap_monad_fold #-}
 {-# INLINE intset_insert #-}
 {-# INLINE intset_delete #-}
+{-# INLINE intset_monad_fold #-}

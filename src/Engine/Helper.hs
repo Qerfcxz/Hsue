@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Helper where
@@ -45,6 +46,18 @@ fit_window_matrix engine window_id widget_width widget_height window_width_scale
 identity_matrix::Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
 
+x_scalable_matrix::FCT.CFloat->FCT.CFloat->Matrix->Matrix
+x_scalable_matrix x x_x matrix=case matrix of
+    Matrix {y,x_y,y_x,y_y}->Matrix {x=x,y=y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
+
+y_scalable_matrix::FCT.CFloat->FCT.CFloat->Matrix->Matrix
+y_scalable_matrix y y_y matrix=case matrix of
+    Matrix {x,x_x,x_y,y_x}->Matrix {x=x,y=y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
+
+update_arrange_matrix::(Matrix->Matrix)->Arrange->Arrange
+update_arrange_matrix update arrange=case arrange of
+    Arrange {point,matrix,red,green,blue,alpha}->Arrange {point=point,matrix=update matrix,red=red,green=green,blue=blue,alpha=alpha}
+
 get_clipboard_text::IO String
 get_clipboard_text=do
     ptr<-SDLF.sdl_get_clipboard_text
@@ -75,3 +88,6 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE fit_matrix #-}
 {-# INLINE fit_window_matrix #-}
 {-# INLINE identity_matrix #-}
+{-# INLINE x_scalable_matrix #-}
+{-# INLINE y_scalable_matrix #-}
+{-# INLINE update_arrange_matrix #-}

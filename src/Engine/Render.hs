@@ -146,3 +146,5 @@ update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer 
     FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=transfer_buffer,sdl_offset=fromIntegral size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=parameter_buffer,sdl_offset=0,sdl_size=fromIntegral parameter_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
     SDLF.sdl_end_gpu_copy_pass copy_pass
     return True
+
+{-# INLINE do_render_c #-}

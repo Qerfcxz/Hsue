@@ -844,6 +844,21 @@ sdl_mousemotionevent_xrel_peek ptr=(#peek SDL_MouseMotionEvent,xrel) ptr
 sdl_mousemotionevent_yrel_peek::Ptr ()->IO CFloat
 sdl_mousemotionevent_yrel_peek ptr=(#peek SDL_MouseMotionEvent,yrel) ptr
 
+sdl_mousewheelevent_windowid_peek::Ptr ()->IO Word32
+sdl_mousewheelevent_windowid_peek ptr=(#peek SDL_MouseWheelEvent,windowID) ptr
+
+sdl_mousewheelevent_x_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_x_peek ptr=(#peek SDL_MouseWheelEvent,x) ptr
+
+sdl_mousewheelevent_y_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_y_peek ptr=(#peek SDL_MouseWheelEvent,y) ptr
+
+sdl_mousewheelevent_mouse_x_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_mouse_x_peek ptr=(#peek SDL_MouseWheelEvent,mouse_x) ptr
+
+sdl_mousewheelevent_mouse_y_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_mouse_y_peek ptr=(#peek SDL_MouseWheelEvent,mouse_y) ptr
+
 sdl_keyboardevent_windowid_peek::Ptr ()->IO Word32
 sdl_keyboardevent_windowid_peek ptr=(#peek SDL_KeyboardEvent,windowID) ptr
 
@@ -894,6 +909,9 @@ pattern SDL_EVENT_MOUSE_BUTTON_DOWN=(#const SDL_EVENT_MOUSE_BUTTON_DOWN)
 
 pattern SDL_EVENT_MOUSE_MOTION::Word32
 pattern SDL_EVENT_MOUSE_MOTION=(#const SDL_EVENT_MOUSE_MOTION)
+
+pattern SDL_EVENT_MOUSE_WHEEL::Word32
+pattern SDL_EVENT_MOUSE_WHEEL=(#const SDL_EVENT_MOUSE_WHEEL)
 
 pattern SDLK_A::Word32
 pattern SDLK_A=(#const SDLK_A)
@@ -972,6 +990,24 @@ pattern SDLK_Y=(#const SDLK_Y)
 
 pattern SDLK_Z::Word32
 pattern SDLK_Z=(#const SDLK_Z)
+
+pattern SDLK_LEFT::Word32
+pattern SDLK_LEFT=(#const SDLK_LEFT)
+
+pattern SDLK_DOWN::Word32
+pattern SDLK_DOWN=(#const SDLK_DOWN)
+
+pattern SDLK_RIGHT::Word32
+pattern SDLK_RIGHT=(#const SDLK_RIGHT)
+
+pattern SDLK_UP::Word32
+pattern SDLK_UP=(#const SDLK_UP)
+
+pattern SDLK_PAGEDOWN::Word32
+pattern SDLK_PAGEDOWN=(#const SDLK_PAGEDOWN)
+
+pattern SDLK_PAGEUP::Word32
+pattern SDLK_PAGEUP=(#const SDLK_PAGEUP)
 
 {-# INLINE sdl_f_color_size_of #-}
 {-# INLINE sdl_f_color_alignment #-}

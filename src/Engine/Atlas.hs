@@ -83,3 +83,6 @@ copy_texture device texture_from texture_to x y width height=do
     FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) $ \texture_location_from->FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->SDLF.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False)
     SDLF.sdl_end_gpu_copy_pass copy_pass
     catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+
+{-# INLINE init_atlas #-}
+{-# INLINE atlas_insert #-}

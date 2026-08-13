@@ -130,3 +130,8 @@ scroll_bottom_text::Visual->Visual
 scroll_bottom_text visual=case visual of
     Text {arrange,half_width,half_height,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y max_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
     _->EE.quick_error "scroll_bottom_text" 0
+
+{-# INLINE to_charset #-}
+{-# INLINE scroll_text #-}
+{-# INLINE scroll_top_text #-}
+{-# INLINE scroll_bottom_text #-}

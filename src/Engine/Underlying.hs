@@ -96,6 +96,9 @@ millisecond=1000000
 {-# INLINE catch_zero #-}
 {-# INLINE catch_null #-}
 {-# INLINE return_catch_null #-}
+{-# INLINE with_string #-}
+{-# INLINE seq_poke_array #-}
+{-# INLINE seq_poke_array_a #-}
 {-# INLINE triple_reverse #-}
 {-# INLINE move_clip #-}
 {-# INLINE combine_arrange #-}

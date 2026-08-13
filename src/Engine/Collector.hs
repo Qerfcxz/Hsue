@@ -172,3 +172,26 @@ get_submit_a::Widget a b c d e->DIM.IntMap (DS.Seq Submit)->DIM.IntMap (DS.Seq S
 get_submit_a widget this_submit=case widget of
     Collector {submit}->DIM.unionWith (DS.><) this_submit submit
     _->EE.quick_error "get_submit_a" 0
+
+{-# INLINE clean_collect #-}
+{-# INLINE clean_collect_a #-}
+{-# INLINE collect_canvas #-}
+{-# INLINE maybe_update_collect #-}
+{-# INLINE maybe_collect_update #-}
+{-# INLINE collect #-}
+{-# INLINE collect_a #-}
+{-# INLINE to_collect #-}
+{-# INLINE to_collect_visual #-}
+{-# INLINE to_Parameter #-}
+{-# INLINE begin_text #-}
+{-# INLINE end_text #-}
+{-# INLINE collect_convex_polygon #-}
+{-# INLINE collect_character #-}
+{-# INLINE move #-}
+{-# INLINE move_a #-}
+{-# INLINE move_lookup #-}
+{-# INLINE consume_widget #-}
+{-# INLINE for_submit #-}
+{-# INLINE for_submit_a #-}
+{-# INLINE get_submit #-}
+{-# INLINE get_submit_a #-}

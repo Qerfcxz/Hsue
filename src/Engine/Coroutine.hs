@@ -335,3 +335,36 @@ run_create_group group_code_index int index clone_index program_counter_index in
 
 run_create_active_group::DIM.IntMap Int->Int->Int->Int->Int->Int->DS.Seq Int->DIM.IntMap (DS.Seq Int)->DIM.IntMap Program_counter->(DIM.IntMap Program_counter,DIM.IntMap (DS.Seq Int),Int,DS.Seq Int)
 run_create_active_group group_code_index int index clone_index program_counter_index index_group_index newborn_main_index_group index_group program_counter=if int<=index then (program_counter,index_group,program_counter_index,newborn_main_index_group) else run_create_active_group group_code_index int (index+1) clone_index (program_counter_index+1) index_group_index (newborn_main_index_group DS.|> program_counter_index) (intmap_insert (index_group_index+index) (DS.singleton program_counter_index) index_group) (intmap_insert program_counter_index (Program_counter {code_index=intmap_lookup index group_code_index,clone_index=clone_index}) program_counter)
+
+{-# INLINE run_coroutine #-}
+{-# INLINE run_coroutine_a #-}
+{-# INLINE run_coroutine_b #-}
+{-# INLINE for_iterative #-}
+{-# INLINE init_coroutine_state #-}
+{-# INLINE to_coroutine #-}
+{-# INLINE lift_coroutine #-}
+{-# INLINE lift_coroutine_a #-}
+{-# INLINE do_empty #-}
+{-# INLINE do_empty_a #-}
+{-# INLINE do_declare #-}
+{-# INLINE do_declare_a #-}
+{-# INLINE do_emit #-}
+{-# INLINE do_wait #-}
+{-# INLINE do_forever #-}
+{-# INLINE do_then #-}
+{-# INLINE do_while #-}
+{-# INLINE do_pause #-}
+{-# INLINE do_skip #-}
+{-# INLINE do_assign #-}
+{-# INLINE do_repeat #-}
+{-# INLINE do_clone #-}
+{-# INLINE do_if #-}
+{-# INLINE do_dynamic_clone #-}
+{-# INLINE do_case #-}
+{-# INLINE do_fork #-}
+{-# INLINE do_race #-}
+{-# INLINE raw_coroutine_unary_generator #-}
+{-# INLINE raw_coroutine_unary_operator #-}
+{-# INLINE raw_coroutine_binary_operator #-}
+{-# INLINE from_coroutine #-}
+{-# INLINE user_variable_getter #-}

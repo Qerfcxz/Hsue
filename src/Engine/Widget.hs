@@ -290,3 +290,11 @@ remove_node_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_
 
 remove_node_node::Custom_widget d=>Int->Engine a b c d e->IO (Engine a b c d e)
 remove_node_node node_id engine=let (node,single_node)=intmap_delete_lookup node_id engine.node in remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
+
+{-# INLINE from_same_insert_widget #-}
+{-# INLINE from_same_insert_widget_a #-}
+{-# INLINE from_insert_widget #-}
+{-# INLINE from_insert_widget_a #-}
+{-# INLINE create_atlas_a #-}
+{-# INLINE create_large_atlas #-}
+{-# INLINE create_node #-}

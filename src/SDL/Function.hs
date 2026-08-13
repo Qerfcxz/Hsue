@@ -193,6 +193,9 @@ foreign import ccall unsafe "SDL_RegisterEvents"
 foreign import ccall unsafe "SDL_GetWindowID"
     sdl_get_window_id::Ptr SDL_Window->IO Word32
 
+foreign import ccall unsafe "SDL_SetWindowIcon"
+    sdl_set_window_icon::Ptr SDL_Window->Ptr SDL_Surface->IO CBool
+
 foreign import ccall unsafe "SDL_CreateSystemCursor"
     sdl_create_system_cursor::Word32->IO (Ptr SDL_Cursor)
 

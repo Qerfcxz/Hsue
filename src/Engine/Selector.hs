@@ -406,3 +406,48 @@ update_coroutine_state update coroutine_state=case coroutine_state of
 functor_update_coroutine_state::Functor f=>(Widget a b c d e->f (Widget a b c d e))->Coroutine_state a b c d e->f (Coroutine_state a b c d e)
 functor_update_coroutine_state update coroutine_state=case coroutine_state of
     Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->fmap (\this_widget->Coroutine_state {widget=this_widget,variable=variable,user_variable=user_variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index}) (update widget)
+
+{-# INLINE group_all_selector_action #-}
+{-# INLINE group_all_selector_update #-}
+{-# INLINE group_default_selector_action #-}
+{-# INLINE group_default_selector_update #-}
+{-# INLINE vector_all_selector_action #-}
+{-# INLINE vector_all_selector_update #-}
+{-# INLINE vector_default_selector_action #-}
+{-# INLINE vector_default_selector_update #-}
+{-# INLINE vector_default_selector_update_a #-}
+{-# INLINE widget_trigger_selector_action #-}
+{-# INLINE widget_trigger_selector_update #-}
+{-# INLINE widget_io_trigger_selector_update #-}
+{-# INLINE widget_mix_trigger_selector_update #-}
+{-# INLINE coroutine_all_selector_action #-}
+{-# INLINE coroutine_all_selector_update #-}
+{-# INLINE coroutine_default_selector_action #-}
+{-# INLINE coroutine_default_selector_update #-}
+{-# INLINE selector_action #-}
+{-# INLINE selector_action_a #-}
+{-# INLINE selector_action_b #-}
+{-# INLINE all_selector_action #-}
+{-# INLINE trigger_selector_action #-}
+{-# INLINE default_selector_action #-}
+{-# INLINE selector_monad_action #-}
+{-# INLINE selector_monad_action_a #-}
+{-# INLINE selector_monad_action_b #-}
+{-# INLINE all_selector_monad_action #-}
+{-# INLINE trigger_selector_monad_action #-}
+{-# INLINE default_selector_monad_action #-}
+{-# INLINE selector_update #-}
+{-# INLINE selector_update_a #-}
+{-# INLINE selector_update_b #-}
+{-# INLINE all_selector_update #-}
+{-# INLINE trigger_selector_update #-}
+{-# INLINE default_selector_update #-}
+{-# INLINE selector_monad_update #-}
+{-# INLINE selector_monad_update_a #-}
+{-# INLINE selector_monad_update_b #-}
+{-# INLINE selector_monad_update_c #-}
+{-# INLINE all_selector_applicative_update #-}
+{-# INLINE trigger_selector_applicative_update #-}
+{-# INLINE default_selector_applicative_update #-}
+{-# INLINE update_coroutine_state #-}
+{-# INLINE functor_update_coroutine_state #-}
