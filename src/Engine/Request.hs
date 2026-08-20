@@ -134,6 +134,22 @@ do_request request engine=case request of
             catch_false (SDLF.sdl_set_window_icon sdl_window surface)
             SDLF.sdl_destroy_surface surface
             return (engine,False)
+    Set_window_size {window_id,window_width,window_height}->case intmap_lookup window_id engine.window of
+        Window {sdl_window}->do
+            catch_false (SDLF.sdl_set_window_size sdl_window window_width window_height)
+            return (engine,False)
+    Set_window_position {window_id,x,y}->case intmap_lookup window_id engine.window of
+        Window {sdl_window}->do
+            catch_false (SDLF.sdl_set_window_position sdl_window x y)
+            return (engine,False)
+    Set_window_title {window_id,title}->case intmap_lookup window_id engine.window of
+        Window {sdl_window}->do
+            catch_false (DBS.useAsCString (DTE.encodeUtf8 title) (SDLF.sdl_set_window_title sdl_window))
+            return (engine,False)
+    Set_window_fullscreen {window_id,fullscreen}->case intmap_lookup window_id engine.window of
+        Window {sdl_window}->do
+            catch_false (SDLF.sdl_set_window_fullscreen sdl_window (FMU.fromBool fullscreen))
+            return (engine,False)
     Set_system_cursor {system_cursor}->do
         catch_false (SDLF.sdl_set_cursor (map_lookup system_cursor engine.system_cursor_map))
         return (engine,False)

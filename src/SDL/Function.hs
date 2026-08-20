@@ -196,6 +196,18 @@ foreign import ccall unsafe "SDL_GetWindowID"
 foreign import ccall unsafe "SDL_SetWindowIcon"
     sdl_set_window_icon::Ptr SDL_Window->Ptr SDL_Surface->IO CBool
 
+foreign import ccall unsafe "SDL_SetWindowSize"
+    sdl_set_window_size::Ptr SDL_Window->CInt->CInt->IO CBool
+
+foreign import ccall unsafe "SDL_SetWindowPosition"
+    sdl_set_window_position::Ptr SDL_Window->CInt->CInt->IO CBool
+
+foreign import ccall unsafe "SDL_SetWindowTitle"
+    sdl_set_window_title::Ptr SDL_Window->CString->IO CBool
+
+foreign import ccall unsafe "SDL_SetWindowFullscreen"
+    sdl_set_window_fullscreen::Ptr SDL_Window->CBool->IO CBool
+
 foreign import ccall unsafe "SDL_CreateSystemCursor"
     sdl_create_system_cursor::Word32->IO (Ptr SDL_Cursor)
 
