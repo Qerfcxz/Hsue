@@ -1,12 +1,12 @@
 struct VSOutput {
-    float4 Position:SV_Position;
-    float2 UV:TEXCOORD0;
+    float4 position:SV_Position;
+    float2 uv:TEXCOORD0;
 };
 
-VSOutput main(uint id:SV_VertexID) {
+VSOutput main(uint vertex_id:SV_VertexID) {
     VSOutput output;
-    output.UV=float2((id<<1)&2,id&2);
-    output.Position=float4(output.UV*2-1,0,1);
-    output.Position.y=-output.Position.y;
+    output.uv=float2((vertex_id<<1)&2,vertex_id&2);
+    output.position=float4(output.uv*2-1,0,1);
+    output.position.y=-output.position.y;
     return output;
 }
