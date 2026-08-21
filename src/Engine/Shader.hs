@@ -3,7 +3,6 @@
 
 module Engine.Shader where
 
-import Engine.Container
 import Engine.Type
 import Engine.Underlying
 import qualified SDL.Function as SDLF
@@ -43,14 +42,6 @@ load_shader::FP.Ptr SDLT.SDL_GPUDevice->DW.Word32->DW.Word32->DW.Word32->DW.Word
 load_shader device format stage num_sampler num_storage_buffer num_uniform_buffer path=do
     shader_code<-DBS.readFile path
     DBS.useAsCStringLen shader_code (\(code,code_size)->FCS.withCString "main" (\entrypoint->FMU.with (SDLI.SDL_GPUShaderCreateInfo {sdl_code_size=fromIntegral code_size,sdl_code=FP.castPtr code,sdl_entrypoint=entrypoint,sdl_format=format,sdl_stage=stage,sdl_num_samplers=num_sampler,sdl_num_storage_textures=0,sdl_num_storage_buffers=num_storage_buffer,sdl_num_uniform_buffers=num_uniform_buffer}) (return_catch_null . SDLF.sdl_create_gpu_shader device)))
-
-insert_pipeline_id::Int->Shader->Shader
-insert_pipeline_id this_pipeline_id shader=case shader of
-    Shader {sdl_shader,pipeline_id}->Shader {sdl_shader=sdl_shader,pipeline_id=intset_insert this_pipeline_id pipeline_id}
-
-delete_pipeline_id::Int->Shader->Shader
-delete_pipeline_id this_pipeline_id shader=case shader of
-    Shader {sdl_shader,pipeline_id}->Shader {sdl_shader=sdl_shader,pipeline_id=intset_delete this_pipeline_id pipeline_id}
 
 from_blend_factor::Blend_factor->DW.Word32
 from_blend_factor blend_factor=case blend_factor of
@@ -110,8 +101,6 @@ from_sampler_create_info sampler_create_info=case sampler_create_info of
     Sampler_create_info {min_filter,mag_filter,mipmap_mode,address_mode_u,address_mode_v,address_mode_w}->
         SDLI.SDL_GPUSamplerCreateInfo {sdl_min_filter=from_filter min_filter,sdl_mag_filter=from_filter mag_filter,sdl_mipmap_mode=from_sampler_mipmap_mode mipmap_mode,sdl_address_mode_u=from_sampler_address_mode address_mode_u,sdl_address_mode_v=from_sampler_address_mode address_mode_v,sdl_address_mode_w=from_sampler_address_mode address_mode_w}
 
-{-# INLINE insert_pipeline_id #-}
-{-# INLINE delete_pipeline_id #-}
 {-# INLINE from_blend_factor #-}
 {-# INLINE from_blend_op #-}
 {-# INLINE from_color_component_flag #-}

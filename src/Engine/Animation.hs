@@ -32,3 +32,4 @@ step_animation_b loop delay count index moment=let single_delay=delay DVS.! inde
 {-# INLINE step_animation #-}
 {-# INLINE step_animation_a #-}
 {-# INLINE step_animation_visual #-}
+{-# INLINE step_animation_b #-}

@@ -185,7 +185,7 @@ event_result_pure _=EE.quick_error "event_result_pure" 0
 event_result_apply::Event_result a b c d e f (g->h)->Event_result a b c d e f g->Event_result a b c d e f h
 event_result_apply _ _=EE.quick_error "event_result_apply" 0
 
-data Engine a b c d e=Engine {custom::a,main_id::Event b->Engine a b c d e->Maybe Int,projection_strategy::Event b->Engine a b c d e->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,canvas::DIM.IntMap Canvas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a b c d e),node::DIM.IntMap (Node a b c d e),window::DIM.IntMap Window,font::DIM.IntMap Font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,system_cursor_map::DM.Map System_cursor (FP.Ptr SDLT.SDL_Cursor),request::DSeq.Seq (Request a b c d e),key::DSet.Set Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::DIM.IntMap (FP.Ptr SDLT.SDL_GPUSampler),default_sampler::FP.Ptr SDLT.SDL_GPUSampler,canvas_graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,pipeline::DIM.IntMap Pipeline,shader::DIM.IntMap Shader,default_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,max_picture_size::FCT.CInt,max_vertex_size::Int,max_index_size::Int,max_parameter_size::Int,initial_canvas_id::Int,canvas_id::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,width::DW.Word32,height::DW.Word32,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
+data Engine a b c d e=Engine {custom::a,main_id::Event b->Engine a b c d e->Maybe Int,projection_strategy::Event b->Engine a b c d e->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,canvas::DIM.IntMap Canvas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a b c d e),node::DIM.IntMap (Node a b c d e),window::DIM.IntMap Window,font::DIM.IntMap Font,atlas_font::DIM.IntMap Atlas_font,window_map::DM.Map DW.Word32 Int,font_map::DM.Map String Int,system_cursor_map::DM.Map System_cursor (FP.Ptr SDLT.SDL_Cursor),request::DSeq.Seq (Request a b c d e),key::DSet.Set Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::DIM.IntMap (FP.Ptr SDLT.SDL_GPUSampler),default_sampler::FP.Ptr SDLT.SDL_GPUSampler,canvas_graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,pipeline::DIM.IntMap Pipeline,shader::DIM.IntMap Shader,default_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,max_picture_size::FCT.CInt,max_vertex_size::Int,max_index_size::Int,max_parameter_size::Int,exponent_width::Int,exponent_height::Int,initial_canvas_id::Int,canvas_id::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
 data Projection a b c d e=Without {ancestry_id::DSeq.Seq Int,object::Widget a b c d e}|With {ancestry_id::DSeq.Seq Int,object::Widget a b c d e,image::Widget a b c d e}
 
@@ -195,7 +195,7 @@ data Widget a b c d e=Group {initial_min_index::Int,min_index::Int,initial_max_i
 
 data Widget_request a b c d e=Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DSeq.Seq (Insert (Widget_request a b c d e))}|Vector_request {index::Int,vector_widget_request::DSeq.Seq (Widget_request a b c d e)}|Trigger_request {next::Event b->Engine a b c d e->Maybe Int,trigger::Event b->Engine a b c d e->Engine a b c d e}|Io_trigger_request {next::Event b->Engine a b c d e->Maybe Int,io_trigger::Event b->Engine a b c d e->IO (Engine a b c d e)}|Mix_trigger_request {next::Event b->Engine a b c d e->Maybe Int,mix_trigger::Event b->(Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool}|Widget_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e),widget_request::Widget_request a b c d e}|Widget_io_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_io_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->IO (Engine a b c d e)),widget_request::Widget_request a b c d e}|Widget_mix_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_mix_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool,widget_request::Widget_request a b c d e}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DSeq.Seq (Insert (Widget_request a b c d e)),raw_coroutine::Raw_coroutine a b c d e (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {visual_request::Visual_request}|Group_visual_request {arrange::Arrange,collect_order::DSeq.Seq Int,group_visual_request::DIM.IntMap Visual_request}|Vector_visual_request {arrange::Arrange,collect_order::DSeq.Seq Int,vector_visual_request::DV.Vector Visual_request}|Custom_widget_request {custom::e}
 
-data Request a b c d e=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a b c d e}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a b c d e->Event b->Event b,widget_transform::Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,window_flag::DSet.Set Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::String}|Remove_shader {shader_id::Int}|Create_pipeline {pipeline_id::Int,maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,blend_state::Blend_state}|Remove_pipeline {pipeline_id::Int}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int}|Set_window_icon {window_id::Int,path::String}|Set_window_size {window_id::Int,window_width::FCT.CInt,window_height::FCT.CInt}|Set_window_position {window_id::Int,x::FCT.CInt,y::FCT.CInt}|Set_window_title {window_id::Int,title::DT.Text}|Set_window_fullscreen {window_id::Int,fullscreen::Bool}|Set_system_cursor {system_cursor::System_cursor}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int}|Io {io::Engine a b c d e->IO (Engine a b c d e)}|Custom_request {custom::c}
+data Request a b c d e=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a b c d e}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a b c d e->Event b->Event b,widget_transform::Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,color::Color,window_flag::DSet.Set Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::String}|Remove_shader {shader_id::Int}|Create_pipeline {pipeline_id::Int,maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,blend_state::Blend_state}|Remove_pipeline {pipeline_id::Int}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int}|Create_atlas_font {atlas_font_id::Int,exponent_width::Int,exponent_height::Int,padding::DW.Word32,width::DW.Word32,height::DW.Word32,font_size::FCT.CFloat,pixel_range::FCT.CFloat,path::String}|Remove_atlas_font {atlas_font_id::Int}|Set_window_icon {window_id::Int,path::String}|Set_window_size {window_id::Int,window_width::FCT.CInt,window_height::FCT.CInt}|Set_window_position {window_id::Int,x::FCT.CInt,y::FCT.CInt}|Set_window_title {window_id::Int,title::DT.Text}|Set_window_fullscreen {window_id::Int,fullscreen::Bool}|Set_system_cursor {system_cursor::System_cursor}|Clean_atlas|Unlock {leaf_id::Int}|Load_charset {charset::DM.Map String (DSet.Set Char)}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int}|Io {io::Engine a b c d e->IO (Engine a b c d e)}|Custom_request {custom::c}
 
 data Coroutine_state a b c d e=Coroutine_state {widget::Widget a b c d e,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DSeq.Seq Int),main_index_group::DSeq.Seq Int,index_group_index::Int,program_counter_index::Int}
 
@@ -211,11 +211,11 @@ data Insert a=Insert {insert_strategy::Insert_strategy,value::a}
 
 data Border a=Border {left::a,down::a,right::a,up::a}
 
-data Submit=Submit {maybe_canvas_id::Maybe Int,maybe_album_id::Maybe Int,vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32,parameter::Parameter,vertex_size::DW.Word32,index_size::DW.Word32}
+data Submit=Submit {submit_mode::Submit_mode,vertex::DSeq.Seq Vertex,index::DSeq.Seq DW.Word32,parameter::Parameter,vertex_size::DW.Word32,index_size::DW.Word32}
 
 data Uniform=Uniform {size::Int,alignment::Int,write::FP.Ptr ()->IO ()}
 
-data Shader=Shader {sdl_shader::FP.Ptr SDLT.SDL_GPUShader,pipeline_id::DIS.IntSet}
+data Shader=Shader {sdl_shader::FP.Ptr SDLT.SDL_GPUShader,reference::Int}
 
 data Pipeline=Pipeline {sdl_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,vertex_shader_id::Int,fragment_shader_id::Int}|Default_pipeline {sdl_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,fragment_shader_id::Int}
 
@@ -227,33 +227,45 @@ data Album=Album {width::DW.Word32,height::DW.Word32,texture::FP.Ptr SDLT.SDL_GP
 
 data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
-data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr SDLT.SDL_Window,graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,width::FCT.CFloat,height::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr SDLT.SDL_Window,graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,width::FCT.CFloat,height::FCT.CFloat,color::Color}
+
+data Cursor=Cursor {visible::Bool,which::Bool,x::FCT.CFloat,start_multiline::Int,start_line::Int,start_element::Int,end_multiline::Int,end_line::Int,end_element::Int}
+
+data Multiline=Multiline {multiline_core::DSeq.Seq Line,size::Int}
+
+data Line=Line {line_core::DSeq.Seq Element,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,lower::FCT.CFloat,upper::FCT.CFloat}
+
+data Element=Element {unicode::Int,advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
 data Row=Blank|Row {row_core::DSeq.Seq Character,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
 
-data Character=Character {unicode::Int,font_id::Int,size::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Character=Character {unicode::Int,font_id::Int,font_size::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,color::Color}
 
 data Sentence=Sentence {sentence_core::DSeq.Seq Phrase,path::String}
 
-data Phrase=Phrase {phrase_core::DT.Text,size::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Phrase=Phrase {phrase_core::DT.Text,font_size::FCT.CFloat,color::Color}
 
-data Visual=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DSeq.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,clip_request::DSeq.Seq Clip_request,path::String,clip::DVS.Vector Clip,size::Int,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,size::Int,album_id::Int,index::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,padding::FCT.CFloat,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}
+data Visual=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DSeq.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,clip_request::DSeq.Seq Clip_request,path::String,clip::DVS.Vector Clip,size::Int,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,size::Int,album_id::Int,index::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,reciprocal_width::FCT.CFloat,reciprocal_height::FCT.CFloat,padding::FCT.CFloat,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Row),charset::DM.Map String (DSet.Set Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),cursor::Cursor,multiline::DSeq.Seq Multiline}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}
 
-data Visual_request=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DSeq.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::String}|Large_picture_request {arrange::Arrange,path::String}|Atlas_request {arrange::Arrange,clip_request::DSeq.Seq Clip_request,path::String}|Large_atlas_request {arrange::Arrange,clip_request::DSeq.Seq Clip_request,path::String}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,animation_width::DW.Word32,animation_height::DW.Word32,padding::Int,path::String}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::Int->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->FCT.CFloat,calculate_typesetting::Int->DSeq.Seq (DSeq.Seq Row)->(FCT.CFloat,FCT.CFloat),load::Bool}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}
+data Visual_request=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DSeq.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::String}|Large_picture_request {arrange::Arrange,path::String}|Atlas_request {arrange::Arrange,clip_request::DSeq.Seq Clip_request,path::String}|Large_atlas_request {arrange::Arrange,clip_request::DSeq.Seq Clip_request,path::String}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,animation_width::DW.Word32,animation_height::DW.Word32,padding::Int,path::String}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,article::DSeq.Seq (DSeq.Seq Sentence),calculate_width::DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DSeq.Seq (DSeq.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}
 
 data Clip_request=Clip_request {x::FCT.CFloat,y::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
+
+data Color=Color {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
 data Matrix=Matrix {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat}
 
 data Point=Point {x::FCT.CFloat,y::FCT.CFloat}
 
-data Arrange=Arrange {point::Point,matrix::Matrix,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
+data Arrange=Arrange {point::Point,matrix::Matrix,color::Color}
 
 data Atlas=Leaf_atlas {border::Border DW.Word32,used::Bool}|Node_atlas {border::Border DW.Word32,left_atlas::Atlas,right_atlas::Atlas}
 
 data Glyph=Glyph {advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
 data Font=Font {descent::FCT.CFloat,ascent::FCT.CFloat,glyph::DIM.IntMap Glyph}
+
+data Atlas_font=Atlas_font {font_atlas::Atlas,texture::FP.Ptr SDLT.SDL_GPUTexture,exponent_width::Int,exponent_height::Int,padding::DW.Word32,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat,descent::FCT.CFloat,ascent::FCT.CFloat,glyph::DIM.IntMap Glyph,path::String,reference::Int}
 
 data Projection_strategy=Object_strategy|Image_strategy|Image_safe_strategy
 
@@ -292,6 +304,8 @@ data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resiza
 data Color_component_flag=Color_component_r|Color_component_g|Color_component_b|Color_component_a deriving (Eq,Ord)
 
 data Extended=Negative_infinity|Finite {number::FCT.CFloat}|Positive_infinity deriving (Eq,Ord)
+
+data Submit_mode=Submit_default|Submit_canvas {canvas_id::Int}|Submit_album {album_id::Int}|Submit_atlas_font {atlas_font_id::Int} deriving Eq
 
 data Clip=Clip {x::FCT.CFloat,y::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -357,7 +371,7 @@ layout_poke ptr layout=case layout of
         FS.pokeByteOff ptr 0 address
         FS.pokeByteOff ptr 8 size
 
-data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,parameter_id::FCT.CFloat,size::FCT.CFloat}
+data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,parameter_id::FCT.CFloat,font_size::FCT.CFloat}
 
 instance FS.Storable Vertex where
     sizeOf=vertex_size_of
@@ -376,7 +390,7 @@ vertex_peek _=EE.quick_error "vertex_peek" 0
 
 vertex_poke::FP.Ptr Vertex->Vertex->IO ()
 vertex_poke ptr vertex=case vertex of
-    Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,size}->do
+    Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,font_size}->do
         FS.pokeByteOff ptr 0 red
         FS.pokeByteOff ptr 4 green
         FS.pokeByteOff ptr 8 blue
@@ -386,7 +400,7 @@ vertex_poke ptr vertex=case vertex of
         FS.pokeByteOff ptr 24 u
         FS.pokeByteOff ptr 28 v
         FS.pokeByteOff ptr 32 parameter_id
-        FS.pokeByteOff ptr 36 size
+        FS.pokeByteOff ptr 36 font_size
 
 data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,border_flag::FCT.CFloat,border_left::FCT.CFloat,border_down::FCT.CFloat,border_right::FCT.CFloat,border_up::FCT.CFloat}
 

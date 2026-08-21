@@ -129,7 +129,7 @@ loop_event on event_type event engine=case event_type of
                     yrel<-SDLI.sdl_mousemotionevent_yrel_peek event
                     loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Move {x=(x-width/2)*scale_x,y=(height/2-y)*scale_y,delta_x=xrel*scale_x,delta_y=(-yrel)*scale_y}}) event engine
     SDLI.SDL_EVENT_MOUSE_WHEEL->do
-        sdl_window_id<-SDLI.sdl_mousemotionevent_windowid_peek event
+        sdl_window_id<-SDLI.sdl_mousewheelevent_windowid_peek event
         case DM.lookup sdl_window_id engine.window_map of
             Nothing->loop_event_a on event engine
             Just window_id->case intmap_lookup window_id engine.window of
@@ -253,8 +253,13 @@ pop_event sdl_event=do
 
 {-# INLINE get_interval #-}
 {-# INLINE to_mouse_button #-}
+{-# INLINE loop_event_a #-}
+{-# INLINE loop_event_b #-}
 {-# INLINE run_event #-}
+{-# INLINE run_event_a #-}
 {-# INLINE run_event_b #-}
 {-# INLINE run_event_c #-}
 {-# INLINE run_widget #-}
 {-# INLINE to_key #-}
+{-# INLINE push_event #-}
+{-# INLINE pop_event #-}

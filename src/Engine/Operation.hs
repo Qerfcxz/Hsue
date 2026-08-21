@@ -56,6 +56,10 @@ get_sdl_pipeline pipeline=case pipeline of
     Pipeline {sdl_pipeline}->sdl_pipeline
     Default_pipeline {sdl_pipeline}->sdl_pipeline
 
+update_shader_reference::(Int->Int)->Shader->Shader
+update_shader_reference update shader=case shader of
+    Shader {sdl_shader,reference}->Shader {sdl_shader=sdl_shader,reference=update reference}
+
 widget_lookup::Widget a b c d e->Widget a b c d e
 widget_lookup this_widget=case this_widget of
     Group {index,group_widget}->widget_lookup (intmap_lookup index group_widget)
@@ -89,5 +93,7 @@ lock_visual visual=case visual of
 {-# INLINE update_group_widget #-}
 {-# INLINE default_update_group_widget #-}
 {-# INLINE get_sdl_pipeline #-}
+{-# INLINE update_shader_reference #-}
+{-# INLINE widget_lookup #-}
 {-# INLINE lock_widget #-}
 {-# INLINE lock_visual #-}

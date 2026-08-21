@@ -367,4 +367,11 @@ run_create_active_group group_code_index int index clone_index program_counter_i
 {-# INLINE raw_coroutine_unary_operator #-}
 {-# INLINE raw_coroutine_binary_operator #-}
 {-# INLINE from_coroutine #-}
+{-# INLINE clone_coroutine #-}
+{-# INLINE clone_coroutine_a #-}
 {-# INLINE user_variable_getter #-}
+{-# INLINE run_kill_group #-}
+{-# INLINE run_kill_group_a #-}
+{-# INLINE run_clone #-}
+{-# INLINE run_create_group #-}
+{-# INLINE run_create_active_group #-}

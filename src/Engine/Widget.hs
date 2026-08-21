@@ -170,14 +170,14 @@ do_image action path engine=do
     return (engine {atlas=atlas},action width height left down right up)
 
 create_picture::Arrange->String->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=fromIntegral left*engine.reciprocal_width,min_v=fromIntegral down*engine.reciprocal_height,max_u=fromIntegral right*engine.reciprocal_width,max_v=fromIntegral up*engine.reciprocal_height,path=path,locked=False}) path engine
+create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=scaleFloat (-engine.exponent_width) (fromIntegral left),min_v=scaleFloat (-engine.exponent_height) (fromIntegral down),max_u=scaleFloat (-engine.exponent_width) (fromIntegral right),max_v=scaleFloat (-engine.exponent_height) (fromIntegral up),path=path,locked=False}) path engine
 
 create_atlas::Arrange->DS.Seq Clip_request->String->Int->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_atlas arrange clip_request path index engine=do_image (\width height left down right up->let size=DS.length clip_request in Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=DVS.fromListN size (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.reciprocal_width engine.reciprocal_height) (DF.toList clip_request)),size=size,index=index,locked=False}) path engine
+create_atlas arrange clip_request path index engine=do_image (\width height left down right up->let size=DS.length clip_request in Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=DVS.fromListN size (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.exponent_width engine.exponent_height) (DF.toList clip_request)),size=size,index=index,locked=False}) path engine
 
-create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Clip_request->Clip
-create_atlas_a width height this_x this_y reciprocal_width reciprocal_height clip_request=case clip_request of
-    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=(this_x+min_u*width/2)*reciprocal_width,min_v=(this_y-max_v*height/2)*reciprocal_height,max_u=(this_x+max_u*width/2)*reciprocal_width,max_v=(this_y-min_v*height/2)*reciprocal_height}
+create_atlas_a::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Int->Int->Clip_request->Clip
+create_atlas_a width height this_x this_y exponent_width exponent_height clip_request=case clip_request of
+    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=scaleFloat (-exponent_width) (this_x+min_u*width/2),min_v=scaleFloat (-exponent_height) (this_y-max_v*height/2),max_u=scaleFloat (-exponent_width) (this_x+max_u*width/2),max_v=scaleFloat (-exponent_height) (this_y-min_v*height/2)}
 
 create_large_atlas::FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_large_atlas width height clip_request=case clip_request of
@@ -293,8 +293,13 @@ remove_node_node node_id engine=let (node,single_node)=intmap_delete_lookup node
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}
+{-# INLINE from_same_insert_widget_b #-}
 {-# INLINE from_insert_widget #-}
 {-# INLINE from_insert_widget_a #-}
+{-# INLINE from_insert_widget_b #-}
+{-# INLINE do_image #-}
+{-# INLINE create_picture #-}
+{-# INLINE create_atlas #-}
 {-# INLINE create_atlas_a #-}
 {-# INLINE create_large_atlas #-}
 {-# INLINE create_node #-}

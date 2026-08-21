@@ -84,5 +84,11 @@ copy_texture device texture_from texture_to x y width height=do
     SDLF.sdl_end_gpu_copy_pass copy_pass
     catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
 
+create_white_texture::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
+create_white_texture device picture_transfer_buffer picture_size width height=let size=fromIntegral (4*width*height) in do
+    CM.when (picture_size<size) (EE.quick_error "create_white_texture" 0)
+    upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.fillBytes (FP.castPtr map_transfer_buffer) 255 (fromIntegral size))
+
 {-# INLINE init_atlas #-}
 {-# INLINE atlas_insert #-}
+{-# INLINE create_white_texture #-}

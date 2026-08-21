@@ -36,49 +36,60 @@ for_render window command_buffer action=FMA.alloca $ \ptr_texture->FMA.alloca $ 
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
         else catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer)
 
-do_render::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
+do_render::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Submit_mode,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
 do_render engine window command_buffer texture maybe_sampler_id draw_call vertex index parameter=do
     value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.max_vertex_size engine.max_index_size engine.max_parameter_size vertex index parameter
-    FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=window.red,sdl_g=window.green,sdl_b=window.blue,sdl_a=window.alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
-        render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-        catch_null render_pass
-        CM.when value (do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call)
-        SDLF.sdl_end_gpu_render_pass render_pass
+    case window.color of
+        Color {red,green,blue,alpha}->FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=red,sdl_g=green,sdl_b=blue,sdl_a=alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
+            render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
+            catch_null render_pass
+            CM.when value (do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call)
+            SDLF.sdl_end_gpu_render_pass render_pass
 
-do_render_a::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_a::Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->Maybe Int->DS.Seq (Submit_mode,DW.Word32,DW.Word32)->IO ()
 do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call=do
     SDLF.sdl_bind_gpu_graphics_pipeline render_pass window.graphics_pipeline
     FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
-    let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
-        FMU.fillBytes ptr 0 size
-        FS.pokeElemOff ptr 0 window.adaptive_width
-        FS.pokeElemOff ptr 1 window.adaptive_height
-        FS.pokeElemOff ptr 2 engine.font_size
-        FS.pokeElemOff ptr 3 engine.pixel_range
-        SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_b render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id) engine) draw_call
+    DF.mapM_ (do_render_b engine window.adaptive_width window.adaptive_height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
 
-do_render_b::FP.Ptr SDLT.SDL_GPURenderPass->FP.Ptr SDLT.SDL_GPUSampler->Engine a b c d e->(Maybe Int,Maybe Int,DW.Word32,DW.Word32)->IO ()
-do_render_b render_pass sampler engine (maybe_canvas_id,maybe_album_id,index_size,index_offset)=case maybe_canvas_id of
-    Just canvas_id->do
-        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (intmap_lookup canvas_id engine.canvas),sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+do_render_b::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->FP.Ptr SDLT.SDL_GPUSampler->(Submit_mode,DW.Word32,DW.Word32)->IO ()
+do_render_b engine adaptive_width adaptive_height command_buffer render_pass sampler (submit_mode,index_size,index_offset)=do
+    let size=4*FS.sizeOf (undefined::FCT.CFloat) in FMA.allocaBytesAligned size 16 $ \ptr->do
+        FMU.fillBytes ptr 0 size
+        FS.pokeElemOff ptr 0 adaptive_width
+        FS.pokeElemOff ptr 1 adaptive_height
+        case submit_mode of
+            Submit_default->do
+                FS.pokeElemOff ptr 2 engine.font_size
+                FS.pokeElemOff ptr 3 engine.pixel_range
+                SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
+                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            Submit_canvas {canvas_id}->do
+                FS.pokeElemOff ptr 2 engine.font_size
+                FS.pokeElemOff ptr 3 engine.pixel_range
+                SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
+                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (intmap_lookup canvas_id engine.canvas),sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            Submit_album {album_id}->do
+                FS.pokeElemOff ptr 2 engine.font_size
+                FS.pokeElemOff ptr 3 engine.pixel_range
+                SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
+                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(intmap_lookup album_id engine.album).texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            Submit_atlas_font {atlas_font_id}->case intmap_lookup atlas_font_id engine.atlas_font of
+                Atlas_font {texture,font_size,pixel_range}->do
+                    FS.pokeElemOff ptr 2 font_size
+                    FS.pokeElemOff ptr 3 pixel_range
+                    SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
+                    FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
         SDLF.sdl_draw_gpu_indexed_primitives render_pass index_size 1 index_offset 0 0
-    Nothing->case maybe_album_id of
-        Nothing->do
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
-            SDLF.sdl_draw_gpu_indexed_primitives render_pass index_size 1 index_offset 0 0
-        Just album_id->do
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(intmap_lookup album_id engine.album).texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
-            SDLF.sdl_draw_gpu_indexed_primitives render_pass index_size 1 index_offset 0 0
 
 do_render_c::Canvas->FP.Ptr SDLT.SDL_GPUTexture
 do_render_c canvas=case canvas of
     Free_canvas {texture}->texture
     Bound_canvas {texture}->texture
 
-do_render_canvas::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
+do_render_canvas::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Submit_mode,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
 do_render_canvas engine width height command_buffer texture maybe_sampler_id draw_call vertex index parameter=do
     value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.max_vertex_size engine.max_index_size engine.max_parameter_size vertex index parameter
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
@@ -87,7 +98,7 @@ do_render_canvas engine width height command_buffer texture maybe_sampler_id dra
         CM.when value (do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_id draw_call)
         SDLF.sdl_end_gpu_render_pass render_pass
 
-do_render_canvas_a::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->Maybe Int->DS.Seq (Maybe Int,Maybe Int,DW.Word32,DW.Word32)->IO ()
+do_render_canvas_a::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->Maybe Int->DS.Seq (Submit_mode,DW.Word32,DW.Word32)->IO ()
 do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_id draw_call=do
     SDLF.sdl_bind_gpu_graphics_pipeline render_pass engine.canvas_graphics_pipeline
     FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
@@ -100,7 +111,7 @@ do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_
         SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_b render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id) engine) draw_call
+    DF.mapM_ (do_render_b engine width height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
 
 for_canvas_widget_render::Maybe Int->Projection_path->Selector ()->Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_selector widget engine=case widget of
@@ -147,4 +158,8 @@ update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer 
     SDLF.sdl_end_gpu_copy_pass copy_pass
     return True
 
+{-# INLINE for_render #-}
 {-# INLINE do_render_c #-}
+{-# INLINE for_canvas_widget_render_a #-}
+{-# INLINE for_canvas_widget_render_b #-}
+{-# INLINE for_canvas_widget_render_c #-}

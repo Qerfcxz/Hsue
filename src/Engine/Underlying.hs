@@ -64,14 +64,19 @@ move_clip::Point->Clip->Clip
 move_clip point clip=case clip of
     Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->Clip {x=x+point.x,y=y+point.y,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v}
 
+multiply_color::Color->Color->Color
+multiply_color first_color second_color=case first_color of
+    Color {red=first_red,green=first_green,blue=first_blue,alpha=first_alpha}->case second_color of
+        Color {red=second_red,green=second_green,blue=second_blue,alpha=second_alpha}->Color {red=first_red*second_red,green=first_green*second_green,blue=first_blue*second_blue,alpha=first_alpha*second_alpha}
+
 combine_arrange::Arrange->Arrange->Arrange
 combine_arrange first_arrange second_arrange=case first_arrange of
-    Arrange {point=first_point,matrix=first_matrix,red=first_red,green=first_green,blue=first_blue,alpha=first_alpha}->case second_arrange of
-        Arrange {point=second_point,matrix=second_matrix,red=second_red,green=second_green,blue=second_blue,alpha=second_alpha}->case first_point of
+    Arrange {point=first_point,matrix=first_matrix,color=first_color}->case second_arrange of
+        Arrange {point=second_point,matrix=second_matrix,color=second_color}->case first_point of
             Point {x=first_point_x,y=first_point_y}->case second_point of
                 Point {x=second_point_x,y=second_point_y}->case first_matrix of
                     Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
-                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_point_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_point_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},red=first_red*second_red,green=first_green*second_green,blue=first_blue*second_blue,alpha=first_alpha*second_alpha}
+                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_point_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_point_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},color=multiply_color first_color second_color}
 
 to_extended::FCT.CFloat->Extended
 to_extended number=Finite {number=number}
@@ -101,6 +106,7 @@ millisecond=1000000
 {-# INLINE seq_poke_array_a #-}
 {-# INLINE triple_reverse #-}
 {-# INLINE move_clip #-}
+{-# INLINE multiply_color #-}
 {-# INLINE combine_arrange #-}
 {-# INLINE to_extended #-}
 {-# INLINE from_extended #-}
