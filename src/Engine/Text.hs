@@ -14,11 +14,11 @@ import qualified SDL.Function as SDLF
 import qualified Error.Error as EE
 import qualified Data.Char as DC
 import qualified Data.Foldable as DF
+import qualified Data.HashSet as DHS
+import qualified Data.HashMap.Strict as DHMS
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
-import qualified Data.Map as DM
-import qualified Data.Sequence as DSeq
-import qualified Data.Set as DSet
+import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
@@ -26,70 +26,70 @@ import qualified Foreign.Marshal.Array as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-do_typesetting::FCT.CFloat->(DSeq.Seq (DSeq.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->DSeq.Seq (DSeq.Seq Row)->(DSeq.Seq (DSeq.Seq Row),FCT.CFloat)
-do_typesetting height calculate_typesetting article=do_typesetting_a (-height) (calculate_typesetting article) 0 article DSeq.empty
+do_typesetting::FCT.CFloat->(DS.Seq (DS.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat)
+do_typesetting height calculate_typesetting article=do_typesetting_a (-height) (calculate_typesetting article) 0 article DS.empty
 
-do_typesetting_a::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->Int->DSeq.Seq (DSeq.Seq Row)->DSeq.Seq (DSeq.Seq Row)->(DSeq.Seq (DSeq.Seq Row),FCT.CFloat)
+do_typesetting_a::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->Int->DS.Seq (DS.Seq Row)->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat)
 do_typesetting_a y calculate_typesetting row_number article this_article=case article of
-    DSeq.Empty->(this_article,y)
-    (paragraph DSeq.:<| other_paragraph)->let (new_paragraph,new_row_number,new_y)=do_typesetting_b y calculate_typesetting row_number paragraph in do_typesetting_a new_y calculate_typesetting new_row_number other_paragraph (this_article DSeq.|> new_paragraph)
+    DS.Empty->(this_article,y)
+    (paragraph DS.:<| other_paragraph)->let (new_paragraph,new_row_number,new_y)=do_typesetting_b y calculate_typesetting row_number paragraph in do_typesetting_a new_y calculate_typesetting new_row_number other_paragraph (this_article DS.|> new_paragraph)
 
-do_typesetting_b::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->Int->DSeq.Seq Row->(DSeq.Seq Row,Int,FCT.CFloat)
+do_typesetting_b::FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->Int->DS.Seq Row->(DS.Seq Row,Int,FCT.CFloat)
 do_typesetting_b y calculate_typesetting row_number paragraph=case paragraph of
-    DSeq.Empty->(DSeq.empty,row_number,y)
-    (row DSeq.:<| other_row)->let (lower,upper,x)=calculate_typesetting row_number in let new_y=y+upper in let (final_paragraph,final_row_number,final_y)=do_typesetting_b (new_y+lower) calculate_typesetting (row_number+1) other_row in case row of
-        Blank->(Blank DSeq.:<| final_paragraph,final_row_number,final_y)
-        Row {row_core,width,min_down,max_up,min_descent,max_ascent}->(Row {row_core=row_core,x=x-width/2,y=new_y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent} DSeq.:<| final_paragraph,final_row_number,final_y)
+    DS.Empty->(DS.empty,row_number,y)
+    (row DS.:<| other_row)->let (lower,upper,x)=calculate_typesetting row_number in let new_y=y+upper in let (final_paragraph,final_row_number,final_y)=do_typesetting_b (new_y+lower) calculate_typesetting (row_number+1) other_row in case row of
+        Blank->(Blank DS.:<| final_paragraph,final_row_number,final_y)
+        Row {row_core,width,min_down,max_up,min_descent,max_ascent}->(Row {row_core=row_core,x=x-width/2,y=new_y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent} DS.:<| final_paragraph,final_row_number,final_y)
 
-for_text::DIM.IntMap Font->DM.Map String Int->DSeq.Seq (DSeq.Seq Sentence)->(DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->Int->FCT.CFloat)->DSeq.Seq (DSeq.Seq Row)
-for_text font font_map article calculate_width=for_text_a font font_map article calculate_width 0 DSeq.empty
+for_text::DIM.IntMap Font->DHMS.HashMap String Int->DS.Seq (DS.Seq Sentence)->(DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat)->DS.Seq (DS.Seq Row)
+for_text font font_map article calculate_width=for_text_a font font_map article calculate_width 0 DS.empty
 
-for_text_a::DIM.IntMap Font->DM.Map String Int->DSeq.Seq (DSeq.Seq Sentence)->(DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->Int->FCT.CFloat)->Int->DSeq.Seq (DSeq.Seq Row)->DSeq.Seq (DSeq.Seq Row)
+for_text_a::DIM.IntMap Font->DHMS.HashMap String Int->DS.Seq (DS.Seq Sentence)->(DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat)->Int->DS.Seq (DS.Seq Row)->DS.Seq (DS.Seq Row)
 for_text_a font font_map article calculate_width row_number this_article=case article of
-    DSeq.Empty->this_article
-    (paragraph DSeq.:<| other_paragraph)->if DSeq.null paragraph then for_text_a font font_map other_paragraph calculate_width row_number (this_article DSeq.|> DSeq.singleton Blank) else let (new_article,new_row_number)=for_text_b font font_map paragraph Positive_infinity Negative_infinity Positive_infinity Negative_infinity 0 (calculate_width DSeq.empty this_article row_number) calculate_width row_number DSeq.empty DSeq.empty this_article in for_text_a font font_map other_paragraph calculate_width new_row_number new_article
+    DS.Empty->this_article
+    (paragraph DS.:<| other_paragraph)->if DS.null paragraph then for_text_a font font_map other_paragraph calculate_width row_number (this_article DS.|> DS.singleton Blank) else let (new_article,new_row_number)=for_text_b font font_map paragraph Positive_infinity Negative_infinity Positive_infinity Negative_infinity 0 (calculate_width DS.empty this_article row_number) calculate_width row_number DS.empty DS.empty this_article in for_text_a font font_map other_paragraph calculate_width new_row_number new_article
 
-for_text_b::DIM.IntMap Font->DM.Map String Int->DSeq.Seq Sentence->Extended->Extended->Extended->Extended->FCT.CFloat->FCT.CFloat->(DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->Int->FCT.CFloat)->Int->DSeq.Seq Character->DSeq.Seq Row->DSeq.Seq (DSeq.Seq Row)->(DSeq.Seq (DSeq.Seq Row),Int)
+for_text_b::DIM.IntMap Font->DHMS.HashMap String Int->DS.Seq Sentence->Extended->Extended->Extended->Extended->FCT.CFloat->FCT.CFloat->(DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat)->Int->DS.Seq Character->DS.Seq Row->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),Int)
 for_text_b font font_map paragraph min_down max_up min_descent max_ascent x width calculate_width row_number row_core this_paragraph article=case paragraph of
-    DSeq.Empty->(article DSeq.|> (this_paragraph DSeq.|> Row {row_core=row_core,x=0,y=0,width=x,min_down=from_extended min_down,max_up=from_extended max_up,min_descent=from_extended min_descent,max_ascent=from_extended max_ascent}),row_number+1)
-    (sentence DSeq.:<| other_sentence)->case sentence of
-        Sentence {sentence_core,path}->let font_id=map_lookup path font_map in let single_font=intmap_lookup font_id font in let (new_paragraph,new_row_core,new_row_number,new_width,new_x,new_max_ascent,new_min_descent,new_max_up,new_min_down)=for_text_c font_id single_font.glyph sentence_core min_down max_up min_descent max_ascent single_font.descent single_font.ascent x width (`calculate_width` article) row_number row_core this_paragraph in for_text_b font font_map other_sentence new_min_down new_max_up new_min_descent new_max_ascent new_x new_width calculate_width new_row_number new_row_core new_paragraph article
+    DS.Empty->(article DS.|> (this_paragraph DS.|> Row {row_core=row_core,x=0,y=0,width=x,min_down=from_extended min_down,max_up=from_extended max_up,min_descent=from_extended min_descent,max_ascent=from_extended max_ascent}),row_number+1)
+    (sentence DS.:<| other_sentence)->case sentence of
+        Sentence {sentence_core,path}->let font_id=hash_map_lookup path font_map in let single_font=int_map_lookup font_id font in let (new_paragraph,new_row_core,new_row_number,new_width,new_x,new_max_ascent,new_min_descent,new_max_up,new_min_down)=for_text_c font_id single_font.glyph sentence_core min_down max_up min_descent max_ascent single_font.descent single_font.ascent x width (`calculate_width` article) row_number row_core this_paragraph in for_text_b font font_map other_sentence new_min_down new_max_up new_min_descent new_max_ascent new_x new_width calculate_width new_row_number new_row_core new_paragraph article
 
-for_text_c::Int->DIM.IntMap Glyph->DSeq.Seq Phrase->Extended->Extended->Extended->Extended->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(DSeq.Seq Row->Int->FCT.CFloat)->Int->DSeq.Seq Character->DSeq.Seq Row->(DSeq.Seq Row,DSeq.Seq Character,Int,FCT.CFloat,FCT.CFloat,Extended,Extended,Extended,Extended)
+for_text_c::Int->DIM.IntMap Glyph->DS.Seq Phrase->Extended->Extended->Extended->Extended->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(DS.Seq Row->Int->FCT.CFloat)->Int->DS.Seq Character->DS.Seq Row->(DS.Seq Row,DS.Seq Character,Int,FCT.CFloat,FCT.CFloat,Extended,Extended,Extended,Extended)
 for_text_c font_id glyph sentence_core min_down max_up min_descent max_ascent descent ascent x width calculate_width row_number row_core paragraph=case sentence_core of
-    DSeq.Empty->(paragraph,row_core,row_number,width,x,max_ascent,min_descent,max_up,min_down)
-    (phrase DSeq.:<| other_phrase)->case phrase of
+    DS.Empty->(paragraph,row_core,row_number,width,x,max_ascent,min_descent,max_up,min_down)
+    (phrase DS.:<| other_phrase)->case phrase of
         Phrase {phrase_core,font_size,color}->let (new_paragraph,new_row_core,new_row_number,new_width,new_x,new_max_ascent,new_min_descent,new_max_up,new_min_down)=let new_descent=descent*font_size in let new_ascent=ascent*font_size in for_text_d font_id glyph phrase_core min_down max_up (min (to_extended new_descent) min_descent) (max (to_extended new_ascent) max_ascent) new_descent new_ascent font_size x width color calculate_width row_number row_core paragraph in for_text_c font_id glyph other_phrase new_min_down new_max_up new_min_descent new_max_ascent descent ascent new_x new_width calculate_width new_row_number new_row_core new_paragraph
 
-for_text_d::Int->DIM.IntMap Glyph->DT.Text->Extended->Extended->Extended->Extended->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Color->(DSeq.Seq Row->Int->FCT.CFloat)->Int->DSeq.Seq Character->DSeq.Seq Row->(DSeq.Seq Row,DSeq.Seq Character,Int,FCT.CFloat,FCT.CFloat,Extended,Extended,Extended,Extended)
+for_text_d::Int->DIM.IntMap Glyph->DT.Text->Extended->Extended->Extended->Extended->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Color->(DS.Seq Row->Int->FCT.CFloat)->Int->DS.Seq Character->DS.Seq Row->(DS.Seq Row,DS.Seq Character,Int,FCT.CFloat,FCT.CFloat,Extended,Extended,Extended,Extended)
 for_text_d font_id glyph text min_down max_up min_descent max_ascent descent ascent font_size x width color calculate_width row_number row_core paragraph=case text of
     DT.Empty->(paragraph,row_core,row_number,width,x,max_ascent,min_descent,max_up,min_down)
-    (char DT.:< other_char)->let unicode=DC.ord char in case intmap_lookup unicode glyph of
-        Glyph {advance,left,down,right,up,min_u,min_v,max_u,max_v}->let new_advance=advance*font_size in let new_left=left*font_size in let new_down=down*font_size in let new_right=right*font_size in let new_up=up*font_size in let extended_down=to_extended new_down in let extended_up=to_extended new_up in if width<x+new_right then let (new_paragraph,new_row_number,new_width)=for_text_e new_right calculate_width (row_number+1) (paragraph DSeq.|> Row {row_core=row_core,x=0,y=0,width=x,min_down=from_extended min_down,max_up=from_extended max_up,min_descent=from_extended min_descent,max_ascent=from_extended max_ascent}) in for_text_d font_id glyph other_char extended_down extended_up (to_extended descent) (to_extended ascent) descent ascent font_size new_advance new_width color calculate_width new_row_number (DSeq.singleton (Character {unicode=unicode,font_id=font_id,font_size=font_size,left=new_left,down=new_down,right=new_right,up=new_up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color})) new_paragraph else for_text_d font_id glyph other_char (min extended_down min_down) (max extended_up max_up) min_descent max_ascent descent ascent font_size (x+new_advance) width color calculate_width row_number (row_core DSeq.|> Character {unicode=unicode,font_id=font_id,font_size=font_size,left=x+new_left,down=new_down,right=x+new_right,up=new_up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}) paragraph
+    (char DT.:< other_char)->let unicode=DC.ord char in case int_map_lookup unicode glyph of
+        Glyph {advance,left,down,right,up,min_u,min_v,max_u,max_v}->let new_advance=advance*font_size in let new_left=left*font_size in let new_down=down*font_size in let new_right=right*font_size in let new_up=up*font_size in let extended_down=to_extended new_down in let extended_up=to_extended new_up in if width<x+new_right then let (new_paragraph,new_row_number,new_width)=for_text_e new_right calculate_width (row_number+1) (paragraph DS.|> Row {row_core=row_core,x=0,y=0,width=x,min_down=from_extended min_down,max_up=from_extended max_up,min_descent=from_extended min_descent,max_ascent=from_extended max_ascent}) in for_text_d font_id glyph other_char extended_down extended_up (to_extended descent) (to_extended ascent) descent ascent font_size new_advance new_width color calculate_width new_row_number (DS.singleton (Character {unicode=unicode,font_id=font_id,font_size=font_size,left=new_left,down=new_down,right=new_right,up=new_up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color})) new_paragraph else for_text_d font_id glyph other_char (min extended_down min_down) (max extended_up max_up) min_descent max_ascent descent ascent font_size (x+new_advance) width color calculate_width row_number (row_core DS.|> Character {unicode=unicode,font_id=font_id,font_size=font_size,left=x+new_left,down=new_down,right=x+new_right,up=new_up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}) paragraph
 
-for_text_e::FCT.CFloat->(DSeq.Seq Row->Int->FCT.CFloat)->Int->DSeq.Seq Row->(DSeq.Seq Row,Int,FCT.CFloat)
-for_text_e right calculate_width row_number paragraph=let width=calculate_width paragraph row_number in if right<width then (paragraph,row_number,width) else for_text_e right calculate_width (row_number+1) (paragraph DSeq.|> Blank)
+for_text_e::FCT.CFloat->(DS.Seq Row->Int->FCT.CFloat)->Int->DS.Seq Row->(DS.Seq Row,Int,FCT.CFloat)
+for_text_e right calculate_width row_number paragraph=let width=calculate_width paragraph row_number in if right<width then (paragraph,row_number,width) else for_text_e right calculate_width (row_number+1) (paragraph DS.|> Blank)
 
-to_charset::DSeq.Seq (DSeq.Seq Sentence)->DM.Map String (DSet.Set Char)
-to_charset=DF.foldl' (DF.foldl' (flip to_charset_a)) DM.empty
+to_charset::DS.Seq (DS.Seq Sentence)->DHMS.HashMap String (DHS.HashSet Char)
+to_charset=DF.foldl' (DF.foldl' (flip to_charset_a)) DHMS.empty
 
-to_charset_a::Sentence->DM.Map String (DSet.Set Char)->DM.Map String (DSet.Set Char)
+to_charset_a::Sentence->DHMS.HashMap String (DHS.HashSet Char)->DHMS.HashMap String (DHS.HashSet Char)
 to_charset_a sentence charset=case sentence of
-    Sentence {sentence_core,path}->DM.insert path (DF.foldl' (\this_charset phrase->DT.foldl' (flip DSet.insert) this_charset phrase.phrase_core) (DM.findWithDefault DSet.empty path charset) sentence_core) charset
+    Sentence {sentence_core,path}->DHMS.insert path (DF.foldl' (\this_charset phrase->DT.foldl' (flip DHS.insert) this_charset phrase.phrase_core) (DHMS.findWithDefault DHS.empty path charset) sentence_core) charset
 
-update_font::DM.Map String (DSet.Set Char)->Engine a b c d e->IO (Engine a b c d e)
-update_font charset engine=DM.foldlWithKey' (\action path char->action>>=update_font_a path char) (return engine) charset
+update_font::DHMS.HashMap String (DHS.HashSet Char)->Engine a b c d e->IO (Engine a b c d e)
+update_font charset engine=DHMS.foldlWithKey' (\action path char->action>>=update_font_a path char) (return engine) charset
 
-update_font_a::String->DSet.Set Char->Engine a b c d e->IO (Engine a b c d e)
-update_font_a path char engine=let charset=DSet.foldl' (\this_charset single_char->DIS.insert (DC.ord single_char) this_charset) DIS.empty char in case DM.lookup path engine.font_map of
-    Nothing->update_font_b engine.font_id path charset (engine {font_map=map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
+update_font_a::String->DHS.HashSet Char->Engine a b c d e->IO (Engine a b c d e)
+update_font_a path char engine=let code=DHS.foldl' (\this_code single_char->DIS.insert (DC.ord single_char) this_code) DIS.empty char in case DHMS.lookup path engine.font_map of
+    Nothing->update_font_b engine.font_id path code (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->case DIM.lookup font_id engine.font of
-        Nothing->update_font_b font_id path charset engine
-        Just font->update_font_b font_id path (DIS.difference charset (DIM.keysSet font.glyph)) engine
+        Nothing->update_font_b font_id path code engine
+        Just font->update_font_b font_id path (DIS.difference code (DIM.keysSet font.glyph)) engine
 
 update_font_b::Int->String->DIS.IntSet->Engine a b c d e->IO (Engine a b c d e)
-update_font_b font_id path charset engine=if DIS.null charset then return engine else with_string path $ \this_path->let size=DIS.size charset in FMA.allocaArray size $ \ptr_charset->do
-    DIS.foldr (flip . update_font_c) (const (return ())) charset ptr_charset
+update_font_b font_id path code engine=if DIS.null code then return engine else with_string path $ \this_path->let size=DIS.size code in FMA.allocaArray size $ \ptr_charset->do
+    DIS.foldr (flip . update_font_c) (const (return ())) code ptr_charset
     ptr_msdf_output<-MSDFF.msdf_generator this_path ptr_charset (fromIntegral size) engine.font_size engine.pixel_range
     catch_null ptr_msdf_output
     msdf_output<-FS.peek ptr_msdf_output

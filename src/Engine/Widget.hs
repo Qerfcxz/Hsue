@@ -32,7 +32,7 @@ import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
 from_same_insert_widget::Int->DS.Seq Insert_strategy->Widget a b c d e->Engine a b c d e->Engine a b c d e
-from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=intmap_update leaf_id (update_projection_object (from_same_insert_widget_a insert_widget_strategy widget)) engine.leaf}
+from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=int_map_update leaf_id (update_projection_object (from_same_insert_widget_a insert_widget_strategy widget)) engine.leaf}
 
 from_same_insert_widget_a::DS.Seq Insert_strategy->Widget a b c d e->Widget a b c d e->Widget a b c d e
 from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
@@ -41,15 +41,15 @@ from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_wi
     _->EE.quick_error "from_same_insert_widget_a" 0
 
 from_same_insert_widget_b::Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
-from_same_insert_widget_b min_index max_index insert_widget_strategy value intmap=case insert_widget_strategy of
-    DS.Empty->(intmap,max_index,min_index)
+from_same_insert_widget_b min_index max_index insert_widget_strategy value int_map=case insert_widget_strategy of
+    DS.Empty->(int_map,max_index,min_index)
     insert_strategy DS.:<| other_insert_strategy->case insert_strategy of
-        Min_strategy->from_same_insert_widget_b (min_index-1) max_index other_insert_strategy value (intmap_insert min_index value intmap)
-        Max_strategy->from_same_insert_widget_b min_index (max_index+1) other_insert_strategy value (intmap_insert max_index value intmap)
-        Index_strategy {seat}->if seat<=min_index then from_same_insert_widget_b (seat-1) max_index other_insert_strategy value (intmap_insert seat value intmap) else if max_index<=seat then from_same_insert_widget_b min_index (seat+1) other_insert_strategy value (intmap_insert seat value intmap) else from_same_insert_widget_b min_index max_index other_insert_strategy value (intmap_insert seat value intmap)
+        Min_strategy->from_same_insert_widget_b (min_index-1) max_index other_insert_strategy value (int_map_insert min_index value int_map)
+        Max_strategy->from_same_insert_widget_b min_index (max_index+1) other_insert_strategy value (int_map_insert max_index value int_map)
+        Index_strategy {seat}->if seat<=min_index then from_same_insert_widget_b (seat-1) max_index other_insert_strategy value (int_map_insert seat value int_map) else if max_index<=seat then from_same_insert_widget_b min_index (seat+1) other_insert_strategy value (int_map_insert seat value int_map) else from_same_insert_widget_b min_index max_index other_insert_strategy value (int_map_insert seat value int_map)
 
 from_insert_widget::Int->DS.Seq (Insert (Widget a b c d e))->Engine a b c d e->Engine a b c d e
-from_insert_widget leaf_id insert_widget engine=engine {leaf=intmap_update leaf_id (update_projection_object (from_insert_widget_a insert_widget)) engine.leaf}
+from_insert_widget leaf_id insert_widget engine=engine {leaf=int_map_update leaf_id (update_projection_object (from_insert_widget_a insert_widget)) engine.leaf}
 
 from_insert_widget_a::DS.Seq (Insert (Widget a b c d e))->Widget a b c d e->Widget a b c d e
 from_insert_widget_a insert_widget widget=case widget of
@@ -58,20 +58,20 @@ from_insert_widget_a insert_widget widget=case widget of
     _->EE.quick_error "from_insert_widget_a" 0
 
 from_insert_widget_b::Int->Int->(Widget a b c d e->f)->DS.Seq (Insert (Widget a b c d e))->DIM.IntMap f->(DIM.IntMap f,Int,Int)
-from_insert_widget_b min_index max_index transform insert_widget intmap=case insert_widget of
-    DS.Empty->(intmap,max_index,min_index)
+from_insert_widget_b min_index max_index transform insert_widget int_map=case insert_widget of
+    DS.Empty->(int_map,max_index,min_index)
     insert DS.:<| other_insert->case insert of
         Insert {insert_strategy,value}->case insert_strategy of
-            Min_strategy->from_insert_widget_b (min_index-1) max_index transform other_insert (intmap_insert min_index (transform value) intmap)
-            Max_strategy->from_insert_widget_b min_index (max_index+1) transform other_insert (intmap_insert max_index (transform value) intmap)
-            Index_strategy {seat}->if seat<=min_index then from_insert_widget_b (seat-1) max_index transform other_insert (intmap_insert seat (transform value) intmap) else if max_index<=seat then from_insert_widget_b min_index (seat+1) transform other_insert (intmap_insert seat (transform value) intmap) else from_insert_widget_b min_index max_index transform other_insert (intmap_insert seat (transform value) intmap)
+            Min_strategy->from_insert_widget_b (min_index-1) max_index transform other_insert (int_map_insert min_index (transform value) int_map)
+            Max_strategy->from_insert_widget_b min_index (max_index+1) transform other_insert (int_map_insert max_index (transform value) int_map)
+            Index_strategy {seat}->if seat<=min_index then from_insert_widget_b (seat-1) max_index transform other_insert (int_map_insert seat (transform value) int_map) else if max_index<=seat then from_insert_widget_b min_index (seat+1) transform other_insert (int_map_insert seat (transform value) int_map) else from_insert_widget_b min_index max_index transform other_insert (int_map_insert seat (transform value) int_map)
 
 create_leaf::Custom_widget_request e=>Int->Maybe Int->Widget_request a b c d e->Engine a b c d e->IO (Engine a b c d e)
 create_leaf leaf_id maybe_father_id widget_request engine=do
     (new_engine,widget)<-create_widget leaf_id widget_request engine
     case maybe_father_id of
-        Nothing->return (new_engine {leaf=intmap_insert leaf_id (Without {ancestry_id=DS.empty,object=widget}) new_engine.leaf})
-        Just father_id->let (node,single_node)=intmap_update_lookup father_id (\this_node->this_node {leaf_child=intset_insert leaf_id this_node.leaf_child}) new_engine.node in return (new_engine {leaf=intmap_insert leaf_id (Without {ancestry_id=single_node.ancestry_id DS.|> father_id,object=widget}) new_engine.leaf,node=node})
+        Nothing->return (new_engine {leaf=int_map_insert leaf_id (Without {ancestry_id=DS.empty,object=widget}) new_engine.leaf})
+        Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {leaf_child=int_set_insert leaf_id this_node.leaf_child}) new_engine.node in return (new_engine {leaf=int_map_insert leaf_id (Without {ancestry_id=single_node.ancestry_id DS.|> father_id,object=widget}) new_engine.leaf,node=node})
 
 create_widget::Custom_widget_request e=>Int->Widget_request a b c d e->Engine a b c d e->IO (Engine a b c d e,Widget a b c d e)
 create_widget leaf_id this_widget_request engine=case this_widget_request of
@@ -104,7 +104,7 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
         (new_engine,visual)<-create_visual visual_request engine
         return (new_engine,Visual {visual=visual})
     Group_visual_request {arrange,collect_order,group_visual_request}->do
-        (new_engine,group_visual)<-intmap_monad_map (\_ visual_request this_engine->create_visual visual_request this_engine) group_visual_request engine
+        (new_engine,group_visual)<-int_map_monad_action (\_ visual_request this_engine->create_visual visual_request this_engine) group_visual_request engine
         return (new_engine,Group_visual {arrange=arrange,collect_order=collect_order,group_visual=group_visual})
     Vector_visual_request {arrange,collect_order,vector_visual_request}->let size=DV.length vector_visual_request in do
         new_vector_visual<-DVM.new size
@@ -124,15 +124,15 @@ create_vector_widget leaf_id index vector_widget vector_widget_request engine=ca
         create_vector_widget leaf_id (index+1) vector_widget other_widget_request new_engine
 
 from_insert_widget_request::Custom_widget_request e=>Int->Int->Int->(Widget a b c d e->f)->DS.Seq (Insert (Widget_request a b c d e))->DIM.IntMap f->Engine a b c d e->IO (Engine a b c d e,DIM.IntMap f,Int,Int)
-from_insert_widget_request leaf_id min_index max_index transform insert_widget_request intmap engine=case insert_widget_request of
-    DS.Empty->return (engine,intmap,max_index,min_index)
+from_insert_widget_request leaf_id min_index max_index transform insert_widget_request int_map engine=case insert_widget_request of
+    DS.Empty->return (engine,int_map,max_index,min_index)
     insert DS.:<| other_insert->case insert of
         Insert {insert_strategy,value}->do
             (new_engine,widget)<-create_widget leaf_id value engine
             case insert_strategy of
-                Min_strategy->from_insert_widget_request leaf_id (min_index-1) max_index transform other_insert (intmap_insert min_index (transform widget) intmap) new_engine
-                Max_strategy->from_insert_widget_request leaf_id min_index (max_index+1) transform other_insert (intmap_insert max_index (transform widget) intmap) new_engine
-                Index_strategy {seat}->if seat<=min_index then from_insert_widget_request leaf_id (seat-1) max_index transform other_insert (intmap_insert seat (transform widget) intmap) new_engine else if max_index<=seat then from_insert_widget_request leaf_id min_index (seat+1) transform other_insert (intmap_insert seat (transform widget) intmap) new_engine else from_insert_widget_request leaf_id min_index max_index transform other_insert (intmap_insert seat (transform widget) intmap) new_engine
+                Min_strategy->from_insert_widget_request leaf_id (min_index-1) max_index transform other_insert (int_map_insert min_index (transform widget) int_map) new_engine
+                Max_strategy->from_insert_widget_request leaf_id min_index (max_index+1) transform other_insert (int_map_insert max_index (transform widget) int_map) new_engine
+                Index_strategy {seat}->if seat<=min_index then from_insert_widget_request leaf_id (seat-1) max_index transform other_insert (int_map_insert seat (transform widget) int_map) new_engine else if max_index<=seat then from_insert_widget_request leaf_id min_index (seat+1) transform other_insert (int_map_insert seat (transform widget) int_map) new_engine else from_insert_widget_request leaf_id min_index max_index transform other_insert (int_map_insert seat (transform widget) int_map) new_engine
 
 create_visual::Visual_request->Engine a b c d e->IO (Engine a b c d e,Visual)
 create_visual visual_request engine=case visual_request of
@@ -143,11 +143,11 @@ create_visual visual_request engine=case visual_request of
     Picture_request {arrange,path}->create_picture arrange path engine
     Large_picture_request {arrange,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
+        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
     Atlas_request {arrange,clip_request,path}->create_atlas arrange clip_request path 0 engine
     Large_atlas_request {arrange,clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
-        return (engine {album=intmap_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),size=size,album_id=engine.album_id,index=0})
+        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),size=size,album_id=engine.album_id,index=0})
     Animation_request {arrange,min_delay,animation_width,animation_height,padding,path}->create_animation arrange min_delay animation_width animation_height padding path engine
     Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
@@ -158,8 +158,8 @@ create_visual visual_request engine=case visual_request of
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=intmap_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
-            Just canvas_id->return (engine {canvas=intmap_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
+            Nothing->return (engine {canvas=int_map_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
+            Just canvas_id->return (engine {canvas=int_map_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
 
 do_image::(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -208,7 +208,7 @@ create_animation arrange min_delay width height padding path engine=with_string 
 create_animation_a::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->DW.Word32->DW.Word32->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Engine a b c d e->IO (Engine a b c d e)
 create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count index album_id engine=if count<=index then return engine else do
     texture<-upload_texture engine.device engine.picture_transfer_buffer width height (create_animation_b frame padding this_width size frame_width frame_height pack_width pack_height width_number number count index)
-    create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count (index+number) (album_id+1) (engine {album=intmap_insert album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
+    create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count (index+number) (album_id+1) (engine {album=int_map_insert album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
 
 create_animation_b::FP.Ptr (FP.Ptr SDLT.SDL_Surface)->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->FP.Ptr ()->IO ()
 create_animation_b frame padding width size frame_width frame_height pack_width pack_height width_number number count index map_transfer_buffer=do
@@ -223,14 +223,14 @@ create_animation_b frame padding width size frame_width frame_height pack_width 
         SDLF.sdl_destroy_surface surface
 
 remove_leaf::Custom_widget d=>Int->Engine a b c d e->IO (Engine a b c d e)
-remove_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in case projection of
+remove_leaf leaf_id engine=let (leaf,projection)=int_map_delete_lookup leaf_id engine.leaf in case projection of
     Without {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
     With {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
 
 remove_leaf_a::Custom_widget d=>DS.Seq Int->Widget a b c d e->DIM.IntMap (Projection a b c d e)->Int->Engine a b c d e->IO (Engine a b c d e)
 remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
     DS.Empty->all_selector_monad_action remove_widget object (engine {leaf=leaf})
-    _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=intmap_update father_id (\node->node {leaf_child=intset_delete leaf_id node.leaf_child}) engine.node})
+    _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=int_map_update father_id (\node->node {leaf_child=int_set_delete leaf_id node.leaf_child}) engine.node})
 
 remove_widget::Custom_widget d=>Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 remove_widget widget engine=case widget of
@@ -242,16 +242,16 @@ remove_widget widget engine=case widget of
 
 remove_visual::Visual->Engine a b c d e->IO (Engine a b c d e)
 remove_visual visual engine=case visual of
-    Large_picture {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
+    Large_picture {album_id}->let (album,single_album)=int_map_delete_lookup album_id engine.album in do
         SDLF.sdl_release_gpu_texture engine.device single_album.texture
         return (engine {album=album})
-    Large_atlas {album_id}->let (album,single_album)=intmap_delete_lookup album_id engine.album in do
+    Large_atlas {album_id}->let (album,single_album)=int_map_delete_lookup album_id engine.album in do
         SDLF.sdl_release_gpu_texture engine.device single_album.texture
         return (engine {album=album})
     Animation {album_number,album_id}->do
         new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
         return (engine {album=new_album})
-    Canvas {canvas_id}->let (canvas,single_canvas)=intmap_delete_lookup canvas_id engine.canvas in do
+    Canvas {canvas_id}->let (canvas,single_canvas)=int_map_delete_lookup canvas_id engine.canvas in do
         clean_canvas engine.device single_canvas
         return (engine {canvas=canvas})
     _->return engine
@@ -266,30 +266,30 @@ clean_canvas device canvas=case canvas of
         SDLF.sdl_release_gpu_texture device temporary_texture
 
 remove_animation::FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)
-remove_animation device index album_id album=let (new_album,single_album)=intmap_delete_lookup (album_id+index) album in do
+remove_animation device index album_id album=let (new_album,single_album)=int_map_delete_lookup (album_id+index) album in do
     SDLF.sdl_release_gpu_texture device single_album.texture
     return new_album
 
 create_node::Int->Maybe Int->(Engine a b c d e->Event b->Event b)->(Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e)->Engine a b c d e->Engine a b c d e
 create_node node_id maybe_father_id event_transform widget_transform engine=case maybe_father_id of
-    Nothing->engine {node=intmap_insert node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
-    Just father_id->let (node,single_node)=intmap_update_lookup father_id (\this_node->this_node {node_child=intset_insert node_id this_node.node_child}) engine.node in engine {node=intmap_insert node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
+    Nothing->engine {node=int_map_insert node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
+    Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {node_child=int_set_insert node_id this_node.node_child}) engine.node in engine {node=int_map_insert node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
 
 remove_node::Custom_widget d=>Int->Engine a b c d e->IO (Engine a b c d e)
-remove_node node_id engine=let (node,single_node)=intmap_delete_lookup node_id engine.node in case single_node.ancestry_id of
+remove_node node_id engine=let (node,single_node)=int_map_delete_lookup node_id engine.node in case single_node.ancestry_id of
     DS.Empty->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
-    _ DS.:|> father_id->remove_node_a single_node.leaf_child single_node.node_child (engine {node=intmap_update father_id (\this_node->this_node {node_child=intset_delete node_id this_node.node_child}) node})
+    _ DS.:|> father_id->remove_node_a single_node.leaf_child single_node.node_child (engine {node=int_map_update father_id (\this_node->this_node {node_child=int_set_delete node_id this_node.node_child}) node})
 
 remove_node_a::Custom_widget d=>DIS.IntSet->DIS.IntSet->Engine a b c d e->IO (Engine a b c d e)
 remove_node_a leaf_child node_child engine=do
-    new_engine<-intset_monad_fold remove_node_leaf leaf_child engine
-    intset_monad_fold remove_node_node node_child new_engine
+    new_engine<-int_set_monad_fold remove_node_leaf leaf_child engine
+    int_set_monad_fold remove_node_node node_child new_engine
 
 remove_node_leaf::Custom_widget d=>Int->Engine a b c d e->IO (Engine a b c d e)
-remove_node_leaf leaf_id engine=let (leaf,projection)=intmap_delete_lookup leaf_id engine.leaf in remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
+remove_node_leaf leaf_id engine=let (leaf,projection)=int_map_delete_lookup leaf_id engine.leaf in remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
 
 remove_node_node::Custom_widget d=>Int->Engine a b c d e->IO (Engine a b c d e)
-remove_node_node node_id engine=let (node,single_node)=intmap_delete_lookup node_id engine.node in remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
+remove_node_node node_id engine=let (node,single_node)=int_map_delete_lookup node_id engine.node in remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}
@@ -302,4 +302,5 @@ remove_node_node node_id engine=let (node,single_node)=intmap_delete_lookup node
 {-# INLINE create_atlas #-}
 {-# INLINE create_atlas_a #-}
 {-# INLINE create_large_atlas #-}
+{-# INLINE clean_canvas #-}
 {-# INLINE create_node #-}

@@ -52,7 +52,7 @@ do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call=
     FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_b engine window.adaptive_width window.adaptive_height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
+    DF.mapM_ (do_render_b engine window.adaptive_width window.adaptive_height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
 
 do_render_b::Engine a b c d e->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPURenderPass->FP.Ptr SDLT.SDL_GPUSampler->(Submit_mode,DW.Word32,DW.Word32)->IO ()
 do_render_b engine adaptive_width adaptive_height command_buffer render_pass sampler (submit_mode,index_size,index_offset)=do
@@ -70,13 +70,13 @@ do_render_b engine adaptive_width adaptive_height command_buffer render_pass sam
                 FS.pokeElemOff ptr 2 engine.font_size
                 FS.pokeElemOff ptr 3 engine.pixel_range
                 SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
-                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (intmap_lookup canvas_id engine.canvas),sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (int_map_lookup canvas_id engine.canvas),sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
             Submit_album {album_id}->do
                 FS.pokeElemOff ptr 2 engine.font_size
                 FS.pokeElemOff ptr 3 engine.pixel_range
                 SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
-                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(intmap_lookup album_id engine.album).texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
-            Submit_atlas_font {atlas_font_id}->case intmap_lookup atlas_font_id engine.atlas_font of
+                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(int_map_lookup album_id engine.album).texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            Submit_atlas_font {atlas_font_id}->case int_map_lookup atlas_font_id engine.atlas_font of
                 Atlas_font {texture,font_size,pixel_range}->do
                     FS.pokeElemOff ptr 2 font_size
                     FS.pokeElemOff ptr 3 pixel_range
@@ -111,14 +111,14 @@ do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_
         SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) (fromIntegral size)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    DF.mapM_ (do_render_b engine width height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->intmap_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
+    DF.mapM_ (do_render_b engine width height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
 
 for_canvas_widget_render::Maybe Int->Projection_path->Selector ()->Widget a b c d e->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_selector widget engine=case widget of
     Collector {submit}->let (vertex,index,parameter,draw_call)=for_submit submit in for_canvas_widget_render_a projection_path canvas_widget_render_selector engine $ \half_width half_height canvas_id this_engine->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
         catch_null command_buffer
-        case intmap_lookup canvas_id this_engine.canvas of
+        case int_map_lookup canvas_id this_engine.canvas of
             Bound_canvas {texture}->do
                 do_render_canvas this_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
@@ -132,7 +132,7 @@ for_canvas_widget_render_a projection_path selector engine action=selector_monad
 for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render_b widget action engine=case widget of
     Visual {visual}->for_canvas_widget_render_c visual action engine
-    Group_visual {collect_order,group_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (intmap_lookup index group_visual) action this_engine) engine collect_order
+    Group_visual {collect_order,group_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (int_map_lookup index group_visual) action this_engine) engine collect_order
     Vector_visual {collect_order,size,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! catch_out 0 size index) action this_engine) engine collect_order
     _->EE.quick_error "for_canvas_widget_render_b" 0
 
@@ -160,6 +160,7 @@ update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer 
 
 {-# INLINE for_render #-}
 {-# INLINE do_render_c #-}
+{-# INLINE for_canvas_widget_render #-}
 {-# INLINE for_canvas_widget_render_a #-}
 {-# INLINE for_canvas_widget_render_b #-}
 {-# INLINE for_canvas_widget_render_c #-}

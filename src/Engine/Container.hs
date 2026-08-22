@@ -1,131 +1,136 @@
+{-# LANGUAGE TupleSections #-}
+
 module Engine.Container where
 
 import qualified Error.Error as EE
+import qualified Data.Hashable as DH
+import qualified Data.HashMap.Strict as DHMS
+import qualified Data.HashSet as DHS
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
-import qualified Data.Map as DM
 import qualified Data.Tuple as DT
 
-map_lookup::Ord a=>a->DM.Map a b->b
-map_lookup key this_map=case DM.lookup key this_map of
+int_map_lookup::Int->DIM.IntMap a->a
+int_map_lookup key int_map=case DIM.lookup key int_map of
     Just value->value
-    _->EE.quick_error "map_lookup" 0
+    _->EE.quick_error "int_map_lookup" 0
 
-map_insert::Ord a=>a->b->DM.Map a b->DM.Map a b
-map_insert key value this_map=let (maybe_value,new_map)=DM.insertLookupWithKey (\_ _ this_value->this_value) key value this_map in case maybe_value of
-    Nothing->new_map
-    _->EE.quick_error "map_insert" 0
+int_map_insert::Int->a->DIM.IntMap a->DIM.IntMap a
+int_map_insert key value int_map=let (maybe_value,new_int_map)=DIM.insertLookupWithKey (\_ _ this_value->this_value) key value int_map in case maybe_value of
+    Nothing->new_int_map
+    _->EE.quick_error "int_map_insert" 0
 
-map_delete::Ord a=>a->DM.Map a b->DM.Map a b
-map_delete key this_map=let (maybe_value,new_map)=DM.updateLookupWithKey (\_ _->Nothing) key this_map in case maybe_value of
-    Nothing->EE.quick_error "map_delete" 0
-    _->new_map
+int_map_insert_maybe_lookup::Int->a->DIM.IntMap a->(DIM.IntMap a,Maybe a)
+int_map_insert_maybe_lookup key value int_map=DT.swap (DIM.insertLookupWithKey (\_ _ this_value->this_value) key value int_map)
 
-intmap_lookup::Int->DIM.IntMap a->a
-intmap_lookup key intmap=case DIM.lookup key intmap of
-    Just value->value
-    _->EE.quick_error "intmap_lookup" 0
+int_map_delete::Int->DIM.IntMap a->DIM.IntMap a
+int_map_delete key int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ _->Nothing) key int_map in case maybe_value of
+    Nothing->EE.quick_error "int_map_delete" 0
+    _->new_int_map
 
-intmap_insert::Int->a->DIM.IntMap a->DIM.IntMap a
-intmap_insert key value intmap=let (maybe_value,new_intmap)=DIM.insertLookupWithKey (\_ _ this_value->this_value) key value intmap in case maybe_value of
-    Nothing->new_intmap
-    _->EE.quick_error "intmap_insert" 0
+int_map_delete_lookup::Int->DIM.IntMap a->(DIM.IntMap a,a)
+int_map_delete_lookup key int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ _->Nothing) key int_map in case maybe_value of
+    Just value->(new_int_map,value)
+    _->EE.quick_error "int_map_delete_lookup" 0
 
-intmap_insert_maybe_lookup::Int->a->DIM.IntMap a->(DIM.IntMap a,Maybe a)
-intmap_insert_maybe_lookup key value intmap=DT.swap (DIM.insertLookupWithKey (\_ _ this_value->this_value) key value intmap)
+int_map_delete_maybe_lookup::Int->DIM.IntMap a->(DIM.IntMap a,Maybe a)
+int_map_delete_maybe_lookup key int_map=DT.swap (DIM.updateLookupWithKey (\_ _->Nothing) key int_map)
 
-intmap_delete::Int->DIM.IntMap a->DIM.IntMap a
-intmap_delete key intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ _->Nothing) key intmap in case maybe_value of
-    Nothing->EE.quick_error "intmap_delete" 0
-    _->new_intmap
+int_map_update::Int->(a->a)->DIM.IntMap a->DIM.IntMap a
+int_map_update key update int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ value->Just (update value)) key int_map in case maybe_value of
+    Nothing->EE.quick_error "int_map_update" 0
+    _->new_int_map
 
-intmap_delete_lookup::Int->DIM.IntMap a->(DIM.IntMap a,a)
-intmap_delete_lookup key intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ _->Nothing) key intmap in case maybe_value of
-    Just value->(new_intmap,value)
-    _->EE.quick_error "intmap_delete_lookup" 0
+int_map_update_safe::Int->(a->a)->DIM.IntMap a->DIM.IntMap a
+int_map_update_safe key update=DIM.update (Just . update) key
 
-intmap_delete_maybe_lookup::Int->DIM.IntMap a->(DIM.IntMap a,Maybe a)
-intmap_delete_maybe_lookup key intmap=DT.swap (DIM.updateLookupWithKey (\_ _->Nothing) key intmap)
+int_map_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
+int_map_update_lookup key update int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ value->Just (update value)) key int_map in case maybe_value of
+    Just value->(new_int_map,value)
+    _->EE.quick_error "int_map_update_lookup" 0
 
-intmap_update::Int->(a->a)->DIM.IntMap a->DIM.IntMap a
-intmap_update key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
-    Nothing->EE.quick_error "intmap_update" 0
-    _->new_intmap
+int_map_functor_update::Functor b=>Int->(a->b a)->DIM.IntMap a->b (DIM.IntMap a)
+int_map_functor_update key update=DIM.alterF (int_map_functor_update_a update) key
 
-intmap_update_safe::Int->(a->a)->DIM.IntMap a->DIM.IntMap a
-intmap_update_safe key update=DIM.update (Just . update) key
-
-intmap_update_lookup::Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
-intmap_update_lookup key update intmap=let (maybe_value,new_intmap)=DIM.updateLookupWithKey (\_ value->Just (update value)) key intmap in case maybe_value of
-    Just value->(new_intmap,value)
-    _->EE.quick_error "intmap_update_lookup" 0
-
-intmap_functor_update::Functor b=>Int->(a->b a)->DIM.IntMap a->b (DIM.IntMap a)
-intmap_functor_update key update=DIM.alterF (intmap_functor_update_a update) key
-
-intmap_functor_update_a::Functor b=>(a->b a)->Maybe a->b (Maybe a)
-intmap_functor_update_a update maybe_value=case maybe_value of
+int_map_functor_update_a::Functor b=>(a->b a)->Maybe a->b (Maybe a)
+int_map_functor_update_a update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
-    _->EE.quick_error "intmap_functor_update_a" 0
+    _->EE.quick_error "int_map_functor_update_a" 0
 
-intmap_monad_map::Monad c=>(Int->a->b->c (b,d))->DIM.IntMap a->b->c (b,DIM.IntMap d)
-intmap_monad_map action intmap value=DIM.foldlWithKey' (\this_action index this_value->this_action>>=intmap_monad_map_a index action this_value) (pure (value,DIM.empty)) intmap
+int_map_applicative_update_safe::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
+int_map_applicative_update_safe update int_map=DIM.traverseWithKey (\key value->int_map_applicative_update_a key update int_map value)
 
-intmap_monad_map_a::Monad c=>Int->(Int->a->b->c (b,d))->a->(b,DIM.IntMap d)->c (b,DIM.IntMap d)
-intmap_monad_map_a index action first_value (second_value,intmap)=do
-    (new_second_value,new_first_value)<-action index first_value second_value
-    return (new_second_value,intmap_insert index new_first_value intmap)
+int_map_applicative_update::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
+int_map_applicative_update update first_int_map second_int_map=if DIS.isSubsetOf (DIM.keysSet first_int_map) (DIM.keysSet second_int_map) then DIM.traverseWithKey (\key value->int_map_applicative_update_a key update first_int_map value) second_int_map else EE.quick_error "int_map_applicative_update" 0
 
-intmap_applicative_action_safe::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
-intmap_applicative_action_safe action intmap=DIM.traverseWithKey (\key value->intmap_applicative_action_a key action intmap value)
-
-intmap_applicative_action::Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
-intmap_applicative_action action first_intmap second_intmap=if DIS.isSubsetOf (DIM.keysSet first_intmap) (DIM.keysSet second_intmap) then DIM.traverseWithKey (\key value->intmap_applicative_action_a key action first_intmap value) second_intmap else EE.quick_error "intmap_applicative_action" 0
-
-intmap_applicative_action_a::Applicative c=>Int->(a->b->c b)->DIM.IntMap a->b->c b
-intmap_applicative_action_a key action intmap value=case DIM.lookup key intmap of
+int_map_applicative_update_a::Applicative c=>Int->(a->b->c b)->DIM.IntMap a->b->c b
+int_map_applicative_update_a key update int_map value=case DIM.lookup key int_map of
     Nothing->pure value
-    Just new_value->action new_value value
+    Just new_value->update new_value value
 
-intmap_monad_action::Monad b=>Int->(a->b (a,c))->b (a,DIM.IntMap c)->b (a,DIM.IntMap c)
-intmap_monad_action key transform action=do
-    (coproduct,intmap)<-action
-    (new_coproduct,value)<-transform coproduct
-    return (new_coproduct,intmap_insert key value intmap)
+int_map_monad_fold::Monad c=>(Int->a->b->c b)->DIM.IntMap a->b->c b
+int_map_monad_fold transform=DIM.foldrWithKey (\key first_value update second_value->transform key first_value second_value>>=update) return
 
-intmap_monad_fold::Monad c=>(Int->a->b->c b)->DIM.IntMap a->b->c b
-intmap_monad_fold transform=DIM.foldrWithKey (\key first_value update second_value->transform key first_value second_value>>=update) return
+int_map_monad_action::Monad c=>(Int->a->b->c (b,d))->DIM.IntMap a->b->c (b,DIM.IntMap d)
+int_map_monad_action action int_map value=DIM.foldlWithKey' (\this_action index this_value->this_action>>=int_map_monad_action_a index action this_value) (pure (value,DIM.empty)) int_map
 
-intset_insert::Int->DIS.IntSet->DIS.IntSet
-intset_insert key intset=if DIS.member key intset then EE.quick_error "intset_insert" 0 else DIS.insert key intset
+int_map_monad_action_a::Monad c=>Int->(Int->a->b->c (b,d))->a->(b,DIM.IntMap d)->c (b,DIM.IntMap d)
+int_map_monad_action_a index action first_value (second_value,int_map)=do
+    (new_second_value,new_first_value)<-action index first_value second_value
+    return (new_second_value,int_map_insert index new_first_value int_map)
 
-intset_delete::Int->DIS.IntSet->DIS.IntSet
-intset_delete key intset=if DIS.member key intset then DIS.delete key intset else EE.quick_error "intset_delete" 0
+int_set_insert::Int->DIS.IntSet->DIS.IntSet
+int_set_insert key int_set=if DIS.member key int_set then EE.quick_error "int_set_insert" 0 else DIS.insert key int_set
 
-intset_monad_fold::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
-intset_monad_fold transform=DIS.foldr (\key update value->transform key value>>=update) return
+int_set_delete::Int->DIS.IntSet->DIS.IntSet
+int_set_delete key int_set=if DIS.member key int_set then DIS.delete key int_set else EE.quick_error "int_set_delete" 0
 
-{-# INLINE map_lookup #-}
-{-# INLINE map_insert #-}
-{-# INLINE map_delete #-}
-{-# INLINE intmap_lookup #-}
-{-# INLINE intmap_insert #-}
-{-# INLINE intmap_insert_maybe_lookup #-}
-{-# INLINE intmap_delete #-}
-{-# INLINE intmap_delete_lookup #-}
-{-# INLINE intmap_delete_maybe_lookup #-}
-{-# INLINE intmap_update #-}
-{-# INLINE intmap_update_safe #-}
-{-# INLINE intmap_update_lookup #-}
-{-# INLINE intmap_functor_update #-}
-{-# INLINE intmap_functor_update_a #-}
-{-# INLINE intmap_monad_map #-}
-{-# INLINE intmap_monad_map_a #-}
-{-# INLINE intmap_applicative_action_safe #-}
-{-# INLINE intmap_applicative_action #-}
-{-# INLINE intmap_applicative_action_a #-}
-{-# INLINE intmap_monad_action #-}
-{-# INLINE intmap_monad_fold #-}
-{-# INLINE intset_insert #-}
-{-# INLINE intset_delete #-}
-{-# INLINE intset_monad_fold #-}
+int_set_monad_fold::Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
+int_set_monad_fold transform=DIS.foldr (\key update value->transform key value>>=update) return
+
+hash_map_lookup::(Eq a,DH.Hashable a)=>a->DHMS.HashMap a b->b
+hash_map_lookup key hash_map=case DHMS.lookup key hash_map of
+    Just value->value
+    _->EE.quick_error "hash_map_lookup" 0
+
+hash_map_insert::(Eq a,DH.Hashable a)=>a->b->DHMS.HashMap a b->DHMS.HashMap a b
+hash_map_insert key value hash_map=case DHMS.alterF (,Just value) key hash_map of
+    (Nothing,new_hash_map)->new_hash_map
+    _->EE.quick_error "hash_map_insert" 0
+
+hash_map_delete::(Eq a,DH.Hashable a)=>a->DHMS.HashMap a b->DHMS.HashMap a b
+hash_map_delete key hash_map=case DHMS.alterF (,Nothing) key hash_map of
+    (Just _,new_hash_map)->new_hash_map
+    _->EE.quick_error "hash_map_delete" 0
+
+hash_set_insert::(Eq a,DH.Hashable a)=>a->DHS.HashSet a->DHS.HashSet a
+hash_set_insert key hash_set=if DHS.member key hash_set then EE.quick_error "hash_set_insert" 0 else DHS.insert key hash_set
+
+hash_set_delete::(Eq a,DH.Hashable a)=>a->DHS.HashSet a->DHS.HashSet a
+hash_set_delete key hash_set=if DHS.member key hash_set then DHS.delete key hash_set else EE.quick_error "hash_set_delete" 0
+
+{-# INLINE int_map_lookup #-}
+{-# INLINE int_map_insert #-}
+{-# INLINE int_map_insert_maybe_lookup #-}
+{-# INLINE int_map_delete #-}
+{-# INLINE int_map_delete_lookup #-}
+{-# INLINE int_map_delete_maybe_lookup #-}
+{-# INLINE int_map_update #-}
+{-# INLINE int_map_update_safe #-}
+{-# INLINE int_map_update_lookup #-}
+{-# INLINE int_map_functor_update #-}
+{-# INLINE int_map_functor_update_a #-}
+{-# INLINE int_map_applicative_update_safe #-}
+{-# INLINE int_map_applicative_update #-}
+{-# INLINE int_map_applicative_update_a #-}
+{-# INLINE int_map_monad_fold #-}
+{-# INLINE int_map_monad_action #-}
+{-# INLINE int_map_monad_action_a #-}
+{-# INLINE int_set_insert #-}
+{-# INLINE int_set_delete #-}
+{-# INLINE int_set_monad_fold #-}
+{-# INLINE hash_map_lookup #-}
+{-# INLINE hash_map_insert #-}
+{-# INLINE hash_map_delete #-}
+{-# INLINE hash_set_insert #-}
+{-# INLINE hash_set_delete #-}

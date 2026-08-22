@@ -9,8 +9,10 @@ import Engine.Engine
 import Engine.Type
 import Engine.Underlying
 import qualified SDL.Function as SDLF
+import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
+import qualified Data.HashMap.Strict as DHMS
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
@@ -38,10 +40,10 @@ origin::Point
 origin=Point {x=0,y=0}
 
 fit_matrix::Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
-fit_matrix engine window_id widget_width widget_height width height=let window=intmap_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
+fit_matrix engine window_id widget_width widget_height width height=let window=int_map_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
 fit_window_matrix::Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
-fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=intmap_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
+fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=int_map_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
 identity_matrix::Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
@@ -57,6 +59,12 @@ y_scalable_matrix y y_y matrix=case matrix of
 update_arrange_matrix::(Matrix->Matrix)->Arrange->Arrange
 update_arrange_matrix update arrange=case arrange of
     Arrange {point,matrix,color}->Arrange {point=point,matrix=update matrix,color=color}
+
+from_foldable_enumeration::(Foldable a,Enum b)=>a b->Integer
+from_foldable_enumeration=DF.foldl' (\int value->int DB..|. DB.bit (fromEnum value)) 0
+
+insert_foldable_enumeration::(Foldable a,Enum b)=>a b->c->DHMS.HashMap Integer c->DHMS.HashMap Integer c
+insert_foldable_enumeration foldable=hash_map_insert (from_foldable_enumeration foldable)
 
 get_clipboard_text::IO String
 get_clipboard_text=do
@@ -91,6 +99,9 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE x_scalable_matrix #-}
 {-# INLINE y_scalable_matrix #-}
 {-# INLINE update_arrange_matrix #-}
+{-# INLINE from_foldable_enumeration #-}
+{-# INLINE insert_foldable_enumeration #-}
+{-# INLINE get_clipboard_text #-}
 {-# INLINE has_clipboard_text #-}
 {-# INLINE set_clipboard_text #-}
 {-# INLINE quick_create_engine #-}

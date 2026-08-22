@@ -17,10 +17,10 @@ import qualified SDL.Type as SDLT
 import qualified Error.Error as EE
 import qualified Data.Bits as DB
 import qualified Data.Foldable as DF
+import qualified Data.HashMap.Strict as DHMS
+import qualified Data.HashSet as DHS
 import qualified Data.IntMap as DIM
-import qualified Data.Map as DM
-import qualified Data.Sequence as DSeq
-import qualified Data.Set as DSet
+import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
@@ -80,17 +80,17 @@ create_engine custom main_id projection_strategy max_picture_size max_vertex_siz
     let (atlas,left,down,right,up)=atlas_insert width height padding (init_atlas new_width new_height)
     copy_texture device new_texture texture left down width height
     let album_id=initial_album_id+1 in case maybe_interval of
-        Nothing->return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=width,height=height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,atlas_font=DIM.empty,window_map=DM.empty,font_map=DM.empty,system_cursor_map=DM.insert System_cursor_pointer system_cursor_pointer (DM.singleton System_cursor_default system_cursor_default),request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,max_picture_size=max_picture_size,max_vertex_size=max_vertex_size,max_index_size=max_index_size,max_parameter_size=max_parameter_size,exponent_width=exponent_width,exponent_height=exponent_height,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range})
+        Nothing->return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=width,height=height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,atlas_font=DIM.empty,window_map=DHMS.empty,font_map=DHMS.empty,system_cursor_map=DHMS.insert System_cursor_pointer system_cursor_pointer (DHMS.singleton System_cursor_default system_cursor_default),request=DS.empty,key=DHS.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,max_picture_size=max_picture_size,max_vertex_size=max_vertex_size,max_index_size=max_index_size,max_parameter_size=max_parameter_size,exponent_width=exponent_width,exponent_height=exponent_height,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=Off,time=time,event_number=event_number,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range})
         Just interval->if 0<interval
             then do
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
                 catch_zero timer_id
-                return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=width,height=height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,atlas_font=DIM.empty,window_map=DM.empty,font_map=DM.empty,system_cursor_map=DM.insert System_cursor_pointer system_cursor_pointer (DM.singleton System_cursor_default system_cursor_default),request=DSeq.empty,key=DSet.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,max_picture_size=max_picture_size,max_vertex_size=max_vertex_size,max_index_size=max_index_size,max_parameter_size=max_parameter_size,exponent_width=exponent_width,exponent_height=exponent_height,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range})
+                return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=width,height=height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,atlas_font=DIM.empty,window_map=DHMS.empty,font_map=DHMS.empty,system_cursor_map=DHMS.insert System_cursor_pointer system_cursor_pointer (DHMS.singleton System_cursor_default system_cursor_default),request=DS.empty,key=DHS.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,max_picture_size=max_picture_size,max_vertex_size=max_vertex_size,max_index_size=max_index_size,max_parameter_size=max_parameter_size,exponent_width=exponent_width,exponent_height=exponent_height,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range})
             else EE.quick_error "create_engine" 0
 
 clean_engine::Engine a b c d e->IO ()
 clean_engine engine=do
-    _<-DM.traverseWithKey (const SDLF.sdl_destroy_cursor) engine.system_cursor_map
+    _<-DHMS.traverseWithKey (const SDLF.sdl_destroy_cursor) engine.system_cursor_map
     DF.traverse_ (clean_window engine.device) (DIM.elems engine.window)
     DF.traverse_ (\atlas_font->SDLF.sdl_release_gpu_texture engine.device atlas_font.texture) (DIM.elems engine.atlas_font)
     case engine.timer of
@@ -127,4 +127,7 @@ run_engine engine=FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alig
     Off->loop_engine_off sdl_event engine
     On {}->loop_engine_on sdl_event engine
 
+{-# INLINE init_engine #-}
 {-# INLINE quit_engine #-}
+{-# INLINE clean_window #-}
+{-# INLINE run_engine #-}

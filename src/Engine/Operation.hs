@@ -43,12 +43,12 @@ action_vector_widget action vector_widget=do
 
 update_group_widget::Int->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 update_group_widget this_index update widget=case widget of
-    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=intmap_update this_index update group_widget}
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update this_index update group_widget}
     _->EE.quick_error "update_group_widget" 0
 
 default_update_group_widget::(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 default_update_group_widget update widget=case widget of
-    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=intmap_update index update group_widget}
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update index update group_widget}
     _->EE.quick_error "default_update_group_widget" 0
 
 get_sdl_pipeline::Pipeline->FP.Ptr SDLT.SDL_GPUGraphicsPipeline
@@ -62,12 +62,12 @@ update_shader_reference update shader=case shader of
 
 widget_lookup::Widget a b c d e->Widget a b c d e
 widget_lookup this_widget=case this_widget of
-    Group {index,group_widget}->widget_lookup (intmap_lookup index group_widget)
+    Group {index,group_widget}->widget_lookup (int_map_lookup index group_widget)
     Vector {index,size,vector_widget}->widget_lookup (vector_widget DV.! catch_out 0 size index)
     Widget_trigger {widget}->widget_lookup widget
     Widget_io_trigger {widget}->widget_lookup widget
     Widget_mix_trigger {widget}->widget_lookup widget
-    Coroutine {index,coroutine_state}->widget_lookup (intmap_lookup index coroutine_state).widget
+    Coroutine {index,coroutine_state}->widget_lookup (int_map_lookup index coroutine_state).widget
     _->this_widget
 
 lock_widget::Custom_widget d=>Widget a b c d e->Widget a b c d e

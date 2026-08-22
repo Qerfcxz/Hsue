@@ -21,7 +21,7 @@ import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 
 clean_collect::Int->Selector a->Engine b c d e f->Engine b c d e f
-clean_collect leaf_id selector engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
+clean_collect leaf_id selector engine=engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
 
 clean_collect_a::Widget a b c d e->Widget a b c d e
 clean_collect_a widget=case widget of
@@ -29,36 +29,36 @@ clean_collect_a widget=case widget of
     _->widget
 
 collect_canvas::Point->Matrix->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Int->Int->Selector a->Insert_strategy->Engine b c d e f->Engine b c d e f
-collect_canvas origin matrix red green blue alpha maybe_border canvas_id leaf_id selector collect_strategy engine=case intmap_lookup canvas_id engine.canvas of
+collect_canvas origin matrix red green blue alpha maybe_border canvas_id leaf_id selector collect_strategy engine=case int_map_lookup canvas_id engine.canvas of
     Free_canvas {half_width,half_height}->case origin of
-        Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (Submit {submit_mode=Submit_canvas {canvas_id=canvas_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=0,v=1,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=1,v=1,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=1,v=0,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=0,v=0,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6})) collect_strategy)) selector)) engine.leaf}
+        Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (Submit {submit_mode=Submit_canvas {canvas_id=canvas_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=0,v=1,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=1,v=1,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=1,v=0,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=0,v=0,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6})) collect_strategy)) selector)) engine.leaf}
     _->EE.quick_error "collect_canvas" 0
 
 maybe_update_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
 maybe_update_collect update view maybe_border projection_path leaf_id selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
     Nothing->engine
-    Just (submit,new_engine)->new_engine {leaf=intmap_update leaf_id (update_projection_object (collect_a submit collect_strategy)) new_engine.leaf}
+    Just (submit,new_engine)->new_engine {leaf=int_map_update leaf_id (update_projection_object (collect_a submit collect_strategy)) new_engine.leaf}
 
 maybe_collect_update::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
-maybe_collect_update update view maybe_border projection_path leaf_id selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(intmap_update leaf_id (update_projection_object (collect_a (to_collect engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
+maybe_collect_update update view maybe_border projection_path leaf_id selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update leaf_id (update_projection_object (collect_a (to_collect engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
 collect::Custom_widget d=>(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
-collect view maybe_border projection_path leaf_id selector collect_strategy engine=engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (const (collect_a (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
+collect view maybe_border projection_path leaf_id selector collect_strategy engine=engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
 
 collect_a::DS.Seq Submit->Insert_strategy->Widget a b c d e->Widget a b c d e
 collect_a this_submit collect_strategy widget=case widget of
     Collector {initial_min_index,min_index,initial_max_index,max_index,submit}->case collect_strategy of
-        Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert min_index this_submit submit}
-        Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=intmap_insert max_index this_submit submit}
-        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=intmap_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=intmap_insert seat this_submit submit}
+        Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert min_index this_submit submit}
+        Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=int_map_insert max_index this_submit submit}
+        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=int_map_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit}
     _->EE.quick_error "collect_a" 0
 
 to_collect::Custom_widget d=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget a b c d e->DS.Seq Submit
 to_collect u v maybe_border widget=case widget of
     Visual {visual}->DS.singleton (to_collect_visual Nothing u v maybe_border visual)
-    Group_visual {arrange,collect_order,group_visual}->fmap (\index->to_collect_visual (Just arrange) u v maybe_border (intmap_lookup index group_visual)) collect_order
+    Group_visual {arrange,collect_order,group_visual}->fmap (\index->to_collect_visual (Just arrange) u v maybe_border (int_map_lookup index group_visual)) collect_order
     Vector_visual {arrange,collect_order,size,vector_visual}->fmap (\index->to_collect_visual (Just arrange) u v maybe_border (vector_visual DV.! catch_out 0 size index)) collect_order
     Custom_widget {custom}->custom_widget_collect u v maybe_border custom
     _->EE.quick_error "to_collect" 0
@@ -151,14 +151,14 @@ move projection_move leaf_id selector engine=let (new_engine,widget)=move_lookup
 
 move_a::Int->Selector Insert_strategy->Widget a b c d e->Engine a b c d e->Engine a b c d e
 move_a leaf_id selector widget engine=case widget of
-    Collector {submit}->engine {leaf=intmap_update leaf_id (update_projection_object (selector_update (collect_a (DF.foldl' (DS.><) DS.empty submit)) selector)) engine.leaf}
+    Collector {submit}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (collect_a (DF.foldl' (DS.><) DS.empty submit)) selector)) engine.leaf}
     _->EE.quick_error "move_a" 0
 
 move_lookup::Projection_move->Engine a b c d e->(Engine a b c d e,Widget a b c d e)
 move_lookup projection_move engine=case projection_move of
-    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=intmap_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (default_selector_update True consume_widget)) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (intmap_lookup leaf_id engine.leaf))
-    Image_move {leaf_id}->(engine,lookup_projection_image (intmap_lookup leaf_id engine.leaf))
-    Image_safe_move {leaf_id}->(engine,lookup_projection_image_safe (intmap_lookup leaf_id engine.leaf))
+    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=int_map_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (default_selector_update True consume_widget)) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (int_map_lookup leaf_id engine.leaf))
+    Image_move {leaf_id}->(engine,lookup_projection_image (int_map_lookup leaf_id engine.leaf))
+    Image_safe_move {leaf_id}->(engine,lookup_projection_image_safe (int_map_lookup leaf_id engine.leaf))
 
 consume_widget::Widget a b c d e->Widget a b c d e
 consume_widget widget=case widget of
