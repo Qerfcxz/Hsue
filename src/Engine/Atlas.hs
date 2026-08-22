@@ -21,7 +21,7 @@ init_atlas width height=Leaf_atlas {border=Border {left=0,down=0,right=width,up=
 atlas_insert::DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas of
     Just (new_atlas,left,down,right,up)->(new_atlas,left+padding,down+padding,right-padding,up-padding)
-    _->EE.quick_error "atlas_insert" 0
+    _->EE.empty_error
 
 atlas_insert_a::DW.Word32->DW.Word32->Atlas->Maybe (Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert_a width height atlas=case atlas of
@@ -48,14 +48,14 @@ from_image device picture_transfer_buffer picture_size path=with_string path $ \
     let new_height=fromIntegral height
     let new_pitch=4*width
     let size=new_pitch*height
-    CM.when (picture_size<size) (EE.quick_error "from_image" 0)
+    CM.when (picture_size<size) EE.empty_error
     texture<-upload_texture device picture_transfer_buffer new_width new_height (\map_transfer_buffer->if pitch==new_pitch then FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size) else CM.forM_ [0..height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (fromIntegral (y*new_pitch))) (FP.plusPtr pixel (fromIntegral (y*pitch))) (fromIntegral new_pitch))
     SDLF.sdl_destroy_surface new_surface
     return (texture,new_width,new_height)
 
 from_pixel::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->FP.Ptr DW.Word8->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
 from_pixel device picture_transfer_buffer picture_size pixel width height=let size=fromIntegral (4*width*height) in do
-    CM.when (picture_size<size) (EE.quick_error "from_pixel" 0)
+    CM.when (picture_size<size) EE.empty_error
     upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size))
 
 upload_texture::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->DW.Word32->DW.Word32->(FP.Ptr ()->IO ())->IO (FP.Ptr SDLT.SDL_GPUTexture)
@@ -86,7 +86,7 @@ copy_texture device texture_from texture_to x y width height=do
 
 create_white_texture::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
 create_white_texture device picture_transfer_buffer picture_size width height=let size=fromIntegral (4*width*height) in do
-    CM.when (picture_size<size) (EE.quick_error "create_white_texture" 0)
+    CM.when (picture_size<size) EE.empty_error
     upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.fillBytes (FP.castPtr map_transfer_buffer) 255 (fromIntegral size))
 
 {-# INLINE init_atlas #-}

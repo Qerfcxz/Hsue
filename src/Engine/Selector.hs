@@ -7,7 +7,6 @@ module Engine.Selector where
 import Engine.Container
 import Engine.Operation
 import Engine.Type
-import Engine.Underlying
 import qualified Error.Error as EE
 import qualified Control.Monad as CM
 import qualified Control.Monad.ST as CMST
@@ -32,17 +31,14 @@ group_default_selector_update bounded fallback wrapper function value initial_mi
 vector_all_selector_action::((a->Widget b c d e f->g)->a->DV.Vector (Widget b c d e f)->g)->(Widget b c d e f->a->g)->DV.Vector (Widget b c d e f)->a->g
 vector_all_selector_action function value vector_widget environment=function (flip value) environment vector_widget
 
-vector_all_selector_update::((DV.Vector (Widget a b c d e)->Widget a b c d e)->f->g)->((Widget a b c d e->h)->DV.Vector (Widget a b c d e)->f)->(Widget a b c d e->h)->Int->Int->DV.Vector (Widget a b c d e)->g
-vector_all_selector_update wrapper function value index size vector_widget=wrapper (\this_vector_widget->Vector {index=index,size=size,vector_widget=this_vector_widget}) (function value vector_widget)
+vector_all_selector_update::((DV.Vector (Widget a b c d e)->Widget a b c d e)->f->g)->((Widget a b c d e->h)->DV.Vector (Widget a b c d e)->f)->(Widget a b c d e->h)->Int->DV.Vector (Widget a b c d e)->g
+vector_all_selector_update wrapper function value index vector_widget=wrapper (\this_vector_widget->Vector {index=index,vector_widget=this_vector_widget}) (function value vector_widget)
 
-vector_default_selector_action::Bool->(a->b)->(Widget c d e f g->a->b)->Int->Int->DV.Vector (Widget c d e f g)->a->b
-vector_default_selector_action bounded function value index size vector_widget environment=if bounded then value (vector_widget DV.! catch_out 0 size index) environment else maybe (function environment) (`value` environment) (vector_widget DV.!? index)
+vector_default_selector_action::Bool->(a->b)->(Widget c d e f g->a->b)->Int->DV.Vector (Widget c d e f g)->a->b
+vector_default_selector_action bounded function value index vector_widget environment=if bounded then value (vector_widget DV.! index) environment else maybe (function environment) (`value` environment) (vector_widget DV.!? index)
 
-vector_default_selector_update::Bool->a->((DV.Vector (Widget b c d e f)->Widget b c d e f)->g->a)->(Int->h->Widget b c d e f->g)->h->Int->Int->DV.Vector (Widget b c d e f)->a
-vector_default_selector_update bounded fallback wrapper function value index size vector_widget=if bounded then let new_index=catch_out 0 size index in vector_default_selector_update_a wrapper function value new_index size (vector_widget DV.! new_index) else maybe fallback (vector_default_selector_update_a wrapper function value index size) (vector_widget DV.!? index)
-
-vector_default_selector_update_a::((DV.Vector (Widget a b c d e)->Widget a b c d e)->f->g)->(Int->h->Widget a b c d e->f)->h->Int->Int->Widget a b c d e->g
-vector_default_selector_update_a wrapper function value index size widget=wrapper (\vector_widget->Vector {index=index,size=size,vector_widget=vector_widget}) (function index value widget)
+vector_default_selector_update::Bool->a->((DV.Vector (Widget b c d e f)->Widget b c d e f)->g->a)->(Int->h->DV.Vector (Widget b c d e f)->g)->h->Int->DV.Vector (Widget b c d e f)->a
+vector_default_selector_update bounded fallback wrapper function value index vector_widget=let result=wrapper (\this_vector_widget->Vector {index=index,vector_widget=this_vector_widget}) (function index value vector_widget) in if bounded then result else maybe fallback (const result) (vector_widget DV.!? index)
 
 widget_trigger_selector_action::(Widget a b c d e->f->g)->Widget a b c d e->f->g
 widget_trigger_selector_action value=value
@@ -59,14 +55,14 @@ widget_mix_trigger_selector_update wrapper function value next widget_mix_trigge
 coroutine_all_selector_action::((a->Coroutine_state b c d e f->g)->a->DIM.IntMap (Coroutine_state b c d e f)->g)->(Widget b c d e f->a->g)->DIM.IntMap (Coroutine_state b c d e f)->a->g
 coroutine_all_selector_action function value coroutine_state environment=function (\this_environment single_coroutine_state->value single_coroutine_state.widget this_environment) environment coroutine_state
 
-coroutine_all_selector_update::((DIM.IntMap (Coroutine_state a b c d e)->Widget a b c d e)->f->g)->(h->DIM.IntMap (Coroutine_state a b c d e)->f)->h->Int->Int->Int->Int->Int->Int->Int->Int->DVS.Vector Layout->DV.Vector (Linear_coroutine a b c d e)->Bool->DIM.IntMap (Coroutine_state a b c d e)->g
-coroutine_all_selector_update wrapper function value index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state=wrapper (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=layout_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (function value coroutine_state)
+coroutine_all_selector_update::((DIM.IntMap (Coroutine_state a b c d e)->Widget a b c d e)->f->g)->(h->DIM.IntMap (Coroutine_state a b c d e)->f)->h->Int->Int->Int->Int->Int->Int->Int->DVS.Vector Layout->DV.Vector (Linear_coroutine a b c d e)->Bool->DIM.IntMap (Coroutine_state a b c d e)->g
+coroutine_all_selector_update wrapper function value index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state=wrapper (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (function value coroutine_state)
 
 coroutine_default_selector_action::Bool->(a->b)->(Widget c d e f g->a->b)->Int->DIM.IntMap (Coroutine_state c d e f g)->a->b
 coroutine_default_selector_action bounded function value index coroutine_state environment=if bounded then value (int_map_lookup index coroutine_state).widget environment else maybe (function environment) (\single_coroutine_state->value single_coroutine_state.widget environment) (DIM.lookup index coroutine_state)
 
-coroutine_default_selector_update::Bool->a->((DIM.IntMap (Coroutine_state b c d e f)->Widget b c d e f)->g->a)->(Int->h->DIM.IntMap (Coroutine_state b c d e f)->g)->h->Int->Int->Int->Int->Int->Int->Int->Int->DVS.Vector Layout->DV.Vector (Linear_coroutine b c d e f)->Bool->DIM.IntMap (Coroutine_state b c d e f)->a
-coroutine_default_selector_update bounded fallback wrapper function value index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state=let result=wrapper (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=layout_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (function index value coroutine_state) in if bounded then result else maybe fallback (const result) (DIM.lookup index coroutine_state)
+coroutine_default_selector_update::Bool->a->((DIM.IntMap (Coroutine_state b c d e f)->Widget b c d e f)->g->a)->(Int->h->DIM.IntMap (Coroutine_state b c d e f)->g)->h->Int->Int->Int->Int->Int->Int->Int->DVS.Vector Layout->DV.Vector (Linear_coroutine b c d e f)->Bool->DIM.IntMap (Coroutine_state b c d e f)->a
+coroutine_default_selector_update bounded fallback wrapper function value index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state=let result=wrapper (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) (function index value coroutine_state) in if bounded then result else maybe fallback (const result) (DIM.lookup index coroutine_state)
 
 selector_action::(a->Widget b c d e f->g->g)->Selector a->Widget b c d e f->g->g
 selector_action action this_selector this_widget environment=case this_selector of
@@ -78,7 +74,7 @@ selector_action action this_selector this_widget environment=case this_selector 
     Default_selector {maybe_value,value,bounded}->default_selector_action bounded (action value) this_widget (selector_action_a maybe_value action this_widget environment)
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
         Group {index,group_widget}->let backup=selector_action_a maybe_value action this_widget environment in group_default_selector_action bounded (const backup) (selector_action action selector) index group_widget backup
-        Vector {index,size,vector_widget}->let backup=selector_action_a maybe_value action this_widget environment in vector_default_selector_action bounded (const backup) (selector_action action selector) index size vector_widget backup
+        Vector {index,vector_widget}->let backup=selector_action_a maybe_value action this_widget environment in vector_default_selector_action bounded (const backup) (selector_action action selector) index vector_widget backup
         Widget_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
         Widget_io_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
         Widget_mix_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
@@ -96,7 +92,7 @@ selector_action action this_selector this_widget environment=case this_selector 
         Group {group_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then selector_action action single_selector (int_map_lookup index group_widget) this_environment else maybe this_environment (\widget->selector_action action single_selector widget this_environment) (DIM.lookup index group_widget)) (selector_action_a maybe_value action this_widget environment) group_selector
         _->selector_action_b strict maybe_value action this_widget environment
     Vector_selector {maybe_value,vector_selector,bounded,strict}->case this_widget of
-        Vector {size,vector_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then selector_action action single_selector (vector_widget DV.! catch_out 0 size index) this_environment else maybe this_environment (\widget->selector_action action single_selector widget this_environment) (vector_widget DV.!? index)) (selector_action_a maybe_value action this_widget environment) vector_selector
+        Vector {vector_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then selector_action action single_selector (vector_widget DV.! index) this_environment else maybe this_environment (\widget->selector_action action single_selector widget this_environment) (vector_widget DV.!? index)) (selector_action_a maybe_value action this_widget environment) vector_selector
         _->selector_action_b strict maybe_value action this_widget environment
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
         Widget_trigger {widget}->selector_action action selector widget (selector_action_a maybe_value action this_widget environment)
@@ -117,7 +113,7 @@ selector_action_a maybe_value action widget environment=case maybe_value of
     Just value->action value widget environment
 
 selector_action_b::Bool->Maybe a->(a->Widget b c d e f->g->g)->Widget b c d e f->g->g
-selector_action_b strict maybe_value action widget environment=if strict then EE.quick_error "selector_action_b" 0 else case maybe_value of
+selector_action_b strict maybe_value action widget environment=if strict then EE.empty_error else case maybe_value of
     Nothing->environment
     Just value->action value widget environment
 
@@ -134,14 +130,14 @@ all_selector_action action this_widget environment=case this_widget of
 trigger_selector_action::Bool->(Widget a b c d e->f->f)->Widget a b c d e->f->f
 trigger_selector_action bounded action this_widget environment=case this_widget of
     Group {index,group_widget}->group_default_selector_action bounded id (trigger_selector_action bounded action) index group_widget environment
-    Vector {index,size,vector_widget}->vector_default_selector_action bounded id (trigger_selector_action bounded action) index size vector_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded id (trigger_selector_action bounded action) index vector_widget environment
     Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded id (trigger_selector_action bounded action) index coroutine_state environment
     _->action this_widget environment
 
 default_selector_action::Bool->(Widget a b c d e->f->f)->Widget a b c d e->f->f
 default_selector_action bounded action this_widget environment=case this_widget of
     Group {index,group_widget}->group_default_selector_action bounded id (default_selector_action bounded action) index group_widget environment
-    Vector {index,size,vector_widget}->vector_default_selector_action bounded id (default_selector_action bounded action) index size vector_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded id (default_selector_action bounded action) index vector_widget environment
     Widget_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget environment
     Widget_io_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget environment
     Widget_mix_trigger {widget}->widget_trigger_selector_action (default_selector_action bounded action) widget environment
@@ -158,7 +154,7 @@ selector_monad_action action this_selector this_widget environment=case this_sel
     Default_selector {maybe_value,value,bounded}->selector_monad_action_a maybe_value action this_widget environment (default_selector_monad_action bounded (action value) this_widget)
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
         Group {index,group_widget}->selector_monad_action_a maybe_value action this_widget environment (group_default_selector_action bounded return (selector_monad_action action selector) index group_widget)
-        Vector {index,size,vector_widget}->selector_monad_action_a maybe_value action this_widget environment (vector_default_selector_action bounded return (selector_monad_action action selector) index size vector_widget)
+        Vector {index,vector_widget}->selector_monad_action_a maybe_value action this_widget environment (vector_default_selector_action bounded return (selector_monad_action action selector) index vector_widget)
         Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
         Widget_io_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
         Widget_mix_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
@@ -176,7 +172,7 @@ selector_monad_action action this_selector this_widget environment=case this_sel
         Group {group_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then this_environment>>=selector_monad_action action single_selector (int_map_lookup index group_widget) else maybe this_environment (\widget->this_environment>>=selector_monad_action action single_selector widget) (DIM.lookup index group_widget)) (selector_monad_action_a maybe_value action this_widget environment return) group_selector
         _->selector_monad_action_b strict maybe_value action this_widget environment
     Vector_selector {maybe_value,vector_selector,bounded,strict}->case this_widget of
-        Vector {size,vector_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then this_environment>>=selector_monad_action action single_selector (vector_widget DV.! catch_out 0 size index) else maybe this_environment (\widget->this_environment>>=selector_monad_action action single_selector widget) (vector_widget DV.!? index)) (selector_monad_action_a maybe_value action this_widget environment return) vector_selector
+        Vector {vector_widget}->DIM.foldlWithKey' (\this_environment index single_selector->if bounded then this_environment>>=selector_monad_action action single_selector (vector_widget DV.! index) else maybe this_environment (\widget->this_environment>>=selector_monad_action action single_selector widget) (vector_widget DV.!? index)) (selector_monad_action_a maybe_value action this_widget environment return) vector_selector
         _->selector_monad_action_b strict maybe_value action this_widget environment
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
         Widget_trigger {widget}->selector_monad_action_a maybe_value action this_widget environment (selector_monad_action action selector widget)
@@ -199,7 +195,7 @@ selector_monad_action_a maybe_value action widget environment monad=case maybe_v
         monad new_environment
 
 selector_monad_action_b::Applicative h=>Bool->Maybe a->(a->Widget b c d e f->g->h g)->Widget b c d e f->g->h g
-selector_monad_action_b strict maybe_value action widget environment=if strict then EE.quick_error "selector_monad_action_b" 0 else case maybe_value of
+selector_monad_action_b strict maybe_value action widget environment=if strict then EE.empty_error else case maybe_value of
     Nothing->pure environment
     Just value->action value widget environment
 
@@ -216,14 +212,14 @@ all_selector_monad_action action this_widget environment=case this_widget of
 trigger_selector_monad_action::Monad g=>Bool->(Widget a b c d e->f->g f)->Widget a b c d e->f->g f
 trigger_selector_monad_action bounded action this_widget environment=case this_widget of
     Group {index,group_widget}->group_default_selector_action bounded return (trigger_selector_monad_action bounded action) index group_widget environment
-    Vector {index,size,vector_widget}->vector_default_selector_action bounded return (trigger_selector_monad_action bounded action) index size vector_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded return (trigger_selector_monad_action bounded action) index vector_widget environment
     Coroutine {index,coroutine_state}->coroutine_default_selector_action bounded return (trigger_selector_monad_action bounded action) index coroutine_state environment
     _->action this_widget environment
 
 default_selector_monad_action::Monad g=>Bool->(Widget a b c d e->f->g f)->Widget a b c d e->f->g f
 default_selector_monad_action bounded action this_widget environment=case this_widget of
     Group {index,group_widget}->group_default_selector_action bounded return (default_selector_monad_action bounded action) index group_widget environment
-    Vector {index,size,vector_widget}->vector_default_selector_action bounded return (default_selector_monad_action bounded action) index size vector_widget environment
+    Vector {index,vector_widget}->vector_default_selector_action bounded return (default_selector_monad_action bounded action) index vector_widget environment
     Widget_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget environment
     Widget_io_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget environment
     Widget_mix_trigger {widget}->widget_trigger_selector_action (default_selector_monad_action bounded action) widget environment
@@ -240,25 +236,25 @@ selector_update update this_selector this_widget=case this_selector of
     Default_selector {maybe_value,value,bounded}->selector_update_a maybe_value update (default_selector_update bounded (update value) this_widget)
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_update_a maybe_value update (group_default_selector_update bounded this_widget id (\this_index this_this_selector this_group_widget->(if bounded then int_map_update else int_map_update_safe) this_index (selector_update update this_this_selector) this_group_widget) selector initial_min_index min_index initial_max_index max_index index group_widget)
-        Vector {index,size,vector_widget}->selector_update_a maybe_value update (vector_default_selector_update bounded this_widget id (\this_index this_this_selector widget->CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index (selector_update update this_this_selector widget)) vector_widget)) selector index size vector_widget)
+        Vector {index,vector_widget}->selector_update_a maybe_value update (vector_default_selector_update bounded this_widget id (\this_index this_this_selector this_vector_widget->CMST.runST (action_vector_widget (\this_this_vector_widget->DVM.write this_this_vector_widget this_index (selector_update update this_this_selector (this_vector_widget DV.! this_index))) this_vector_widget)) selector index vector_widget)
         Widget_trigger {next,widget_trigger,widget}->selector_update_a maybe_value update (widget_trigger_selector_update id id (selector_update update selector) next widget_trigger widget)
         Widget_io_trigger {next,widget_io_trigger,widget}->selector_update_a maybe_value update (widget_io_trigger_selector_update id id (selector_update update selector) next widget_io_trigger widget)
         Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_update_a maybe_value update (widget_mix_trigger_selector_update id id (selector_update update selector) next widget_mix_trigger order widget)
-        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (coroutine_default_selector_update bounded this_widget id (\this_index this_this_selector this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (selector_update update this_this_selector)) this_coroutine_state) selector index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state)
+        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (coroutine_default_selector_update bounded this_widget id (\this_index this_this_selector this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (selector_update update this_this_selector)) this_coroutine_state) selector index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_update_b strict maybe_value update this_widget
     Any_selector {maybe_value,selector,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_update_a maybe_value update (group_all_selector_update id fmap (selector_update update selector) initial_min_index min_index initial_max_index max_index index group_widget)
-        Vector {index,size,vector_widget}->selector_update_a maybe_value update (vector_all_selector_update id fmap (selector_update update selector) index size vector_widget)
+        Vector {index,vector_widget}->selector_update_a maybe_value update (vector_all_selector_update id fmap (selector_update update selector) index vector_widget)
         Widget_trigger {next,widget_trigger,widget}->selector_update_a maybe_value update (widget_trigger_selector_update id id (selector_update update selector) next widget_trigger widget)
         Widget_io_trigger {next,widget_io_trigger,widget}->selector_update_a maybe_value update (widget_io_trigger_selector_update id id (selector_update update selector) next widget_io_trigger widget)
         Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_update_a maybe_value update (widget_mix_trigger_selector_update id id (selector_update update selector) next widget_mix_trigger order widget)
-        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (coroutine_all_selector_update id fmap (update_coroutine_state (selector_update update selector)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state)
+        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (coroutine_all_selector_update id fmap (update_coroutine_state (selector_update update selector)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_update_b strict maybe_value update this_widget
     Group_selector {maybe_value,group_selector,bounded,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_update_a maybe_value update (Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=DIM.foldlWithKey' (\this_group_widget this_index single_selector->(if bounded then int_map_update else int_map_update_safe) this_index (selector_update update single_selector) this_group_widget) group_widget group_selector})
         _->selector_update_b strict maybe_value update this_widget
     Vector_selector {maybe_value,vector_selector,bounded,strict}->case this_widget of
-        Vector {index,size,vector_widget}->selector_update_a maybe_value update (Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->CM.void (DIM.traverseWithKey (\this_index single_selector->if bounded then let new_index=catch_out 0 size this_index in DVM.write this_vector_widget new_index (selector_update update single_selector (vector_widget DV.! new_index)) else maybe (return ()) (DVM.write this_vector_widget this_index . selector_update update single_selector) (vector_widget DV.!? this_index)) vector_selector)) vector_widget)})
+        Vector {index,vector_widget}->selector_update_a maybe_value update (Vector {index=index,vector_widget=CMST.runST (action_vector_widget (\this_vector_widget->CM.void (DIM.traverseWithKey (\this_index single_selector->if bounded then DVM.write this_vector_widget this_index (selector_update update single_selector (vector_widget DV.! this_index)) else maybe (return ()) (DVM.write this_vector_widget this_index . selector_update update single_selector) (vector_widget DV.!? this_index)) vector_selector)) vector_widget)})
         _->selector_update_b strict maybe_value update this_widget
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
         Widget_trigger {next,widget_trigger,widget}->selector_update_a maybe_value update (Widget_trigger {next=next,widget_trigger=widget_trigger,widget=selector_update update selector widget})
@@ -270,7 +266,7 @@ selector_update update this_selector this_widget=case this_selector of
         Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_update_a maybe_value update (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=selector_update update selector widget})
         _->selector_update_b strict maybe_value update this_widget
     Coroutine_selector {maybe_value,coroutine_selector,bounded,strict}->case this_widget of
-        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=layout_size,coroutine_state=DIM.foldlWithKey' (\this_coroutine_state this_index single_selector->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (selector_update update single_selector)) this_coroutine_state) coroutine_state coroutine_selector,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
+        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=DIM.foldlWithKey' (\this_coroutine_state this_index single_selector->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (selector_update update single_selector)) this_coroutine_state) coroutine_state coroutine_selector,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
         _->selector_update_b strict maybe_value update this_widget
 
 selector_update_a::Maybe a->(a->Widget b c d e f->Widget b c d e f)->Widget b c d e f->Widget b c d e f
@@ -279,35 +275,35 @@ selector_update_a maybe_value update widget=case maybe_value of
     Just value->update value widget
 
 selector_update_b::Bool->Maybe a->(a->Widget b c d e f->Widget b c d e f)->Widget b c d e f->Widget b c d e f
-selector_update_b strict maybe_value update widget=if strict then EE.quick_error "selector_update_b" 0 else case maybe_value of
+selector_update_b strict maybe_value update widget=if strict then EE.empty_error else case maybe_value of
     Nothing->widget
     Just value->update value widget
 
 all_selector_update::(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 all_selector_update update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->group_all_selector_update id fmap (all_selector_update update) initial_min_index min_index initial_max_index max_index index group_widget
-    Vector {index,size,vector_widget}->vector_all_selector_update id fmap (all_selector_update update) index size vector_widget
+    Vector {index,vector_widget}->vector_all_selector_update id fmap (all_selector_update update) index vector_widget
     Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update id id (all_selector_update update) next widget_trigger widget
     Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update id id (all_selector_update update) next widget_io_trigger widget
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update id id (all_selector_update update) next widget_mix_trigger order widget
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_all_selector_update id fmap (update_coroutine_state (all_selector_update update)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_all_selector_update id fmap (update_coroutine_state (all_selector_update update)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
 trigger_selector_update::Bool->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 trigger_selector_update bounded update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->group_default_selector_update bounded this_widget id (\this_index this_update this_group_widget->(if bounded then int_map_update else int_map_update_safe) this_index (trigger_selector_update bounded this_update) this_group_widget) update initial_min_index min_index initial_max_index max_index index group_widget
-    Vector {index,size,vector_widget}->vector_default_selector_update bounded this_widget id (\this_index this_update widget->CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index (trigger_selector_update bounded this_update widget)) vector_widget)) update index size vector_widget
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded this_widget id (\this_index this_update this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (trigger_selector_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state
+    Vector {index,vector_widget}->vector_default_selector_update bounded this_widget id (\this_index this_update this_vector_widget->CMST.runST (action_vector_widget (\this_this_vector_widget->DVM.write this_this_vector_widget this_index (trigger_selector_update bounded this_update (this_vector_widget DV.! this_index))) this_vector_widget)) update index vector_widget
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded this_widget id (\this_index this_update this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (trigger_selector_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
 default_selector_update::Bool->(Widget a b c d e->Widget a b c d e)->Widget a b c d e->Widget a b c d e
 default_selector_update bounded update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->group_default_selector_update bounded this_widget id (\this_index this_update this_group_widget->(if bounded then int_map_update else int_map_update_safe) this_index (default_selector_update bounded this_update) this_group_widget) update initial_min_index min_index initial_max_index max_index index group_widget
-    Vector {index,size,vector_widget}->vector_default_selector_update bounded this_widget id (\this_index this_update widget->CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index (default_selector_update bounded this_update widget)) vector_widget)) update index size vector_widget
+    Vector {index,vector_widget}->vector_default_selector_update bounded this_widget id (\this_index this_update this_vector_widget->CMST.runST (action_vector_widget (\this_this_vector_widget->DVM.write this_this_vector_widget this_index (default_selector_update bounded this_update (this_vector_widget DV.! this_index))) this_vector_widget)) update index vector_widget
     Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update id id (default_selector_update bounded update) next widget_trigger widget
     Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update id id (default_selector_update bounded update) next widget_io_trigger widget
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update id id (default_selector_update bounded update) next widget_mix_trigger order widget
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded this_widget id (\this_index this_update this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (default_selector_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded this_widget id (\this_index this_update this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (default_selector_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
 selector_monad_update::Monad g=>(a->Widget b c d e f->g (Widget b c d e f))->Selector a->Widget b c d e f->g (Widget b c d e f)
@@ -320,25 +316,25 @@ selector_monad_update update this_selector this_widget=case this_selector of
     Default_selector {maybe_value,value,bounded}->selector_monad_update_a maybe_value update (default_selector_applicative_update bounded (update value) this_widget)
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_monad_update_a maybe_value update (group_default_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_group_widget->int_map_functor_update this_index (selector_monad_update update this_this_selector) this_group_widget) selector initial_min_index min_index initial_max_index max_index index group_widget)
-        Vector {index,size,vector_widget}->selector_monad_update_a maybe_value update (vector_default_selector_update bounded (return this_widget) fmap (\this_index this_this_selector widget->fmap (\this_this_widget->CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index this_this_widget) vector_widget)) (selector_monad_update update this_this_selector widget)) selector index size vector_widget)
+        Vector {index,vector_widget}->selector_monad_update_a maybe_value update (vector_default_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_vector_widget->fmap (\widget->CMST.runST (action_vector_widget (\this_this_vector_widget->DVM.write this_this_vector_widget this_index widget) this_vector_widget)) (selector_monad_update update this_this_selector (this_vector_widget DV.! this_index))) selector index vector_widget)
         Widget_trigger {next,widget_trigger,widget}->selector_monad_update_a maybe_value update (widget_trigger_selector_update fmap id (selector_monad_update update selector) next widget_trigger widget)
         Widget_io_trigger {next,widget_io_trigger,widget}->selector_monad_update_a maybe_value update (widget_io_trigger_selector_update fmap id (selector_monad_update update selector) next widget_io_trigger widget)
         Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_monad_update_a maybe_value update (widget_mix_trigger_selector_update fmap id (selector_monad_update update selector) next widget_mix_trigger order widget)
-        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_a maybe_value update (coroutine_default_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (selector_monad_update update this_this_selector)) this_coroutine_state) selector index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state)
+        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_a maybe_value update (coroutine_default_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (selector_monad_update update this_this_selector)) this_coroutine_state) selector index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_monad_update_b strict maybe_value update this_widget
     Any_selector {maybe_value,selector,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_monad_update_a maybe_value update (group_all_selector_update fmap traverse (selector_monad_update update selector) initial_min_index min_index initial_max_index max_index index group_widget)
-        Vector {index,size,vector_widget}->selector_monad_update_a maybe_value update (vector_all_selector_update fmap traverse (selector_monad_update update selector) index size vector_widget)
+        Vector {index,vector_widget}->selector_monad_update_a maybe_value update (vector_all_selector_update fmap traverse (selector_monad_update update selector) index vector_widget)
         Widget_trigger {next,widget_trigger,widget}->selector_monad_update_a maybe_value update (widget_trigger_selector_update fmap id (selector_monad_update update selector) next widget_trigger widget)
         Widget_io_trigger {next,widget_io_trigger,widget}->selector_monad_update_a maybe_value update (widget_io_trigger_selector_update fmap id (selector_monad_update update selector) next widget_io_trigger widget)
         Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_monad_update_a maybe_value update (widget_mix_trigger_selector_update fmap id (selector_monad_update update selector) next widget_mix_trigger order widget)
-        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_a maybe_value update (coroutine_all_selector_update fmap traverse (functor_update_coroutine_state (selector_monad_update update selector)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state)
+        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_a maybe_value update (coroutine_all_selector_update fmap traverse (functor_update_coroutine_state (selector_monad_update update selector)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_monad_update_b strict maybe_value update this_widget
     Group_selector {maybe_value,group_selector,bounded,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_monad_update_c maybe_value update (\this_group_widget->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=this_group_widget}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (selector_monad_update update) group_selector group_widget)
         _->selector_monad_update_b strict maybe_value update this_widget
     Vector_selector {maybe_value,vector_selector,bounded,strict}->case this_widget of
-        Vector {index,size,vector_widget}->selector_monad_update_c maybe_value update (\this_vector_widget->Vector {index=index,size=size,vector_widget=CMST.runST (action_vector_widget (\this_this_vector_widget->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_widget) this_vector_widget)) vector_widget)}) (DIM.traverseWithKey (\this_index single_selector->if bounded then fmap Just (selector_monad_update update single_selector (vector_widget DV.! catch_out 0 size this_index)) else maybe (return Nothing) (fmap Just . selector_monad_update update single_selector) (vector_widget DV.!? this_index)) vector_selector)
+        Vector {index,vector_widget}->selector_monad_update_c maybe_value update (\this_vector_widget->Vector {index=index,vector_widget=CMST.runST (action_vector_widget (\this_this_vector_widget->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_widget) this_vector_widget)) vector_widget)}) (DIM.traverseWithKey (\this_index single_selector->if bounded then fmap Just (selector_monad_update update single_selector (vector_widget DV.! this_index)) else maybe (return Nothing) (fmap Just . selector_monad_update update single_selector) (vector_widget DV.!? this_index)) vector_selector)
         _->selector_monad_update_b strict maybe_value update this_widget
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
         Widget_trigger {next,widget_trigger,widget}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=this_this_widget}) (selector_monad_update update selector widget)
@@ -350,7 +346,7 @@ selector_monad_update update this_selector this_widget=case this_selector of
         Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_this_widget}) (selector_monad_update update selector widget)
         _->selector_monad_update_b strict maybe_value update this_widget
     Coroutine_selector {maybe_value,coroutine_selector,bounded,strict}->case this_widget of
-        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_c maybe_value update (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,layout_size=layout_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (functor_update_coroutine_state . selector_monad_update update) coroutine_selector coroutine_state)
+        Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_c maybe_value update (\this_coroutine_state->Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (functor_update_coroutine_state . selector_monad_update update) coroutine_selector coroutine_state)
         _->selector_monad_update_b strict maybe_value update this_widget
 
 selector_monad_update_a::Monad g=>Maybe a->(a->Widget b c d e f->g (Widget b c d e f))->g (Widget b c d e f)->g (Widget b c d e f)
@@ -361,7 +357,7 @@ selector_monad_update_a maybe_value update applicative_widget=case maybe_value o
         update value widget
 
 selector_monad_update_b::Applicative g=>Bool->Maybe a->(a->Widget b c d e f->g (Widget b c d e f))->Widget b c d e f->g (Widget b c d e f)
-selector_monad_update_b strict maybe_value update widget=if strict then EE.quick_error "selector_monad_update_b" 0 else case maybe_value of
+selector_monad_update_b strict maybe_value update widget=if strict then EE.empty_error else case maybe_value of
     Nothing->pure widget
     Just value->update value widget
 
@@ -375,28 +371,28 @@ selector_monad_update_c maybe_value update function applicative_value=case maybe
 all_selector_applicative_update::Applicative f=>(Widget a b c d e->f (Widget a b c d e))->Widget a b c d e->f (Widget a b c d e)
 all_selector_applicative_update update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->group_all_selector_update fmap traverse (all_selector_applicative_update update) initial_min_index min_index initial_max_index max_index index group_widget
-    Vector {index,size,vector_widget}->vector_all_selector_update fmap traverse (all_selector_applicative_update update) index size vector_widget
+    Vector {index,vector_widget}->vector_all_selector_update fmap traverse (all_selector_applicative_update update) index vector_widget
     Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update fmap id (all_selector_applicative_update update) next widget_trigger widget
     Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update fmap id (all_selector_applicative_update update) next widget_io_trigger widget
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update fmap id (all_selector_applicative_update update) next widget_mix_trigger order widget
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_all_selector_update fmap traverse (functor_update_coroutine_state (all_selector_applicative_update update)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_all_selector_update fmap traverse (functor_update_coroutine_state (all_selector_applicative_update update)) index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
 trigger_selector_applicative_update::Applicative f=>Bool->(Widget a b c d e->f (Widget a b c d e))->Widget a b c d e->f (Widget a b c d e)
 trigger_selector_applicative_update bounded update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->group_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_group_widget->int_map_functor_update this_index (trigger_selector_applicative_update bounded this_update) this_group_widget) update initial_min_index min_index initial_max_index max_index index group_widget
-    Vector {index,size,vector_widget}->vector_default_selector_update bounded (pure this_widget) fmap (\this_index this_update widget->fmap (\this_this_widget->CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index this_this_widget) vector_widget)) (trigger_selector_applicative_update bounded this_update widget)) update index size vector_widget
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (trigger_selector_applicative_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state
+    Vector {index,vector_widget}->vector_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_vector_widget->fmap (\widget->CMST.runST (action_vector_widget (\this_this_vector_widget->DVM.write this_this_vector_widget this_index widget) this_vector_widget)) (trigger_selector_applicative_update bounded this_update (this_vector_widget DV.! this_index))) update index vector_widget
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (trigger_selector_applicative_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
 default_selector_applicative_update::Applicative f=>Bool->(Widget a b c d e->f (Widget a b c d e))->Widget a b c d e->f (Widget a b c d e)
 default_selector_applicative_update bounded update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->group_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_group_widget->int_map_functor_update this_index (default_selector_applicative_update bounded this_update) this_group_widget) update initial_min_index min_index initial_max_index max_index index group_widget
-    Vector {index,size,vector_widget}->vector_default_selector_update bounded (pure this_widget) fmap (\this_index this_update widget->fmap (\this_this_widget->CMST.runST (action_vector_widget (\this_vector_widget->DVM.write this_vector_widget this_index this_this_widget) vector_widget)) (default_selector_applicative_update bounded this_update widget)) update index size vector_widget
+    Vector {index,vector_widget}->vector_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_vector_widget->fmap (\widget->CMST.runST (action_vector_widget (\this_this_vector_widget->DVM.write this_this_vector_widget this_index widget) this_vector_widget)) (default_selector_applicative_update bounded this_update (this_vector_widget DV.! this_index))) update index vector_widget
     Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget_trigger widget
     Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget_io_trigger widget
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget_mix_trigger order widget
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,layout_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (default_selector_applicative_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout_size layout linear_coroutine iterative coroutine_state
+    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->coroutine_default_selector_update bounded (pure this_widget) fmap (\this_index this_update this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (default_selector_applicative_update bounded this_update)) this_coroutine_state) update index initial_min_index min_index initial_max_index max_index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
 update_coroutine_state::(Widget a b c d e->Widget a b c d e)->Coroutine_state a b c d e->Coroutine_state a b c d e
@@ -415,7 +411,6 @@ functor_update_coroutine_state update coroutine_state=case coroutine_state of
 {-# INLINE vector_all_selector_update #-}
 {-# INLINE vector_default_selector_action #-}
 {-# INLINE vector_default_selector_update #-}
-{-# INLINE vector_default_selector_update_a #-}
 {-# INLINE widget_trigger_selector_action #-}
 {-# INLINE widget_trigger_selector_update #-}
 {-# INLINE widget_io_trigger_selector_update #-}

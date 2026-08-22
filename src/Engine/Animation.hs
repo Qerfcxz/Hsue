@@ -18,7 +18,7 @@ step_animation_a::Bool->FCT.CFloat->Widget a b c d e->Widget a b c d e
 step_animation_a loop time widget=case widget of
     Visual {visual}->Visual {visual=step_animation_visual loop time visual}
     Group_visual {arrange,collect_order,group_visual}->Group_visual {arrange=arrange,collect_order=collect_order,group_visual=fmap (step_animation_visual loop time) group_visual}
-    Vector_visual {arrange,collect_order,size,vector_visual}->Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=fmap (step_animation_visual loop time) vector_visual}
+    Vector_visual {arrange,collect_order,vector_visual,size}->Vector_visual {arrange=arrange,collect_order=collect_order,vector_visual=fmap (step_animation_visual loop time) vector_visual,size=size}
     _->widget
 
 step_animation_visual::Bool->FCT.CFloat->Visual->Visual

@@ -32,7 +32,7 @@ loop_engine_off event engine=do
         then do
             event_type<-SDLI.sdl_event_type_peek event
             loop_event switch event_type event new_engine
-        else EE.quick_error "loop_engine_off" 0
+        else EE.empty_error
 
 loop_engine_off_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off_a event engine=do
@@ -41,7 +41,7 @@ loop_engine_off_a event engine=do
         then do
             event_type<-SDLI.sdl_event_type_peek event
             loop_event False event_type event engine
-        else EE.quick_error "loop_engine_off_a" 0
+        else EE.empty_error
 
 loop_engine_on::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on event engine=do
@@ -51,7 +51,7 @@ loop_engine_on event engine=do
         then do
             event_type<-SDLI.sdl_event_type_peek event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
-        else EE.quick_error "loop_engine_on" 0
+        else EE.empty_error
 
 loop_engine_on_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on_a event engine=do
@@ -60,12 +60,12 @@ loop_engine_on_a event engine=do
         then do
             event_type<-SDLI.sdl_event_type_peek event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {count=count,time=time}) else loop_event True event_type event engine
-        else EE.quick_error "loop_engine_on_a" 0
+        else EE.empty_error
 
 get_interval::Timer->DW.Word64
 get_interval timer=case timer of
     On {interval}->interval
-    _->EE.quick_error "get_interval" 0
+    _->EE.empty_error
 
 loop_event::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->DW.Word32->FP.Ptr ()->Engine a b c d e->IO ()
 loop_event on event_type event engine=case event_type of
@@ -187,7 +187,7 @@ run_widget event engine this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Event_result {first_value=next,update=create_request (Io {io=update}),second_value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Event_result {first_value=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),second_value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
     Custom_widget {custom}->let (new_custom,update,next)=custom_widget_run event engine custom in Event_result {first_value=next,update=update,second_value=Custom_widget {custom=new_custom}}
-    _->EE.quick_error "run_widget" 0
+    _->EE.empty_error
 
 run_request::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
 run_request switch engine=case engine.request of
@@ -241,7 +241,7 @@ push_event engine custom=do
         let new_sdl_event=FP.castPtr sdl_event
         SDLI.sdl_user_event_data1_poke new_sdl_event (FSP.castStablePtrToPtr ptr)
         value<-SDLF.sdl_push_event new_sdl_event
-        CM.unless (FMU.toBool value) (EE.quick_error "push_event" 0)
+        CM.unless (FMU.toBool value) EE.empty_error
 
 pop_event::FP.Ptr ()->IO a
 pop_event sdl_event=do

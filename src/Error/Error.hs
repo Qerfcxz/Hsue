@@ -1,8 +1,6 @@
 module Error.Error where
 
-import GHC.Stack.Types
+empty_error::a
+empty_error=error ""
 
-quick_error::HasCallStack=>String->Int->a
-quick_error string int=error (string++": error "++show int)
-
-{-# NOINLINE quick_error #-}
+{-# INLINE empty_error #-}

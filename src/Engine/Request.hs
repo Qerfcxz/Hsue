@@ -52,12 +52,12 @@ do_request request engine=case request of
                 new_timer_id<-SDLF.sdl_add_timer_ns interval engine.callback FP.nullPtr
                 catch_zero new_timer_id
                 return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
-        else EE.quick_error "do_request" 0
+        else EE.empty_error
     Stop_timer->case engine.timer of
         On {timer_id}->do
             catch_false (SDLF.sdl_remove_timer timer_id)
             return (engine {timer=Off},True)
-        _->EE.quick_error "do_request" 1
+        _->EE.empty_error
     Stop_timer_safe->case engine.timer of
         Off->return (engine,False)
         On {timer_id}->do
@@ -96,7 +96,7 @@ do_request request engine=case request of
             SDLF.sdl_release_gpu_texture engine.device texture
             SDLF.sdl_release_gpu_texture engine.device temporary_texture
             return (engine {canvas=canvas},False)
-        _->EE.quick_error "do_request" 2
+        _->EE.empty_error
     Create_shader {shader_id,stage,num_sampler,num_uniform_buffer,path}->do
         shader<-load_shader engine.device SDLI.sdl_gpu_shaderformat_dxil stage num_sampler 0 num_uniform_buffer path
         return (engine {shader=int_map_insert shader_id (Shader {sdl_shader=shader,reference=0}) engine.shader},False)
@@ -105,7 +105,7 @@ do_request request engine=case request of
             then do
                 SDLF.sdl_release_gpu_shader engine.device sdl_shader
                 return (engine {shader=shader},False)
-            else EE.quick_error "do_request" 3
+            else EE.empty_error
     Create_pipeline {pipeline_id,maybe_vertex_shader_id,fragment_shader_id,blend_state}->case maybe_vertex_shader_id of
         Nothing->let (shader,fragment_shader)=int_map_update_lookup fragment_shader_id (update_shader_reference (+1)) engine.shader in do
             pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
@@ -145,7 +145,7 @@ do_request request engine=case request of
             then do
                 SDLF.sdl_release_gpu_texture engine.device texture
                 return (engine {atlas_font=atlas_font},False)
-            else EE.quick_error "do_request" 4
+            else EE.empty_error
     Set_window_icon {window_id,path}->case int_map_lookup window_id engine.window of
         Window {sdl_window}->with_string path $ \this_path->do
             surface<-SDLF.img_load this_path
@@ -193,7 +193,7 @@ do_request request engine=case request of
                 let (vertex,index,parameter,draw_call)=for_submit (get_submit canvas_render_selector widget) in do_render_canvas new_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return (new_engine,False)
-            _->EE.quick_error "do_request" 5
+            _->EE.empty_error
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->do
         new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (for_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
         return (new_new_engine,False)
@@ -224,13 +224,13 @@ for_unlock widget=case widget of
         (new_engine,new_group_visual)<-CMIOC.liftIO (int_map_monad_action (\_ visual this_engine->for_unlock_visual visual this_engine) group_visual engine)
         CMTS.put new_engine
         return (Group_visual {arrange=arrange,collect_order=collect_order,group_visual=new_group_visual})
-    Vector_visual {arrange,collect_order,size,vector_visual}->do
+    Vector_visual {arrange,collect_order,vector_visual,size}->do
         engine<-CMTS.get
         new_vector_visual<-DVM.new size
         new_engine<-CMIOC.liftIO (vector_io_map (size-1) (\_ visual this_engine->for_unlock_visual visual this_engine) vector_visual new_vector_visual engine)
         new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
         CMTS.put new_engine
-        return (Vector_visual {arrange=arrange,collect_order=collect_order,size=size,vector_visual=new_new_vector_visual})
+        return (Vector_visual {arrange=arrange,collect_order=collect_order,vector_visual=new_new_vector_visual,size=size})
     Custom_widget {custom}->do
         engine<-CMTS.get
         (new_engine,new_custom)<-CMIOC.liftIO (custom_widget_unlock custom engine)

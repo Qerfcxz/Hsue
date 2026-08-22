@@ -14,8 +14,8 @@ import qualified SDL.Function as SDLF
 import qualified Error.Error as EE
 import qualified Data.Char as DC
 import qualified Data.Foldable as DF
-import qualified Data.HashSet as DHS
 import qualified Data.HashMap.Strict as DHMS
+import qualified Data.HashSet as DHS
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
@@ -119,17 +119,17 @@ update_font_d x y exponent_width exponent_height index msdf_count msdf_glyph gly
 scroll_text::FCT.CFloat->Visual->Visual
 scroll_text scroll visual=case visual of
     Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y (min (max min_y max_y) (current_y+scroll)),min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
-    _->EE.quick_error "scroll_text" 0
+    _->EE.empty_error
 
 scroll_top_text::Visual->Visual
 scroll_top_text visual=case visual of
     Text {arrange,half_width,half_height,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=min_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
-    _->EE.quick_error "scroll_top_text" 0
+    _->EE.empty_error
 
 scroll_bottom_text::Visual->Visual
 scroll_bottom_text visual=case visual of
     Text {arrange,half_width,half_height,min_y,max_y,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y max_y,min_y=min_y,max_y=max_y,article=article,charset=charset,locked=locked}
-    _->EE.quick_error "scroll_bottom_text" 0
+    _->EE.empty_error
 
 {-# INLINE do_typesetting #-}
 {-# INLINE for_text #-}

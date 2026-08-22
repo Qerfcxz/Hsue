@@ -39,7 +39,7 @@ msdf_glyph_peek ptr=do
     return (MSDF_Glyph {msdf_unicode=msdf_unicode,msdf_advance=msdf_advance,msdf_plane_left=msdf_plane_left,msdf_plane_down=msdf_plane_down,msdf_plane_right=msdf_plane_right,msdf_plane_up=msdf_plane_up,msdf_atlas_left=msdf_atlas_left,msdf_atlas_down=msdf_atlas_down,msdf_atlas_right=msdf_atlas_right,msdf_atlas_up=msdf_atlas_up})
 
 msdf_glyph_poke::Ptr MSDF_Glyph->MSDF_Glyph->IO ()
-msdf_glyph_poke _ _=quick_error "msdf_glyph_poke" 0
+msdf_glyph_poke _ _=empty_error
 
 data MSDF_Output=MSDF_Output {msdf_pixel::Ptr Word8,msdf_width::CInt,msdf_height::CInt,msdf_descent::CFloat,msdf_ascent::CFloat,msdf_glyph::Ptr MSDF_Glyph,msdf_count::CInt}
 
@@ -67,7 +67,7 @@ msdf_output_peek ptr=do
     return (MSDF_Output {msdf_pixel=msdf_pixel,msdf_width=msdf_width,msdf_height=msdf_height,msdf_descent=msdf_descent,msdf_ascent=msdf_ascent,msdf_glyph=msdf_glyph,msdf_count=msdf_count})
 
 msdf_output_poke::Ptr MSDF_Output->MSDF_Output->IO ()
-msdf_output_poke _ _=quick_error "msdf_output_poke" 0
+msdf_output_poke _ _=empty_error
 
 {-# INLINE msdf_glyph_size_of #-}
 {-# INLINE msdf_glyph_alignment #-}

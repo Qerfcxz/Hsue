@@ -30,7 +30,7 @@ do_widget_transform ancestry_id event engine widget=DF.foldr (\node_id->(int_map
 create_projection_image::Event a->Engine b a c d e->Projection b a c d e->Projection b a c d e
 create_projection_image event engine projection=case projection of
     Without {ancestry_id,object}->With {ancestry_id=ancestry_id,object=object,image=do_widget_transform ancestry_id event engine object}
-    _->EE.quick_error "create_projection_image" 0
+    _->EE.empty_error
 
 create_projection_image_safe::Event a->Engine b a c d e->Projection b a c d e->Projection b a c d e
 create_projection_image_safe event engine projection=case projection of
@@ -40,7 +40,7 @@ create_projection_image_safe event engine projection=case projection of
 remove_projection_image::Projection a b c d e->Projection a b c d e
 remove_projection_image projection=case projection of
     With {ancestry_id,object}->Without {ancestry_id=ancestry_id,object=object}
-    _->EE.quick_error "remove_projection_image" 0
+    _->EE.empty_error
 
 remove_projection_image_safe::Projection a b c d e->Projection a b c d e
 remove_projection_image_safe projection=case projection of
@@ -76,7 +76,7 @@ lookup_projection_object projection=case projection of
 lookup_projection_image::Projection a b c d e->Widget a b c d e
 lookup_projection_image projection=case projection of
     With {image}->image
-    _->EE.quick_error "lookup_projection_image" 0
+    _->EE.empty_error
 
 lookup_projection_image_safe::Projection a b c d e->Widget a b c d e
 lookup_projection_image_safe projection=case projection of

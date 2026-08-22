@@ -123,8 +123,8 @@ for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_s
                 do_render_canvas this_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return this_engine
-            _->EE.quick_error "for_canvas_widget_render" 0
-    _->EE.quick_error "for_canvas_widget_render" 1
+            _->EE.empty_error
+    _->EE.empty_error
 
 for_canvas_widget_render_a::Projection_path->Selector ()->Engine a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->IO (Engine a b c d e)
 for_canvas_widget_render_a projection_path selector engine action=selector_monad_action (\_ widget this_engine->for_canvas_widget_render_b widget action this_engine) selector (lookup_projection_widget projection_path engine) engine
@@ -133,8 +133,8 @@ for_canvas_widget_render_b::Widget a b c d e->(FCT.CFloat->FCT.CFloat->Int->Engi
 for_canvas_widget_render_b widget action engine=case widget of
     Visual {visual}->for_canvas_widget_render_c visual action engine
     Group_visual {collect_order,group_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (int_map_lookup index group_visual) action this_engine) engine collect_order
-    Vector_visual {collect_order,size,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! catch_out 0 size index) action this_engine) engine collect_order
-    _->EE.quick_error "for_canvas_widget_render_b" 0
+    Vector_visual {collect_order,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! index) action this_engine) engine collect_order
+    _->EE.empty_error
 
 for_canvas_widget_render_c::Visual->(FCT.CFloat->FCT.CFloat->Int->Engine a b c d e->IO (Engine a b c d e))->Engine a b c d e->IO (Engine a b c d e)
 for_canvas_widget_render_c visual action engine=case visual of
@@ -142,7 +142,7 @@ for_canvas_widget_render_c visual action engine=case visual of
     _->return engine
 
 update_buffer::FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUTransferBuffer->Int->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO Bool
-update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer transfer_buffer max_vertex_size max_index_size max_parameter_size vertex index parameter=let vertex_length=DS.length vertex in let index_length=DS.length index in let parameter_length=DS.length parameter in if vertex_length==0||index_length==0||parameter_length==0 then return False else let single_vertex_size=FS.sizeOf (undefined::Vertex) in let single_index_size=FS.sizeOf (undefined::DW.Word32) in let single_parameter_size=FS.sizeOf (undefined::Parameter) in let vertex_size=vertex_length*single_vertex_size in let index_size=index_length*single_index_size in let parameter_size=parameter_length*single_parameter_size in if max_vertex_size<vertex_size||max_index_size<index_size||max_parameter_size<parameter_size then EE.quick_error "update_buffer" 0 else do
+update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer transfer_buffer max_vertex_size max_index_size max_parameter_size vertex index parameter=let vertex_length=DS.length vertex in let index_length=DS.length index in let parameter_length=DS.length parameter in if vertex_length==0||index_length==0||parameter_length==0 then return False else let single_vertex_size=FS.sizeOf (undefined::Vertex) in let single_index_size=FS.sizeOf (undefined::DW.Word32) in let single_parameter_size=FS.sizeOf (undefined::Parameter) in let vertex_size=vertex_length*single_vertex_size in let index_size=index_length*single_index_size in let parameter_size=parameter_length*single_parameter_size in if max_vertex_size<vertex_size||max_index_size<index_size||max_parameter_size<parameter_size then EE.empty_error else do
     map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer device transfer_buffer (FMU.fromBool True)
     catch_null map_transfer_buffer
     seq_poke_array single_vertex_size vertex (FP.castPtr map_transfer_buffer)

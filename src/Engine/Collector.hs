@@ -32,7 +32,7 @@ collect_canvas::Point->Matrix->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->M
 collect_canvas origin matrix red green blue alpha maybe_border canvas_id leaf_id selector collect_strategy engine=case int_map_lookup canvas_id engine.canvas of
     Free_canvas {half_width,half_height}->case origin of
         Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (Submit {submit_mode=Submit_canvas {canvas_id=canvas_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=0,v=1,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=1,v=1,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=1,v=0,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=0,v=0,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6})) collect_strategy)) selector)) engine.leaf}
-    _->EE.quick_error "collect_canvas" 0
+    _->EE.empty_error
 
 maybe_update_collect::Custom_widget d=>(Widget a b c d e->Maybe (Widget a b c d e))->(Widget a b c d e->Widget a b c d e)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector f->Insert_strategy->Engine a b c d e->Engine a b c d e
 maybe_update_collect update view maybe_border projection_path leaf_id selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
@@ -53,15 +53,15 @@ collect_a this_submit collect_strategy widget=case widget of
         Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert min_index this_submit submit}
         Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=int_map_insert max_index this_submit submit}
         Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=int_map_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit}
-    _->EE.quick_error "collect_a" 0
+    _->EE.empty_error
 
 to_collect::Custom_widget d=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget a b c d e->DS.Seq Submit
 to_collect u v maybe_border widget=case widget of
     Visual {visual}->DS.singleton (to_collect_visual Nothing u v maybe_border visual)
     Group_visual {arrange,collect_order,group_visual}->fmap (\index->to_collect_visual (Just arrange) u v maybe_border (int_map_lookup index group_visual)) collect_order
-    Vector_visual {arrange,collect_order,size,vector_visual}->fmap (\index->to_collect_visual (Just arrange) u v maybe_border (vector_visual DV.! catch_out 0 size index)) collect_order
+    Vector_visual {arrange,collect_order,vector_visual}->fmap (\index->to_collect_visual (Just arrange) u v maybe_border (vector_visual DV.! index)) collect_order
     Custom_widget {custom}->custom_widget_collect u v maybe_border custom
-    _->EE.quick_error "to_collect" 0
+    _->EE.empty_error
 
 to_collect_visual::Maybe Arrange->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Visual->Submit
 to_collect_visual maybe_arrange u v maybe_border visual=case visual of
@@ -76,12 +76,12 @@ to_collect_visual maybe_arrange u v maybe_border visual=case visual of
     Convex_polygon {arrange,point_set}->case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
             Color {red,green,blue,alpha}->case point of
-                Point {x,y}->let number=DS.length point_set in if number<3 then EE.quick_error "to_collect_visual" 0 else let new_number=3*(number-2) in Submit {submit_mode=Submit_default,vertex=fmap (\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+this_point.x,y=y+this_point.y,u=u,v=v,parameter_id=0,font_size=0}) point_set,index=DS.fromFunction new_number collect_convex_polygon,parameter=to_Parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=fromIntegral new_number}
+                Point {x,y}->let number=DS.length point_set in if number<3 then EE.empty_error else let new_number=3*(number-2) in Submit {submit_mode=Submit_default,vertex=fmap (\this_point->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+this_point.x,y=y+this_point.y,u=u,v=v,parameter_id=0,font_size=0}) point_set,index=DS.fromFunction new_number collect_convex_polygon,parameter=to_Parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=fromIntegral new_number}
     Regular_polygon {arrange,number,radius,angle}->case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
             Color {red,green,blue,alpha}->case point of
-                Point {x,y}->if number<3 then EE.quick_error "to_collect_visual" 1 else let new_number=3*(number-2) in let new_angle=2*pi/fromIntegral number in Submit {submit_mode=Submit_default,vertex=DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+radius*cos direction,y=y+radius*sin direction,u=u,v=v,parameter_id=0,font_size=0}),index=DS.fromFunction new_number collect_convex_polygon,parameter=to_Parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=fromIntegral new_number}
-    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,locked}->if locked then EE.quick_error "to_collect_visual" 2 else case maybe arrange (`combine_arrange` arrange) maybe_arrange of
+                Point {x,y}->if number<3 then EE.empty_error else let new_number=3*(number-2) in let new_angle=2*pi/fromIntegral number in Submit {submit_mode=Submit_default,vertex=DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x+radius*cos direction,y=y+radius*sin direction,u=u,v=v,parameter_id=0,font_size=0}),index=DS.fromFunction new_number collect_convex_polygon,parameter=to_Parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=fromIntegral new_number}
+    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,locked}->if locked then EE.empty_error else case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
             Color {red,green,blue,alpha}->case point of
                 Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in Submit {submit_mode=Submit_default,vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
@@ -89,18 +89,18 @@ to_collect_visual maybe_arrange u v maybe_border visual=case visual of
         Arrange {point,matrix,color}->case color of
             Color {red,green,blue,alpha}->case point of
                 Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in Submit {submit_mode=Submit_album {album_id=album_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=0,v=1,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=1,v=1,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=1,v=0,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=0,v=0,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
-    Atlas {arrange,clip,size,index,locked}->if locked then EE.quick_error "to_collect_visual" 3 else case maybe arrange (`combine_arrange` arrange) maybe_arrange of
+    Atlas {arrange,clip,index,locked}->if locked then EE.empty_error else case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
-            Color {red,green,blue,alpha}->case move_clip point (clip DVS.! catch_out 0 size index) of
+            Color {red,green,blue,alpha}->case move_clip point (clip DVS.! index) of
                 Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in Submit {submit_mode=Submit_default,vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter point.x point.y matrix maybe_border,vertex_size=4,index_size=6}
-    Large_atlas {arrange,clip,size,album_id,index}->case maybe arrange (`combine_arrange` arrange) maybe_arrange of
+    Large_atlas {arrange,clip,album_id,index}->case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
-            Color {red,green,blue,alpha}->case move_clip point (clip DVS.! catch_out 0 size index) of
+            Color {red,green,blue,alpha}->case move_clip point (clip DVS.! index) of
                 Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in Submit {submit_mode=Submit_album {album_id=album_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter point.x point.y matrix maybe_border,vertex_size=4,index_size=6}
     Animation {arrange,half_width,half_height,reciprocal_width,reciprocal_height,padding,width_number,height_number,album_number,album_id,index}->case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
             Color {red,green,blue,alpha}->case point of
-                Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in let (quotient,remainder)=divMod index (width_number*height_number) in let new_album_id=album_id+quotient in if album_number<=quotient then EE.quick_error "to_collect_visual" 4 else let (new_quotient,new_remainder)=divMod remainder width_number in let frame_x=2*fromIntegral new_remainder*(half_width+padding)+padding in let frame_y=2*fromIntegral new_quotient*(half_height+padding)+padding in let min_u=frame_x*reciprocal_width in let min_v=frame_y*reciprocal_height in let max_u=(frame_x+2*half_width)*reciprocal_width in let max_v=(frame_y+2*half_height)*reciprocal_height in Submit {submit_mode=Submit_album {album_id=new_album_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
+                Point {x,y}->let left=x-half_width in let down=y-half_height in let right=x+half_width in let up=y+half_height in let (quotient,remainder)=divMod index (width_number*height_number) in let new_album_id=album_id+quotient in if album_number<=quotient then EE.empty_error else let (new_quotient,new_remainder)=divMod remainder width_number in let frame_x=2*fromIntegral new_remainder*(half_width+padding)+padding in let frame_y=2*fromIntegral new_quotient*(half_height+padding)+padding in let min_u=frame_x*reciprocal_width in let min_v=frame_y*reciprocal_height in let max_u=(frame_x+2*half_width)*reciprocal_width in let max_v=(frame_y+2*half_height)*reciprocal_height in Submit {submit_mode=Submit_album {album_id=new_album_id},vertex=DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0},index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
     Text {arrange,half_width,half_height,current_y,article}->case maybe arrange (`combine_arrange` arrange) maybe_arrange of
         Arrange {point,matrix,color}->case color of
             Color {red,green,blue,alpha}->case point of
@@ -134,7 +134,7 @@ collect_convex_polygon index=let (quotient,remainder)=divMod index 3 in let new_
     0->0
     1->new_quotient
     2->new_quotient+1
-    _->EE.quick_error "collect_convex_polygon" 0
+    _->EE.empty_error
 
 collect_text::FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Row->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)
 collect_text red green blue alpha origin_x origin_y this_y row primitive=case row of
@@ -152,7 +152,7 @@ move projection_move leaf_id selector engine=let (new_engine,widget)=move_lookup
 move_a::Int->Selector Insert_strategy->Widget a b c d e->Engine a b c d e->Engine a b c d e
 move_a leaf_id selector widget engine=case widget of
     Collector {submit}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (collect_a (DF.foldl' (DS.><) DS.empty submit)) selector)) engine.leaf}
-    _->EE.quick_error "move_a" 0
+    _->EE.empty_error
 
 move_lookup::Projection_move->Engine a b c d e->(Engine a b c d e,Widget a b c d e)
 move_lookup projection_move engine=case projection_move of
@@ -163,7 +163,7 @@ move_lookup projection_move engine=case projection_move of
 consume_widget::Widget a b c d e->Widget a b c d e
 consume_widget widget=case widget of
     Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
-    _->EE.quick_error "consume_widget" 0
+    _->EE.empty_error
 
 for_submit::DIM.IntMap (DS.Seq Submit)->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Submit_mode,DW.Word32,DW.Word32))
 for_submit submit=let (vertex,index,parameter,draw_call,_,_,_)=DIM.foldl' (DF.foldl' (flip for_submit_a)) (DS.empty,DS.empty,DS.empty,DS.empty,0,0,0) submit in (vertex,index,parameter,draw_call)
@@ -183,7 +183,7 @@ get_submit selector widget=selector_action (\_ this_widget submit->get_submit_a 
 get_submit_a::Widget a b c d e->DIM.IntMap (DS.Seq Submit)->DIM.IntMap (DS.Seq Submit)
 get_submit_a widget this_submit=case widget of
     Collector {submit}->DIM.unionWith (DS.><) this_submit submit
-    _->EE.quick_error "get_submit_a" 0
+    _->EE.empty_error
 
 {-# INLINE clean_collect #-}
 {-# INLINE clean_collect_a #-}

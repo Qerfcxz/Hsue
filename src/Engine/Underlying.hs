@@ -19,26 +19,23 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-catch_out::Ord a=>a->a->a->a
-catch_out min_value max_value value=if value<min_value||max_value<=value then EE.quick_error "catch_out" 0 else value
-
 catch_false::IO FCT.CBool->IO ()
 catch_false io=do
     value<-io
-    CM.unless (FMU.toBool value) (EE.quick_error "catch_false" 0)
+    CM.unless (FMU.toBool value) EE.empty_error
 
 catch_zero::(Eq a,Num a)=>a->IO ()
 catch_zero number=case number of
-    0->EE.quick_error "catch_zero" 0
+    0->EE.empty_error
     _->return ()
 
 catch_null::FP.Ptr a->IO ()
-catch_null ptr=CM.when (ptr==FP.nullPtr) (EE.quick_error "catch_null" 0)
+catch_null ptr=CM.when (ptr==FP.nullPtr) EE.empty_error
 
 return_catch_null::IO (FP.Ptr a)->IO (FP.Ptr a)
 return_catch_null io=do
     ptr<-io
-    if ptr==FP.nullPtr then EE.quick_error "return_catch_null" 0 else return ptr
+    if ptr==FP.nullPtr then EE.empty_error else return ptr
 
 with_string::String->(FP.Ptr FCT.CChar->IO a)->IO a
 with_string string=DBS.useAsCString (DTE.encodeUtf8 (DT.pack string))
@@ -96,7 +93,6 @@ nanosecond=1000000000
 millisecond::Num a=>a
 millisecond=1000000
 
-{-# INLINE catch_out #-}
 {-# INLINE catch_false #-}
 {-# INLINE catch_zero #-}
 {-# INLINE catch_null #-}
