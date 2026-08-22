@@ -42,8 +42,10 @@ library
         base ^>=4.18.3.0,
         bytestring ==0.12.2.0,
         containers ==0.8,
+        hashable ==1.5.1.0,
         text ==2.1.4,
         transformers ==0.6.3.0,
+        unordered-containers ==0.2.21,
         vector ==0.13.2.0
     extra-libraries:
         msdf
