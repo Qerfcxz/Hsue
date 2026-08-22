@@ -12,6 +12,9 @@ common warnings
 
 library
     import:           warnings
+    ghc-options:
+        -finfo-table-map
+        -fdistinct-constructor-tables
     exposed-modules:
         Engine.Animation
         Engine.Atlas
