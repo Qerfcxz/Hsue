@@ -76,6 +76,10 @@ combine_arrange first_arrange second_arrange=case first_arrange of
                     Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
                         Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_point_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_point_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},color=multiply_color first_color second_color}
 
+quick_create_vertex::Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Vertex
+quick_create_vertex color x y u v=case color of
+    Color {red,green,blue,alpha}->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x,y=y,u=u,v=v,parameter_id=0,font_size=0}
+
 to_extended::ET.Has_call_stack=>FCT.CFloat->Extended
 to_extended number=Finite {number=number}
 
@@ -105,6 +109,7 @@ millisecond=1000000
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}
 {-# INLINE combine_arrange #-}
+{-# INLINE quick_create_vertex #-}
 {-# INLINE to_extended #-}
 {-# INLINE from_extended #-}
 {-# INLINE mebibyte #-}
