@@ -5,7 +5,7 @@
 module Engine.Underlying where
 
 import Engine.Type
-import qualified Error.Function as EF
+import qualified SDL.Function as SDLF
 import qualified Error.Type as ET
 import qualified Control.Monad as CM
 import qualified Data.ByteString as DBS
@@ -15,28 +15,35 @@ import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
+import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
+sdl_error::ET.Has_call_stack=>IO a
+sdl_error=do
+    ptr<-SDLF.sdl_get_error
+    string<-FCS.peekCString ptr
+    error string
+
 catch_false::ET.Has_call_stack=>IO FCT.CBool->IO ()
 catch_false io=do
     value<-io
-    CM.unless (FMU.toBool value) EF.empty_error
+    CM.unless (FMU.toBool value) sdl_error
 
 catch_zero::ET.Has_call_stack=>Eq a=>Num a=>a->IO ()
 catch_zero number=case number of
-    0->EF.empty_error
+    0->sdl_error
     _->return ()
 
 catch_null::ET.Has_call_stack=>FP.Ptr a->IO ()
-catch_null ptr=CM.when (ptr==FP.nullPtr) EF.empty_error
+catch_null ptr=CM.when (ptr==FP.nullPtr) sdl_error
 
 return_catch_null::ET.Has_call_stack=>IO (FP.Ptr a)->IO (FP.Ptr a)
 return_catch_null io=do
     ptr<-io
-    if ptr==FP.nullPtr then EF.empty_error else return ptr
+    if ptr==FP.nullPtr then sdl_error else return ptr
 
 with_string::ET.Has_call_stack=>String->(FP.Ptr FCT.CChar->IO a)->IO a
 with_string string=DBS.useAsCString (DTE.encodeUtf8 (DT.pack string))

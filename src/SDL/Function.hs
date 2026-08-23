@@ -217,5 +217,8 @@ foreign import ccall unsafe "SDL_SetCursor"
 foreign import ccall unsafe "SDL_DestroyCursor"
     sdl_destroy_cursor::Ptr SDL_Cursor->IO ()
 
+foreign import ccall unsafe "SDL_GetError"
+    sdl_get_error::IO CString
+
 foreign import ccall "wrapper"
     wrapper::(Ptr ()->Word32->Word64->IO Word64)->IO (FunPtr (Ptr ()->Word32->Word64->IO Word64))
