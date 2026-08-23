@@ -11,7 +11,8 @@ import Engine.Selector
 import Engine.Type
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
-import qualified Error.Error as EE
+import qualified Error.Function as EF
+import qualified Error.Type as ET
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.HashMap.Strict as DHMS
@@ -24,7 +25,7 @@ import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified Foreign.StablePtr as FSP
 
-loop_engine_off::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_off::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off event engine=do
     (new_engine,switch)<-run_request False engine
     value<-SDLF.sdl_wait_event event
@@ -32,18 +33,18 @@ loop_engine_off event engine=do
         then do
             event_type<-SDLI.sdl_event_type_peek event
             loop_event switch event_type event new_engine
-        else EE.empty_error
+        else EF.empty_error
 
-loop_engine_off_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_off_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off_a event engine=do
     value<-SDLF.sdl_wait_event event
     if FMU.toBool value
         then do
             event_type<-SDLI.sdl_event_type_peek event
             loop_event False event_type event engine
-        else EE.empty_error
+        else EF.empty_error
 
-loop_engine_on::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_on::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on event engine=do
     (new_engine,switch)<-run_request False engine
     value<-SDLF.sdl_wait_event event
@@ -51,23 +52,23 @@ loop_engine_on event engine=do
         then do
             event_type<-SDLI.sdl_event_type_peek event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
-        else EE.empty_error
+        else EF.empty_error
 
-loop_engine_on_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_on_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on_a event engine=do
     value<-SDLF.sdl_wait_event event
     if FMU.toBool value
         then do
             event_type<-SDLI.sdl_event_type_peek event
             if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {count=count,time=time}) else loop_event True event_type event engine
-        else EE.empty_error
+        else EF.empty_error
 
-get_interval::Timer->DW.Word64
+get_interval::ET.Has_call_stack=>Timer->DW.Word64
 get_interval timer=case timer of
     On {interval}->interval
-    _->EE.empty_error
+    _->EF.empty_error
 
-loop_event::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->DW.Word32->FP.Ptr ()->Engine a b c d e->IO ()
+loop_event::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->DW.Word32->FP.Ptr ()->Engine a b c d e->IO ()
 loop_event on event_type event engine=case event_type of
     SDLI.SDL_EVENT_QUIT->return ()
     SDLI.SDL_EVENT_WINDOW_CLOSE_REQUESTED->do
@@ -145,40 +146,40 @@ loop_event on event_type event engine=case event_type of
             loop_event_b on (Custom_event {custom=custom}) event engine
         else loop_event_a on event engine
 
-to_mouse_button::DW.Word8->Mouse_button
+to_mouse_button::ET.Has_call_stack=>DW.Word8->Mouse_button
 to_mouse_button button=case button of
     SDLI.SDL_BUTTON_LEFT->Mouse_button_left
     SDLI.SDL_BUTTON_MIDDLE->Mouse_button_middle
     SDLI.SDL_BUTTON_RIGHT->Mouse_button_right
     _->Mouse_button_unknown
 
-loop_event_a::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->FP.Ptr ()->Engine a b c d e->IO ()
+loop_event_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->FP.Ptr ()->Engine a b c d e->IO ()
 loop_event_a on sdl_event engine=if on then loop_engine_on_a sdl_event engine else loop_engine_off_a sdl_event engine
 
-loop_event_b::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->Event a->FP.Ptr ()->Engine b a c d e->IO ()
+loop_event_b::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->Event a->FP.Ptr ()->Engine b a c d e->IO ()
 loop_event_b on event sdl_event engine=let new_engine=run_event event engine in if on then loop_engine_on sdl_event new_engine else loop_engine_off sdl_event new_engine
 
-run_event::Custom_widget d=>Event a->Engine b a c d e->Engine b a c d e
+run_event::ET.Has_call_stack=>Custom_widget d=>Event a->Engine b a c d e->Engine b a c d e
 run_event event engine=case engine.main_id event engine of
     Nothing->engine
     Just leaf_id->run_event_a leaf_id event engine
 
-run_event_a::Custom_widget d=>Int->Event a->Engine b a c d e->Engine b a c d e
+run_event_a::ET.Has_call_stack=>Custom_widget d=>Int->Event a->Engine b a c d e->Engine b a c d e
 run_event_a leaf_id event engine=case int_map_functor_update leaf_id (run_event_b event engine) engine.leaf of
     Event_result {first_value,update,second_value}->let new_engine=update (engine {leaf=second_value}) in case first_value new_engine of
         Nothing->new_engine
         Just new_leaf_id->run_event_a new_leaf_id event new_engine
 
-run_event_b::Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
+run_event_b::ET.Has_call_stack=>Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
 run_event_b event engine projection=case projection of
     Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in run_event_c new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))
     With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in run_event_c new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))
 
-run_event_c::Event a->(Widget b a c d e->Projection b a c d e)->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
+run_event_c::ET.Has_call_stack=>Event a->(Widget b a c d e->Projection b a c d e)->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
 run_event_c event transform event_result=case event_result of
     Event_result {first_value,update,second_value}->Event_result {first_value=first_value event,update=update,second_value=transform second_value}
 
-run_widget::Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)
+run_widget::ET.Has_call_stack=>Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)
 run_widget event engine this_widget=case this_widget of
     Trigger {next,trigger}->Event_result {first_value=next,update=trigger event,second_value=this_widget}
     Io_trigger {next,io_trigger}->Event_result {first_value=next,update=create_request (Io {io=io_trigger event}),second_value=this_widget}
@@ -187,16 +188,16 @@ run_widget event engine this_widget=case this_widget of
     Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Event_result {first_value=next,update=create_request (Io {io=update}),second_value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Event_result {first_value=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),second_value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
     Custom_widget {custom}->let (new_custom,update,next)=custom_widget_run event engine custom in Event_result {first_value=next,update=update,second_value=Custom_widget {custom=new_custom}}
-    _->EE.empty_error
+    _->EF.empty_error
 
-run_request::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
+run_request::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
 run_request switch engine=case engine.request of
     DS.Empty->return (engine,switch)
     (request DS.:<| other_request)->do
         (new_engine,new_switch)<-do_request request (engine {request=other_request})
         run_request (switch/=new_switch) new_engine
 
-to_key::DW.Word32->Key
+to_key::ET.Has_call_stack=>DW.Word32->Key
 to_key key=case key of
     SDLI.SDLK_A->Key_a
     SDLI.SDLK_B->Key_b
@@ -232,7 +233,7 @@ to_key key=case key of
     SDLI.SDLK_PAGEUP->Key_page_up
     _->Key_unknown
 
-push_event::Engine a b c d e->b->IO ()
+push_event::ET.Has_call_stack=>Engine a b c d e->b->IO ()
 push_event engine custom=do
     ptr<-FSP.newStablePtr custom
     FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \sdl_event->do
@@ -241,9 +242,9 @@ push_event engine custom=do
         let new_sdl_event=FP.castPtr sdl_event
         SDLI.sdl_user_event_data1_poke new_sdl_event (FSP.castStablePtrToPtr ptr)
         value<-SDLF.sdl_push_event new_sdl_event
-        CM.unless (FMU.toBool value) EE.empty_error
+        CM.unless (FMU.toBool value) EF.empty_error
 
-pop_event::FP.Ptr ()->IO a
+pop_event::ET.Has_call_stack=>FP.Ptr ()->IO a
 pop_event sdl_event=do
     ptr<-SDLI.sdl_user_event_data1_peek sdl_event
     let new_ptr=FSP.castPtrToStablePtr ptr

@@ -20,7 +20,8 @@ import Engine.Window
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
-import qualified Error.Error as EE
+import qualified Error.Function as EF
+import qualified Error.Type as ET
 import qualified Control.Monad.IO.Class as CMIOC
 import qualified Control.Monad.Trans.State as CMTS
 import qualified Data.Bits as DB
@@ -36,10 +37,10 @@ import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 
-create_request::Request a b c d e->Engine a b c d e->Engine a b c d e
+create_request::ET.Has_call_stack=>Request a b c d e->Engine a b c d e->Engine a b c d e
 create_request request engine=engine {request=engine.request DS.|> request}
 
-do_request::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Request a b c d e->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_request::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Request a b c d e->Engine a b c d e->IO (Engine a b c d e,Bool)
 do_request request engine=case request of
     Reset_timer {interval}->if 0<interval
         then case engine.timer of
@@ -52,12 +53,12 @@ do_request request engine=case request of
                 new_timer_id<-SDLF.sdl_add_timer_ns interval engine.callback FP.nullPtr
                 catch_zero new_timer_id
                 return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
-        else EE.empty_error
+        else EF.empty_error
     Stop_timer->case engine.timer of
         On {timer_id}->do
             catch_false (SDLF.sdl_remove_timer timer_id)
             return (engine {timer=Off},True)
-        _->EE.empty_error
+        _->EF.empty_error
     Stop_timer_safe->case engine.timer of
         Off->return (engine,False)
         On {timer_id}->do
@@ -96,7 +97,7 @@ do_request request engine=case request of
             SDLF.sdl_release_gpu_texture engine.device texture
             SDLF.sdl_release_gpu_texture engine.device temporary_texture
             return (engine {canvas=canvas},False)
-        _->EE.empty_error
+        _->EF.empty_error
     Create_shader {shader_id,stage,num_sampler,num_uniform_buffer,path}->do
         shader<-load_shader engine.device SDLI.sdl_gpu_shaderformat_dxil stage num_sampler 0 num_uniform_buffer path
         return (engine {shader=int_map_insert shader_id (Shader {sdl_shader=shader,reference=0}) engine.shader},False)
@@ -105,7 +106,7 @@ do_request request engine=case request of
             then do
                 SDLF.sdl_release_gpu_shader engine.device sdl_shader
                 return (engine {shader=shader},False)
-            else EE.empty_error
+            else EF.empty_error
     Create_pipeline {pipeline_id,maybe_vertex_shader_id,fragment_shader_id,blend_state}->case maybe_vertex_shader_id of
         Nothing->let (shader,fragment_shader)=int_map_update_lookup fragment_shader_id (update_shader_reference (+1)) engine.shader in do
             pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
@@ -145,7 +146,7 @@ do_request request engine=case request of
             then do
                 SDLF.sdl_release_gpu_texture engine.device texture
                 return (engine {atlas_font=atlas_font},False)
-            else EE.empty_error
+            else EF.empty_error
     Set_window_icon {window_id,path}->case int_map_lookup window_id engine.window of
         Window {sdl_window}->with_string path $ \this_path->do
             surface<-SDLF.img_load this_path
@@ -193,7 +194,7 @@ do_request request engine=case request of
                 let (vertex,index,parameter,draw_call)=for_submit (get_submit canvas_render_selector widget) in do_render_canvas new_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
                 catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return (new_engine,False)
-            _->EE.empty_error
+            _->EF.empty_error
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->do
         new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (for_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
         return (new_new_engine,False)
@@ -207,12 +208,12 @@ do_request request engine=case request of
         new_engine<-custom_request custom engine
         return (new_engine,False)
 
-from_system_cursor::System_cursor->DW.Word32
+from_system_cursor::ET.Has_call_stack=>System_cursor->DW.Word32
 from_system_cursor system_cursor=case system_cursor of
     System_cursor_default->SDLI.sdl_system_cursor_default
     System_cursor_pointer->SDLI.sdl_system_cursor_pointer
 
-for_unlock::Custom_widget d=>Widget a b c d e->CMTS.StateT (Engine a b c d e) IO (Widget a b c d e)
+for_unlock::ET.Has_call_stack=>Custom_widget d=>Widget a b c d e->CMTS.StateT (Engine a b c d e) IO (Widget a b c d e)
 for_unlock widget=case widget of
     Visual {visual}->do
         engine<-CMTS.get
@@ -238,7 +239,7 @@ for_unlock widget=case widget of
         return (Custom_widget {custom=new_custom})
     _->return widget
 
-for_unlock_visual::Visual->Engine a b c d e->IO (Engine a b c d e,Visual)
+for_unlock_visual::ET.Has_call_stack=>Visual->Engine a b c d e->IO (Engine a b c d e,Visual)
 for_unlock_visual visual engine=case visual of
     Picture {arrange,path,locked}->if locked then create_picture arrange path engine else return (engine,visual)
     Atlas {arrange,clip_request,path,index,locked}->if locked then create_atlas arrange clip_request path index engine else return (engine,visual)
@@ -249,17 +250,17 @@ for_unlock_visual visual engine=case visual of
         else return (engine,visual)
     _->return (engine,visual)
 
-update_article::DIM.IntMap Font->Row->Row
+update_article::ET.Has_call_stack=>DIM.IntMap Font->Row->Row
 update_article font row=case row of
     Blank->Blank
     Row {row_core,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a font) row_core,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
 
-update_article_a::DIM.IntMap Font->Character->Character
+update_article_a::ET.Has_call_stack=>DIM.IntMap Font->Character->Character
 update_article_a font character=case character of
     Character {unicode,font_id,font_size,left,down,right,up,color}->case int_map_lookup unicode (int_map_lookup font_id font).glyph of
         Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}
 
-do_shader_canvas::Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_shader_canvas::ET.Has_call_stack=>Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
 do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine=do
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
     catch_null command_buffer

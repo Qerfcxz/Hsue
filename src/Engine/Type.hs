@@ -8,7 +8,8 @@
 module Engine.Type where
 
 import qualified SDL.Type as SDLT
-import qualified Error.Error as EE
+import qualified Error.Function as EF
+import qualified Error.Type as ET
 import qualified Data.Bits as DB
 import qualified Data.Hashable as DH
 import qualified Data.HashMap.Strict as DHMS
@@ -30,8 +31,8 @@ newtype Dynamic_bool a b c d e=Dynamic_bool {dynamic_bool::(Int->Int)->Event b->
 instance Eq (Dynamic_bool a b c d e) where
     (==)=dynamic_bool_equal
 
-dynamic_bool_equal::Dynamic_bool a b c d e->Dynamic_bool a b c d e->Bool
-dynamic_bool_equal _ _=EE.empty_error
+dynamic_bool_equal::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Bool
+dynamic_bool_equal _ _=EF.empty_error
 
 instance DB.Bits (Dynamic_bool a b c d e) where
     (.&.)=dynamic_bool_and
@@ -47,52 +48,52 @@ instance DB.Bits (Dynamic_bool a b c d e) where
     bit=dynamic_bool_bit
     popCount=dynamic_bool_pop_count
 
-dynamic_bool_and::Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_and::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
 dynamic_bool_and first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator (DB..&.) first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
 
-dynamic_bool_or::Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_or::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
 dynamic_bool_or first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator (DB..|.) first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
 
-dynamic_bool_xor::Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_xor::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
 dynamic_bool_xor first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator DB.xor first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
 
-dynamic_bool_complement::Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_complement::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e
 dynamic_bool_complement dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_unary_operator DB.complement dynamic_bool.dynamic_bool}
 
-dynamic_bool_shift::Dynamic_bool a b c d e->Int->Dynamic_bool a b c d e
+dynamic_bool_shift::ET.Has_call_stack=>Dynamic_bool a b c d e->Int->Dynamic_bool a b c d e
 dynamic_bool_shift dynamic_bool int=if int==0 then dynamic_bool else Dynamic_bool {dynamic_bool=dynamic_bool_false}
 
-dynamic_bool_rotate::Dynamic_bool a b c d e->Int->Dynamic_bool a b c d e
+dynamic_bool_rotate::ET.Has_call_stack=>Dynamic_bool a b c d e->Int->Dynamic_bool a b c d e
 dynamic_bool_rotate dynamic_bool _=dynamic_bool
 
-dynamic_bool_bit_size::Dynamic_bool a b c d e->Int
+dynamic_bool_bit_size::ET.Has_call_stack=>Dynamic_bool a b c d e->Int
 dynamic_bool_bit_size _=1
 
-dynamic_bool_bit_size_maybe::Dynamic_bool a b c d e->Maybe Int
+dynamic_bool_bit_size_maybe::ET.Has_call_stack=>Dynamic_bool a b c d e->Maybe Int
 dynamic_bool_bit_size_maybe _=Just 1
 
-dynamic_bool_is_signed::Dynamic_bool a b c d e->Bool
+dynamic_bool_is_signed::ET.Has_call_stack=>Dynamic_bool a b c d e->Bool
 dynamic_bool_is_signed _=False
 
-dynamic_bool_test_bit::Dynamic_bool a b c d e->Int->Bool
-dynamic_bool_test_bit _ _=EE.empty_error
+dynamic_bool_test_bit::ET.Has_call_stack=>Dynamic_bool a b c d e->Int->Bool
+dynamic_bool_test_bit _ _=EF.empty_error
 
-dynamic_bool_bit::Int->Dynamic_bool a b c d e
+dynamic_bool_bit::ET.Has_call_stack=>Int->Dynamic_bool a b c d e
 dynamic_bool_bit int=if int==0 then Dynamic_bool {dynamic_bool=dynamic_bool_true} else Dynamic_bool {dynamic_bool=dynamic_bool_false}
 
-dynamic_bool_pop_count::Dynamic_bool a b c d e->Int
-dynamic_bool_pop_count _=EE.empty_error
+dynamic_bool_pop_count::ET.Has_call_stack=>Dynamic_bool a b c d e->Int
+dynamic_bool_pop_count _=EF.empty_error
 
-dynamic_bool_true::(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_true::ET.Has_call_stack=>(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
 dynamic_bool_true _ _ _ _=True
 
-dynamic_bool_false::(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_false::ET.Has_call_stack=>(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
 dynamic_bool_false _ _ _ _=False
 
-dynamic_bool_unary_operator::(Bool->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_unary_operator::ET.Has_call_stack=>(Bool->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
 dynamic_bool_unary_operator operator dynamic_bool getter event engine widget=operator (dynamic_bool getter event engine widget)
 
-dynamic_bool_binary_operator::(Bool->Bool->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_binary_operator::ET.Has_call_stack=>(Bool->Bool->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
 dynamic_bool_binary_operator operator first_dynamic_bool second_dynamic_bool getter event engine widget=operator (first_dynamic_bool getter event engine widget) (second_dynamic_bool getter event engine widget)
 
 newtype Dynamic_int a b c d e=Dynamic_int {dynamic_int::(Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Int}
@@ -105,28 +106,28 @@ instance Num (Dynamic_int a b c d e) where
     fromInteger=dynamic_int_from_integer
     negate=dynamic_int_negate
 
-dynamic_int_addition::Dynamic_int a b c d e->Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_addition::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e->Dynamic_int a b c d e
 dynamic_int_addition first_dynamic_int second_dynamic_int=Dynamic_int {dynamic_int=dynamic_int_binary_operator (+) first_dynamic_int.dynamic_int second_dynamic_int.dynamic_int}
 
-dynamic_int_multiplication::Dynamic_int a b c d e->Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_multiplication::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e->Dynamic_int a b c d e
 dynamic_int_multiplication first_dynamic_int second_dynamic_int=Dynamic_int {dynamic_int=dynamic_int_binary_operator (*) first_dynamic_int.dynamic_int second_dynamic_int.dynamic_int}
 
-dynamic_int_abs::Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_abs::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e
 dynamic_int_abs dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator abs dynamic_int.dynamic_int}
 
-dynamic_int_signum::Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_signum::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e
 dynamic_int_signum dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator signum dynamic_int.dynamic_int}
 
-dynamic_int_from_integer::Integer->Dynamic_int a b c d e
+dynamic_int_from_integer::ET.Has_call_stack=>Integer->Dynamic_int a b c d e
 dynamic_int_from_integer integer=Dynamic_int {dynamic_int=const (const (const (const (fromInteger integer))))}
 
-dynamic_int_negate::Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_negate::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e
 dynamic_int_negate dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator negate dynamic_int.dynamic_int}
 
-dynamic_int_unary_operator::(Int->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int
+dynamic_int_unary_operator::ET.Has_call_stack=>(Int->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int
 dynamic_int_unary_operator operator dynamic_int getter event engine widget=operator (dynamic_int getter event engine widget)
 
-dynamic_int_binary_operator::(Int->Int->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int
+dynamic_int_binary_operator::ET.Has_call_stack=>(Int->Int->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int
 dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int getter event engine widget=operator (first_dynamic_int getter event engine widget) (second_dynamic_int getter event engine widget)
 
 newtype Raw_coroutine a b c d e f=Raw_coroutine {iterator::Int->(Int,DS.Seq (Coroutine a b c d e),f)}
@@ -134,26 +135,26 @@ newtype Raw_coroutine a b c d e f=Raw_coroutine {iterator::Int->(Int,DS.Seq (Cor
 instance Functor (Raw_coroutine a b c d e) where
     fmap=raw_coroutine_fmap
 
-raw_coroutine_fmap::(a->b)->Raw_coroutine c d e f g a->Raw_coroutine c d e f g b
+raw_coroutine_fmap::ET.Has_call_stack=>(a->b)->Raw_coroutine c d e f g a->Raw_coroutine c d e f g b
 raw_coroutine_fmap function raw_coroutine=Raw_coroutine {iterator=raw_coroutine_fmap_a function raw_coroutine.iterator}
 
-raw_coroutine_fmap_a::(a->b)->(Int->(Int,DS.Seq (Coroutine c d e f g),a))->Int->(Int,DS.Seq (Coroutine c d e f g),b)
+raw_coroutine_fmap_a::ET.Has_call_stack=>(a->b)->(Int->(Int,DS.Seq (Coroutine c d e f g),a))->Int->(Int,DS.Seq (Coroutine c d e f g),b)
 raw_coroutine_fmap_a function iterator int=let (new_int,coroutine_sequence,value)=iterator int in (new_int,coroutine_sequence,function value)
 
 instance Applicative (Raw_coroutine a b c d e) where
     pure=raw_coroutine_pure
     (<*>)=raw_coroutine_apply
 
-raw_coroutine_pure::a->Raw_coroutine b c d e f a
+raw_coroutine_pure::ET.Has_call_stack=>a->Raw_coroutine b c d e f a
 raw_coroutine_pure value=Raw_coroutine {iterator=raw_coroutine_pure_a value}
 
-raw_coroutine_pure_a::a->Int->(Int,DS.Seq (Coroutine b c d e f),a)
+raw_coroutine_pure_a::ET.Has_call_stack=>a->Int->(Int,DS.Seq (Coroutine b c d e f),a)
 raw_coroutine_pure_a value int=(int,DS.empty,value)
 
-raw_coroutine_apply::Raw_coroutine a b c d e (f->g)->Raw_coroutine a b c d e f->Raw_coroutine a b c d e g
+raw_coroutine_apply::ET.Has_call_stack=>Raw_coroutine a b c d e (f->g)->Raw_coroutine a b c d e f->Raw_coroutine a b c d e g
 raw_coroutine_apply first_raw_coroutine second_raw_coroutine=Raw_coroutine {iterator=raw_coroutine_apply_a first_raw_coroutine.iterator second_raw_coroutine.iterator}
 
-raw_coroutine_apply_a::(Int->(Int,DS.Seq (Coroutine a b c d e),f->g))->(Int->(Int,DS.Seq (Coroutine a b c d e),f))->Int->(Int,DS.Seq (Coroutine a b c d e),g)
+raw_coroutine_apply_a::ET.Has_call_stack=>(Int->(Int,DS.Seq (Coroutine a b c d e),f->g))->(Int->(Int,DS.Seq (Coroutine a b c d e),f))->Int->(Int,DS.Seq (Coroutine a b c d e),g)
 raw_coroutine_apply_a function_iterator value_iterator int=let (function_int,function_coroutine_sequence,function)=function_iterator int in
     let (value_int,value_coroutine_sequence,value)=value_iterator function_int in (value_int,function_coroutine_sequence DS.>< value_coroutine_sequence,function value)
 
@@ -161,10 +162,10 @@ instance Monad (Raw_coroutine a b c d e) where
     return=pure
     (>>=)=raw_coroutine_bind
 
-raw_coroutine_bind::Raw_coroutine a b c d e f->(f->Raw_coroutine a b c d e g)->Raw_coroutine a b c d e g
+raw_coroutine_bind::ET.Has_call_stack=>Raw_coroutine a b c d e f->(f->Raw_coroutine a b c d e g)->Raw_coroutine a b c d e g
 raw_coroutine_bind raw_coroutine function=Raw_coroutine {iterator=raw_coroutine_bind_a raw_coroutine.iterator function}
 
-raw_coroutine_bind_a::(Int->(Int,DS.Seq (Coroutine a b c d e),f))->(f->Raw_coroutine a b c d e g)->Int->(Int,DS.Seq (Coroutine a b c d e),g)
+raw_coroutine_bind_a::ET.Has_call_stack=>(Int->(Int,DS.Seq (Coroutine a b c d e),f))->(f->Raw_coroutine a b c d e g)->Int->(Int,DS.Seq (Coroutine a b c d e),g)
 raw_coroutine_bind_a iterator function int=let (new_int,coroutine_sequence,value)=iterator int in let (new_new_int,new_coroutine_sequence,new_value)=(function value).iterator new_int in (new_new_int,coroutine_sequence DS.>< new_coroutine_sequence,new_value)
 
 data Event_result a b c d e f g=Event_result {first_value::f,update::Engine a b c d e->Engine a b c d e,second_value::g}
@@ -172,7 +173,7 @@ data Event_result a b c d e f g=Event_result {first_value::f,update::Engine a b 
 instance Functor (Event_result a b c d e f) where
     fmap=event_result_fmap
 
-event_result_fmap::(a->b)->Event_result c d e f g h a->Event_result c d e f g h b
+event_result_fmap::ET.Has_call_stack=>(a->b)->Event_result c d e f g h a->Event_result c d e f g h b
 event_result_fmap function event_result=case event_result of
     Event_result {first_value,update,second_value}->Event_result {first_value=first_value,update=update,second_value=function second_value}
 
@@ -180,11 +181,11 @@ instance Applicative (Event_result a b c d e f) where
     pure=event_result_pure
     (<*>)=event_result_apply
 
-event_result_pure::a->Event_result b c d e f g a
-event_result_pure _=EE.empty_error
+event_result_pure::ET.Has_call_stack=>a->Event_result b c d e f g a
+event_result_pure _=EF.empty_error
 
-event_result_apply::Event_result a b c d e f (g->h)->Event_result a b c d e f g->Event_result a b c d e f h
-event_result_apply _ _=EE.empty_error
+event_result_apply::ET.Has_call_stack=>Event_result a b c d e f (g->h)->Event_result a b c d e f g->Event_result a b c d e f h
+event_result_apply _ _=EF.empty_error
 
 data Engine a b c d e=Engine {custom::a,main_id::Event b->Engine a b c d e->Maybe Int,projection_strategy::Event b->Engine a b c d e->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,canvas::DIM.IntMap Canvas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a b c d e),node::DIM.IntMap (Node a b c d e),window::DIM.IntMap Window,font::DIM.IntMap Font,atlas_font::DIM.IntMap Atlas_font,window_map::DHMS.HashMap DW.Word32 Int,font_map::DHMS.HashMap String Int,system_cursor_map::DHMS.HashMap System_cursor (FP.Ptr SDLT.SDL_Cursor),request::DS.Seq (Request a b c d e),key::DHS.HashSet Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::DIM.IntMap (FP.Ptr SDLT.SDL_GPUSampler),default_sampler::FP.Ptr SDLT.SDL_GPUSampler,canvas_graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,pipeline::DIM.IntMap Pipeline,shader::DIM.IntMap Shader,default_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,max_picture_size::FCT.CInt,max_vertex_size::Int,max_index_size::Int,max_parameter_size::Int,exponent_width::Int,exponent_height::Int,initial_canvas_id::Int,canvas_id::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
@@ -305,7 +306,7 @@ data Key=Key_unknown|Key_a|Key_b|Key_c|Key_d|Key_e|Key_f|Key_g|Key_h|Key_i|Key_j
 instance DH.Hashable Key where
     hashWithSalt=key_hashWithSalt
 
-key_hashWithSalt::Int->Key->Int
+key_hashWithSalt::ET.Has_call_stack=>Int->Key->Int
 key_hashWithSalt=DH.hashUsing fromEnum
 
 data System_cursor=System_cursor_default|System_cursor_pointer deriving (Eq,Enum)
@@ -313,7 +314,7 @@ data System_cursor=System_cursor_default|System_cursor_pointer deriving (Eq,Enum
 instance DH.Hashable System_cursor where
     hashWithSalt=system_cursor_hashWithSalt
 
-system_cursor_hashWithSalt::Int->System_cursor->Int
+system_cursor_hashWithSalt::ET.Has_call_stack=>Int->System_cursor->Int
 system_cursor_hashWithSalt=DH.hashUsing fromEnum
 
 data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resizable|Window_always_on_top deriving (Eq,Enum)
@@ -321,7 +322,7 @@ data Window_flag=Window_fullscreen|Window_hidden|Window_borderless|Window_resiza
 instance DH.Hashable Window_flag where
     hashWithSalt=window_flag_hashWithSalt
 
-window_flag_hashWithSalt::Int->Window_flag->Int
+window_flag_hashWithSalt::ET.Has_call_stack=>Int->Window_flag->Int
 window_flag_hashWithSalt=DH.hashUsing fromEnum
 
 data Color_component_flag=Color_component_r|Color_component_g|Color_component_b|Color_component_a deriving (Eq,Enum)
@@ -329,7 +330,7 @@ data Color_component_flag=Color_component_r|Color_component_g|Color_component_b|
 instance DH.Hashable Color_component_flag where
     hashWithSalt=color_component_flag_hashWithSalt
 
-color_component_flag_hashWithSalt::Int->Color_component_flag->Int
+color_component_flag_hashWithSalt::ET.Has_call_stack=>Int->Color_component_flag->Int
 color_component_flag_hashWithSalt=DH.hashUsing fromEnum
 
 data Clip=Clip {x::FCT.CFloat,y::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
@@ -340,13 +341,13 @@ instance FS.Storable Clip where
     peek=clip_peek
     poke=clip_poke
 
-clip_size_of::Num a=>Clip->a
+clip_size_of::ET.Has_call_stack=>Num a=>Clip->a
 clip_size_of _=32
 
-clip_alignment::Num a=>Clip->a
+clip_alignment::ET.Has_call_stack=>Num a=>Clip->a
 clip_alignment _=4
 
-clip_peek::FP.Ptr Clip->IO Clip
+clip_peek::ET.Has_call_stack=>FP.Ptr Clip->IO Clip
 clip_peek ptr=do
     x<-FS.peekByteOff ptr 0
     y<-FS.peekByteOff ptr 4
@@ -358,7 +359,7 @@ clip_peek ptr=do
     max_v<-FS.peekByteOff ptr 28
     return (Clip {x=x,y=y,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v})
 
-clip_poke::FP.Ptr Clip->Clip->IO ()
+clip_poke::ET.Has_call_stack=>FP.Ptr Clip->Clip->IO ()
 clip_poke ptr clip=case clip of
     Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->do
         FS.pokeByteOff ptr 0 x
@@ -378,19 +379,19 @@ instance FS.Storable Layout where
     peek=layout_peek
     poke=layout_poke
 
-layout_size_of::Num a=>Layout->a
+layout_size_of::ET.Has_call_stack=>Num a=>Layout->a
 layout_size_of _=16
 
-layout_alignment::Num a=>Layout->a
+layout_alignment::ET.Has_call_stack=>Num a=>Layout->a
 layout_alignment _=8
 
-layout_peek::FP.Ptr Layout->IO Layout
+layout_peek::ET.Has_call_stack=>FP.Ptr Layout->IO Layout
 layout_peek ptr=do
     address<-FS.peekByteOff ptr 0
     size<-FS.peekByteOff ptr 8
     return (Layout {address=address,size=size})
 
-layout_poke::FP.Ptr Layout->Layout->IO ()
+layout_poke::ET.Has_call_stack=>FP.Ptr Layout->Layout->IO ()
 layout_poke ptr layout=case layout of
     Layout {address,size}->do
         FS.pokeByteOff ptr 0 address
@@ -404,16 +405,16 @@ instance FS.Storable Vertex where
     peek=vertex_peek
     poke=vertex_poke
 
-vertex_size_of::Num a=>Vertex->a
+vertex_size_of::ET.Has_call_stack=>Num a=>Vertex->a
 vertex_size_of _=40
 
-vertex_alignment::Num a=>Vertex->a
+vertex_alignment::ET.Has_call_stack=>Num a=>Vertex->a
 vertex_alignment _=4
 
-vertex_peek::FP.Ptr Vertex->IO Vertex
-vertex_peek _=EE.empty_error
+vertex_peek::ET.Has_call_stack=>FP.Ptr Vertex->IO Vertex
+vertex_peek _=EF.empty_error
 
-vertex_poke::FP.Ptr Vertex->Vertex->IO ()
+vertex_poke::ET.Has_call_stack=>FP.Ptr Vertex->Vertex->IO ()
 vertex_poke ptr vertex=case vertex of
     Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,font_size}->do
         FS.pokeByteOff ptr 0 red
@@ -435,16 +436,16 @@ instance FS.Storable Parameter where
     peek=parameter_peek
     poke=parameter_poke
 
-parameter_size_of::Num a=>Parameter->a
+parameter_size_of::ET.Has_call_stack=>Num a=>Parameter->a
 parameter_size_of _=48
 
-parameter_alignment::Num a=>Parameter->a
+parameter_alignment::ET.Has_call_stack=>Num a=>Parameter->a
 parameter_alignment _=4
 
-parameter_peek::FP.Ptr Parameter->IO Parameter
-parameter_peek _=EE.empty_error
+parameter_peek::ET.Has_call_stack=>FP.Ptr Parameter->IO Parameter
+parameter_peek _=EF.empty_error
 
-parameter_poke::FP.Ptr Parameter->Parameter->IO ()
+parameter_poke::ET.Has_call_stack=>FP.Ptr Parameter->Parameter->IO ()
 parameter_poke ptr parameter=case parameter of
     Parameter {x,y,x_x,x_y,y_x,y_y,border_flag,border_left,border_down,border_right,border_up}->do
         FS.pokeByteOff ptr 0 x
@@ -462,62 +463,62 @@ parameter_poke ptr parameter=case parameter of
 data Data=Data_bool {bool::Bool}|Data_int {int::Int}|Data_c_float {c_float::FCT.CFloat}
 
 class Convert a b where
-    convert::a->b
+    convert::ET.Has_call_stack=>a->b
 
 instance Convert Data Bool where
     convert=data_bool_convert
 
-data_bool_convert::Data->Bool
+data_bool_convert::ET.Has_call_stack=>Data->Bool
 data_bool_convert store=case store of
     Data_bool {bool}->bool
-    _->EE.empty_error
+    _->EF.empty_error
 
 instance Convert Bool Data where
     convert=bool_data_convert
 
-bool_data_convert::Bool->Data
+bool_data_convert::ET.Has_call_stack=>Bool->Data
 bool_data_convert bool=Data_bool {bool=bool}
 
 instance Convert Data Int where
     convert=data_int_convert
 
-data_int_convert::Data->Int
+data_int_convert::ET.Has_call_stack=>Data->Int
 data_int_convert store=case store of
     Data_int {int}->int
-    _->EE.empty_error
+    _->EF.empty_error
 
 instance Convert Int Data where
     convert=int_data_convert
 
-int_data_convert::Int->Data
+int_data_convert::ET.Has_call_stack=>Int->Data
 int_data_convert int=Data_int {int=int}
 
 instance Convert Data FCT.CFloat where
     convert=data_c_float_convert
 
-data_c_float_convert::Data->FCT.CFloat
+data_c_float_convert::ET.Has_call_stack=>Data->FCT.CFloat
 data_c_float_convert store=case store of
     Data_c_float {c_float}->c_float
-    _->EE.empty_error
+    _->EF.empty_error
 
 instance Convert FCT.CFloat Data where
     convert=c_float_data_convert
 
-c_float_data_convert::FCT.CFloat->Data
+c_float_data_convert::ET.Has_call_stack=>FCT.CFloat->Data
 c_float_data_convert c_float=Data_c_float {c_float=c_float}
 
 class Custom_request a where
-    custom_request::a->Engine b c a d e->IO (Engine b c a d e)
+    custom_request::ET.Has_call_stack=>a->Engine b c a d e->IO (Engine b c a d e)
 
 class Custom_widget a where
-    custom_widget_run::Event b->Engine c b d a e->a->(a,Engine c b d a e->Engine c b d a e,Event b->Engine c b d a e->Maybe Int)
-    custom_widget_collect::FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->a->DS.Seq Submit
-    custom_widget_remove::a->Engine b c d a e->IO (Engine b c d a e)
-    custom_widget_lock::a->a
-    custom_widget_unlock::a->Engine b c d a e->IO (Engine b c d a e,a)
+    custom_widget_run::ET.Has_call_stack=>Event b->Engine c b d a e->a->(a,Engine c b d a e->Engine c b d a e,Event b->Engine c b d a e->Maybe Int)
+    custom_widget_collect::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->a->DS.Seq Submit
+    custom_widget_remove::ET.Has_call_stack=>a->Engine b c d a e->IO (Engine b c d a e)
+    custom_widget_lock::ET.Has_call_stack=>a->a
+    custom_widget_unlock::ET.Has_call_stack=>a->Engine b c d a e->IO (Engine b c d a e,a)
 
 class Custom_widget_request a where
-    custom_widget_request::a->Engine b c d e a->IO (Engine b c d e a,e)
+    custom_widget_request::ET.Has_call_stack=>a->Engine b c d e a->IO (Engine b c d e a,e)
 
 {-# INLINE dynamic_bool_equal #-}
 {-# INLINE dynamic_bool_and #-}

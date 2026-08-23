@@ -14,7 +14,8 @@ import Engine.Widget
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified SDL.Type as SDLT
-import qualified Error.Error as EE
+import qualified Error.Function as EF
+import qualified Error.Type as ET
 import qualified Data.Bits as DB
 import qualified Data.Foldable as DF
 import qualified Data.HashMap.Strict as DHMS
@@ -29,15 +30,15 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-init_engine::IO ()
+init_engine::ET.Has_call_stack=>IO ()
 init_engine=do
     catch_false (FCS.withCString "SDL_TIMER_RESOLUTION" (FCS.withCString "1" . SDLF.sdl_set_hint))
     catch_false (SDLF.sdl_init SDLI.sdl_init_video)
 
-quit_engine::IO ()
+quit_engine::ET.Has_call_stack=>IO ()
 quit_engine=SDLF.sdl_quit
 
-create_engine::a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a b c d e)
+create_engine::ET.Has_call_stack=>a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a b c d e)
 create_engine custom main_id projection_strategy max_picture_size max_vertex_size max_index_size max_parameter_size exponent_width exponent_height initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range sampler_create_info blend_state=do
     system_cursor_default<-SDLF.sdl_create_system_cursor SDLI.sdl_system_cursor_default
     catch_null system_cursor_default
@@ -86,9 +87,9 @@ create_engine custom main_id projection_strategy max_picture_size max_vertex_siz
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
                 catch_zero timer_id
                 return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=width,height=height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,atlas_font=DIM.empty,window_map=DHMS.empty,font_map=DHMS.empty,system_cursor_map=DHMS.insert System_cursor_pointer system_cursor_pointer (DHMS.singleton System_cursor_default system_cursor_default),request=DS.empty,key=DHS.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,max_picture_size=max_picture_size,max_vertex_size=max_vertex_size,max_index_size=max_index_size,max_parameter_size=max_parameter_size,exponent_width=exponent_width,exponent_height=exponent_height,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range})
-            else EE.empty_error
+            else EF.empty_error
 
-clean_engine::Engine a b c d e->IO ()
+clean_engine::ET.Has_call_stack=>Engine a b c d e->IO ()
 clean_engine engine=do
     _<-DHMS.traverseWithKey (const SDLF.sdl_destroy_cursor) engine.system_cursor_map
     DF.traverse_ (clean_window engine.device) (DIM.elems engine.window)
@@ -115,14 +116,14 @@ clean_engine engine=do
     SDLF.sdl_release_gpu_shader engine.device engine.fragment_shader
     SDLF.sdl_destroy_gpu_device engine.device
 
-clean_window::FP.Ptr SDLT.SDL_GPUDevice->Window->IO ()
+clean_window::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->Window->IO ()
 clean_window device window=do
     catch_false (SDLF.sdl_wait_for_gpu_idle device)
     SDLF.sdl_release_window_from_gpu_device device window.sdl_window
     SDLF.sdl_release_gpu_graphics_pipeline device window.graphics_pipeline
     SDLF.sdl_destroy_window window.sdl_window
 
-run_engine::(Custom_request c,Custom_widget d,Custom_widget_request e)=>Engine a b c d e->IO ()
+run_engine::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Engine a b c d e->IO ()
 run_engine engine=FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \sdl_event->case engine.timer of
     Off->loop_engine_off sdl_event engine
     On {}->loop_engine_on sdl_event engine

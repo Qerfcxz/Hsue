@@ -10,7 +10,8 @@ module SDL.Include where
 #include <SDL3_image/SDL_image.h>
 
 import SDL.Type
-import Error.Error
+import Error.Function
+import Error.Type
 import Data.Word
 import Foreign.C.String
 import Foreign.C.Types
@@ -26,16 +27,16 @@ instance Storable SDL_FColor where
     peek=sdl_f_color_peek
     poke=sdl_f_color_poke
 
-sdl_f_color_size_of::Num a=>SDL_FColor->a
+sdl_f_color_size_of::Has_call_stack=>Num a=>SDL_FColor->a
 sdl_f_color_size_of _=(#size SDL_FColor)
 
-sdl_f_color_alignment::Num a=>SDL_FColor->a
+sdl_f_color_alignment::Has_call_stack=>Num a=>SDL_FColor->a
 sdl_f_color_alignment _=(#alignment SDL_FColor)
 
-sdl_f_color_peek::Ptr SDL_FColor->IO SDL_FColor
+sdl_f_color_peek::Has_call_stack=>Ptr SDL_FColor->IO SDL_FColor
 sdl_f_color_peek _=empty_error
 
-sdl_f_color_poke::Ptr SDL_FColor->SDL_FColor->IO ()
+sdl_f_color_poke::Has_call_stack=>Ptr SDL_FColor->SDL_FColor->IO ()
 sdl_f_color_poke ptr f_color=case f_color of
     SDL_FColor {sdl_r,sdl_g,sdl_b,sdl_a}->do
         fillBytes ptr 0 (#size SDL_FColor)
@@ -52,16 +53,16 @@ instance Storable SDL_GPUBufferBinding where
     peek=sdl_gpu_buffer_binding_peek
     poke=sdl_gpu_buffer_binding_poke
 
-sdl_gpu_buffer_binding_size_of::Num a=>SDL_GPUBufferBinding->a
+sdl_gpu_buffer_binding_size_of::Has_call_stack=>Num a=>SDL_GPUBufferBinding->a
 sdl_gpu_buffer_binding_size_of _=(#size SDL_GPUBufferBinding)
 
-sdl_gpu_buffer_binding_alignment::Num a=>SDL_GPUBufferBinding->a
+sdl_gpu_buffer_binding_alignment::Has_call_stack=>Num a=>SDL_GPUBufferBinding->a
 sdl_gpu_buffer_binding_alignment _=(#alignment SDL_GPUBufferBinding)
 
-sdl_gpu_buffer_binding_peek::Ptr SDL_GPUBufferBinding->IO SDL_GPUBufferBinding
+sdl_gpu_buffer_binding_peek::Has_call_stack=>Ptr SDL_GPUBufferBinding->IO SDL_GPUBufferBinding
 sdl_gpu_buffer_binding_peek _=empty_error
 
-sdl_gpu_buffer_binding_poke::Ptr SDL_GPUBufferBinding->SDL_GPUBufferBinding->IO ()
+sdl_gpu_buffer_binding_poke::Has_call_stack=>Ptr SDL_GPUBufferBinding->SDL_GPUBufferBinding->IO ()
 sdl_gpu_buffer_binding_poke ptr buffer_binding=case buffer_binding of
     SDL_GPUBufferBinding {sdl_buffer,sdl_offset}->do
         fillBytes ptr 0 (#size SDL_GPUBufferBinding)
@@ -76,16 +77,16 @@ instance Storable SDL_GPUColorTargetInfo where
     peek=sdl_gpu_color_target_info_peek
     poke=sdl_gpu_color_target_info_poke
 
-sdl_gpu_color_target_info_size_of::Num a=>SDL_GPUColorTargetInfo->a
+sdl_gpu_color_target_info_size_of::Has_call_stack=>Num a=>SDL_GPUColorTargetInfo->a
 sdl_gpu_color_target_info_size_of _=(#size SDL_GPUColorTargetInfo)
 
-sdl_gpu_color_target_info_alignment::Num a=>SDL_GPUColorTargetInfo->a
+sdl_gpu_color_target_info_alignment::Has_call_stack=>Num a=>SDL_GPUColorTargetInfo->a
 sdl_gpu_color_target_info_alignment _=(#alignment SDL_GPUColorTargetInfo)
 
-sdl_gpu_color_target_info_peek::Ptr SDL_GPUColorTargetInfo->IO SDL_GPUColorTargetInfo
+sdl_gpu_color_target_info_peek::Has_call_stack=>Ptr SDL_GPUColorTargetInfo->IO SDL_GPUColorTargetInfo
 sdl_gpu_color_target_info_peek _=empty_error
 
-sdl_gpu_color_target_info_poke::Ptr SDL_GPUColorTargetInfo->SDL_GPUColorTargetInfo->IO ()
+sdl_gpu_color_target_info_poke::Has_call_stack=>Ptr SDL_GPUColorTargetInfo->SDL_GPUColorTargetInfo->IO ()
 sdl_gpu_color_target_info_poke ptr color_target_info=case color_target_info of
     SDL_GPUColorTargetInfo {sdl_texture,sdl_clear_color,sdl_load_op,sdl_store_op}->do
         fillBytes ptr 0 (#size SDL_GPUColorTargetInfo)
@@ -102,16 +103,16 @@ instance Storable SDL_GPUVertexAttribute where
     peek=sdl_gpu_vertex_attribute_peek
     poke=sdl_gpu_vertex_attribute_poke
 
-sdl_gpu_vertex_attribute_size_of::Num a=>SDL_GPUVertexAttribute->a
+sdl_gpu_vertex_attribute_size_of::Has_call_stack=>Num a=>SDL_GPUVertexAttribute->a
 sdl_gpu_vertex_attribute_size_of _=(#size SDL_GPUVertexAttribute)
 
-sdl_gpu_vertex_attribute_alignment::Num a=>SDL_GPUVertexAttribute->a
+sdl_gpu_vertex_attribute_alignment::Has_call_stack=>Num a=>SDL_GPUVertexAttribute->a
 sdl_gpu_vertex_attribute_alignment _=(#alignment SDL_GPUVertexAttribute)
 
-sdl_gpu_vertex_attribute_peek::Ptr SDL_GPUVertexAttribute->IO SDL_GPUVertexAttribute
+sdl_gpu_vertex_attribute_peek::Has_call_stack=>Ptr SDL_GPUVertexAttribute->IO SDL_GPUVertexAttribute
 sdl_gpu_vertex_attribute_peek _=empty_error
 
-sdl_gpu_vertex_attribute_poke::Ptr SDL_GPUVertexAttribute->SDL_GPUVertexAttribute->IO ()
+sdl_gpu_vertex_attribute_poke::Has_call_stack=>Ptr SDL_GPUVertexAttribute->SDL_GPUVertexAttribute->IO ()
 sdl_gpu_vertex_attribute_poke ptr vertex_attribute=case vertex_attribute of
     SDL_GPUVertexAttribute {sdl_location,sdl_buffer_slot,sdl_format,sdl_offset}->do
         fillBytes ptr 0 (#size SDL_GPUVertexAttribute)
@@ -128,16 +129,16 @@ instance Storable SDL_GPUColorTargetDescription where
     peek=sdl_gpu_color_target_description_peek
     poke=sdl_gpu_color_target_description_poke
 
-sdl_gpu_color_target_description_size_of::Num a=>SDL_GPUColorTargetDescription->a
+sdl_gpu_color_target_description_size_of::Has_call_stack=>Num a=>SDL_GPUColorTargetDescription->a
 sdl_gpu_color_target_description_size_of _=(#size SDL_GPUColorTargetDescription)
 
-sdl_gpu_color_target_description_alignment::Num a=>SDL_GPUColorTargetDescription->a
+sdl_gpu_color_target_description_alignment::Has_call_stack=>Num a=>SDL_GPUColorTargetDescription->a
 sdl_gpu_color_target_description_alignment _=(#alignment SDL_GPUColorTargetDescription)
 
-sdl_gpu_color_target_description_peek::Ptr SDL_GPUColorTargetDescription->IO SDL_GPUColorTargetDescription
+sdl_gpu_color_target_description_peek::Has_call_stack=>Ptr SDL_GPUColorTargetDescription->IO SDL_GPUColorTargetDescription
 sdl_gpu_color_target_description_peek _=empty_error
 
-sdl_gpu_color_target_description_poke::Ptr SDL_GPUColorTargetDescription->SDL_GPUColorTargetDescription->IO ()
+sdl_gpu_color_target_description_poke::Has_call_stack=>Ptr SDL_GPUColorTargetDescription->SDL_GPUColorTargetDescription->IO ()
 sdl_gpu_color_target_description_poke ptr color_target_description=case color_target_description of
     SDL_GPUColorTargetDescription {sdl_format,sdl_blend_state}->do
         fillBytes ptr 0 (#size SDL_GPUColorTargetDescription)
@@ -152,16 +153,16 @@ instance Storable SDL_GPUColorTargetBlendState where
     peek=sdl_gpu_color_target_blend_state_peek
     poke=sdl_gpu_color_target_blend_state_poke
 
-sdl_gpu_color_target_blend_state_size_of::Num a=>SDL_GPUColorTargetBlendState->a
+sdl_gpu_color_target_blend_state_size_of::Has_call_stack=>Num a=>SDL_GPUColorTargetBlendState->a
 sdl_gpu_color_target_blend_state_size_of _=(#size SDL_GPUColorTargetBlendState)
 
-sdl_gpu_color_target_blend_state_alignment::Num a=>SDL_GPUColorTargetBlendState->a
+sdl_gpu_color_target_blend_state_alignment::Has_call_stack=>Num a=>SDL_GPUColorTargetBlendState->a
 sdl_gpu_color_target_blend_state_alignment _=(#alignment SDL_GPUColorTargetBlendState)
 
-sdl_gpu_color_target_blend_state_peek::Ptr SDL_GPUColorTargetBlendState->IO SDL_GPUColorTargetBlendState
+sdl_gpu_color_target_blend_state_peek::Has_call_stack=>Ptr SDL_GPUColorTargetBlendState->IO SDL_GPUColorTargetBlendState
 sdl_gpu_color_target_blend_state_peek _=empty_error
 
-sdl_gpu_color_target_blend_state_poke::Ptr SDL_GPUColorTargetBlendState->SDL_GPUColorTargetBlendState->IO ()
+sdl_gpu_color_target_blend_state_poke::Has_call_stack=>Ptr SDL_GPUColorTargetBlendState->SDL_GPUColorTargetBlendState->IO ()
 sdl_gpu_color_target_blend_state_poke ptr color_target_blend_state=case color_target_blend_state of
     SDL_GPUColorTargetBlendState {sdl_src_color_blendfactor,sdl_dst_color_blendfactor,sdl_color_blend_op,sdl_src_alpha_blendfactor,sdl_dst_alpha_blendfactor,sdl_alpha_blend_op,sdl_color_write_mask,sdl_enable_blend,sdl_enable_color_write_mask}->do
         fillBytes ptr 0 (#size SDL_GPUColorTargetBlendState)
@@ -183,16 +184,16 @@ instance Storable SDL_GPUShaderCreateInfo where
     peek=sdl_gpu_shader_create_info_peek
     poke=sdl_gpu_shader_create_info_poke
 
-sdl_gpu_shader_create_info_size_of::Num a=>SDL_GPUShaderCreateInfo->a
+sdl_gpu_shader_create_info_size_of::Has_call_stack=>Num a=>SDL_GPUShaderCreateInfo->a
 sdl_gpu_shader_create_info_size_of _=(#size SDL_GPUShaderCreateInfo)
 
-sdl_gpu_shader_create_info_alignment::Num a=>SDL_GPUShaderCreateInfo->a
+sdl_gpu_shader_create_info_alignment::Has_call_stack=>Num a=>SDL_GPUShaderCreateInfo->a
 sdl_gpu_shader_create_info_alignment _=(#alignment SDL_GPUShaderCreateInfo)
 
-sdl_gpu_shader_create_info_peek::Ptr SDL_GPUShaderCreateInfo->IO SDL_GPUShaderCreateInfo
+sdl_gpu_shader_create_info_peek::Has_call_stack=>Ptr SDL_GPUShaderCreateInfo->IO SDL_GPUShaderCreateInfo
 sdl_gpu_shader_create_info_peek _=empty_error
 
-sdl_gpu_shader_create_info_poke::Ptr SDL_GPUShaderCreateInfo->SDL_GPUShaderCreateInfo->IO ()
+sdl_gpu_shader_create_info_poke::Has_call_stack=>Ptr SDL_GPUShaderCreateInfo->SDL_GPUShaderCreateInfo->IO ()
 sdl_gpu_shader_create_info_poke ptr shader_create_info=case shader_create_info of
     SDL_GPUShaderCreateInfo {sdl_code_size,sdl_code,sdl_entrypoint,sdl_format,sdl_stage,sdl_num_samplers,sdl_num_storage_textures,sdl_num_storage_buffers,sdl_num_uniform_buffers}->do
         fillBytes ptr 0 (#size SDL_GPUShaderCreateInfo)
@@ -214,16 +215,16 @@ instance Storable SDL_GPUVertexInputState where
     peek=sdl_gpu_vertex_input_state_peek
     poke=sdl_gpu_vertex_input_state_poke
 
-sdl_gpu_vertex_input_state_size_of::Num a=>SDL_GPUVertexInputState->a
+sdl_gpu_vertex_input_state_size_of::Has_call_stack=>Num a=>SDL_GPUVertexInputState->a
 sdl_gpu_vertex_input_state_size_of _=(#size SDL_GPUVertexInputState)
 
-sdl_gpu_vertex_input_state_alignment::Num a=>SDL_GPUVertexInputState->a
+sdl_gpu_vertex_input_state_alignment::Has_call_stack=>Num a=>SDL_GPUVertexInputState->a
 sdl_gpu_vertex_input_state_alignment _=(#alignment SDL_GPUVertexInputState)
 
-sdl_gpu_vertex_input_state_peek::Ptr SDL_GPUVertexInputState->IO SDL_GPUVertexInputState
+sdl_gpu_vertex_input_state_peek::Has_call_stack=>Ptr SDL_GPUVertexInputState->IO SDL_GPUVertexInputState
 sdl_gpu_vertex_input_state_peek _=empty_error
 
-sdl_gpu_vertex_input_state_poke::Ptr SDL_GPUVertexInputState->SDL_GPUVertexInputState->IO ()
+sdl_gpu_vertex_input_state_poke::Has_call_stack=>Ptr SDL_GPUVertexInputState->SDL_GPUVertexInputState->IO ()
 sdl_gpu_vertex_input_state_poke ptr vertex_input_state=case vertex_input_state of
     SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions,sdl_num_vertex_buffers,sdl_vertex_attributes,sdl_num_vertex_attributes}->do
         fillBytes ptr 0 (#size SDL_GPUVertexInputState)
@@ -240,16 +241,16 @@ instance Storable SDL_GPUBufferCreateInfo where
     peek=sdl_gpu_buffer_create_info_peek
     poke=sdl_gpu_buffer_create_info_poke
 
-sdl_gpu_buffer_create_info_size_of::Num a=>SDL_GPUBufferCreateInfo->a
+sdl_gpu_buffer_create_info_size_of::Has_call_stack=>Num a=>SDL_GPUBufferCreateInfo->a
 sdl_gpu_buffer_create_info_size_of _=(#size SDL_GPUBufferCreateInfo)
 
-sdl_gpu_buffer_create_info_alignment::Num a=>SDL_GPUBufferCreateInfo->a
+sdl_gpu_buffer_create_info_alignment::Has_call_stack=>Num a=>SDL_GPUBufferCreateInfo->a
 sdl_gpu_buffer_create_info_alignment _=(#alignment SDL_GPUBufferCreateInfo)
 
-sdl_gpu_buffer_create_info_peek::Ptr SDL_GPUBufferCreateInfo->IO SDL_GPUBufferCreateInfo
+sdl_gpu_buffer_create_info_peek::Has_call_stack=>Ptr SDL_GPUBufferCreateInfo->IO SDL_GPUBufferCreateInfo
 sdl_gpu_buffer_create_info_peek _=empty_error
 
-sdl_gpu_buffer_create_info_poke::Ptr SDL_GPUBufferCreateInfo->SDL_GPUBufferCreateInfo->IO ()
+sdl_gpu_buffer_create_info_poke::Has_call_stack=>Ptr SDL_GPUBufferCreateInfo->SDL_GPUBufferCreateInfo->IO ()
 sdl_gpu_buffer_create_info_poke ptr buffer_create_info=case buffer_create_info of
     SDL_GPUBufferCreateInfo {sdl_usage,sdl_size}->do
         fillBytes ptr 0 (#size SDL_GPUBufferCreateInfo)
@@ -264,16 +265,16 @@ instance Storable SDL_GPUTransferBufferCreateInfo where
     peek=sdl_gpu_transfer_buffer_create_info_peek
     poke=sdl_gpu_transfer_buffer_create_info_poke
 
-sdl_gpu_transfer_buffer_create_info_size_of::Num a=>SDL_GPUTransferBufferCreateInfo->a
+sdl_gpu_transfer_buffer_create_info_size_of::Has_call_stack=>Num a=>SDL_GPUTransferBufferCreateInfo->a
 sdl_gpu_transfer_buffer_create_info_size_of _=(#size SDL_GPUTransferBufferCreateInfo)
 
-sdl_gpu_transfer_buffer_create_info_alignment::Num a=>SDL_GPUTransferBufferCreateInfo->a
+sdl_gpu_transfer_buffer_create_info_alignment::Has_call_stack=>Num a=>SDL_GPUTransferBufferCreateInfo->a
 sdl_gpu_transfer_buffer_create_info_alignment _=(#alignment SDL_GPUTransferBufferCreateInfo)
 
-sdl_gpu_transfer_buffer_create_info_peek::Ptr SDL_GPUTransferBufferCreateInfo->IO SDL_GPUTransferBufferCreateInfo
+sdl_gpu_transfer_buffer_create_info_peek::Has_call_stack=>Ptr SDL_GPUTransferBufferCreateInfo->IO SDL_GPUTransferBufferCreateInfo
 sdl_gpu_transfer_buffer_create_info_peek _=empty_error
 
-sdl_gpu_transfer_buffer_create_info_poke::Ptr SDL_GPUTransferBufferCreateInfo->SDL_GPUTransferBufferCreateInfo->IO ()
+sdl_gpu_transfer_buffer_create_info_poke::Has_call_stack=>Ptr SDL_GPUTransferBufferCreateInfo->SDL_GPUTransferBufferCreateInfo->IO ()
 sdl_gpu_transfer_buffer_create_info_poke ptr transfer_buffer_create_info=case transfer_buffer_create_info of
     SDL_GPUTransferBufferCreateInfo {sdl_usage,sdl_size}->do
         fillBytes ptr 0 (#size SDL_GPUTransferBufferCreateInfo)
@@ -288,16 +289,16 @@ instance Storable SDL_GPUTransferBufferLocation where
     peek=sdl_gpu_transfer_buffer_location_peek
     poke=sdl_gpu_transfer_buffer_location_poke
 
-sdl_gpu_transfer_buffer_location_size_of::Num a=>SDL_GPUTransferBufferLocation->a
+sdl_gpu_transfer_buffer_location_size_of::Has_call_stack=>Num a=>SDL_GPUTransferBufferLocation->a
 sdl_gpu_transfer_buffer_location_size_of _=(#size SDL_GPUTransferBufferLocation)
 
-sdl_gpu_transfer_buffer_location_alignment::Num a=>SDL_GPUTransferBufferLocation->a
+sdl_gpu_transfer_buffer_location_alignment::Has_call_stack=>Num a=>SDL_GPUTransferBufferLocation->a
 sdl_gpu_transfer_buffer_location_alignment _=(#alignment SDL_GPUTransferBufferLocation)
 
-sdl_gpu_transfer_buffer_location_peek::Ptr SDL_GPUTransferBufferLocation->IO SDL_GPUTransferBufferLocation
+sdl_gpu_transfer_buffer_location_peek::Has_call_stack=>Ptr SDL_GPUTransferBufferLocation->IO SDL_GPUTransferBufferLocation
 sdl_gpu_transfer_buffer_location_peek _=empty_error
 
-sdl_gpu_transfer_buffer_location_poke::Ptr SDL_GPUTransferBufferLocation->SDL_GPUTransferBufferLocation->IO ()
+sdl_gpu_transfer_buffer_location_poke::Has_call_stack=>Ptr SDL_GPUTransferBufferLocation->SDL_GPUTransferBufferLocation->IO ()
 sdl_gpu_transfer_buffer_location_poke ptr transfer_buffer_location=case transfer_buffer_location of
     SDL_GPUTransferBufferLocation {sdl_transfer_buffer,sdl_offset}->do
         fillBytes ptr 0 (#size SDL_GPUTransferBufferLocation)
@@ -312,16 +313,16 @@ instance Storable SDL_GPUBufferRegion where
     peek=sdl_gpu_buffer_region_peek
     poke=sdl_gpu_buffer_region_poke
 
-sdl_gpu_buffer_region_size_of::Num a=>SDL_GPUBufferRegion->a
+sdl_gpu_buffer_region_size_of::Has_call_stack=>Num a=>SDL_GPUBufferRegion->a
 sdl_gpu_buffer_region_size_of _=(#size SDL_GPUBufferRegion)
 
-sdl_gpu_buffer_region_alignment::Num a=>SDL_GPUBufferRegion->a
+sdl_gpu_buffer_region_alignment::Has_call_stack=>Num a=>SDL_GPUBufferRegion->a
 sdl_gpu_buffer_region_alignment _=(#alignment SDL_GPUBufferRegion)
 
-sdl_gpu_buffer_region_peek::Ptr SDL_GPUBufferRegion->IO SDL_GPUBufferRegion
+sdl_gpu_buffer_region_peek::Has_call_stack=>Ptr SDL_GPUBufferRegion->IO SDL_GPUBufferRegion
 sdl_gpu_buffer_region_peek _=empty_error
 
-sdl_gpu_buffer_region_poke::Ptr SDL_GPUBufferRegion->SDL_GPUBufferRegion->IO ()
+sdl_gpu_buffer_region_poke::Has_call_stack=>Ptr SDL_GPUBufferRegion->SDL_GPUBufferRegion->IO ()
 sdl_gpu_buffer_region_poke ptr buffer_region=case buffer_region of
     SDL_GPUBufferRegion {sdl_buffer,sdl_offset,sdl_size}->do
         fillBytes ptr 0 (#size SDL_GPUBufferRegion)
@@ -337,16 +338,16 @@ instance Storable SDL_GPUVertexBufferDescription where
     peek=sdl_gpu_vertex_buffer_description_peek
     poke=sdl_gpu_vertex_buffer_description_poke
 
-sdl_gpu_vertex_buffer_description_size_of::Num a=>SDL_GPUVertexBufferDescription->a
+sdl_gpu_vertex_buffer_description_size_of::Has_call_stack=>Num a=>SDL_GPUVertexBufferDescription->a
 sdl_gpu_vertex_buffer_description_size_of _=(#size SDL_GPUVertexBufferDescription)
 
-sdl_gpu_vertex_buffer_description_alignment::Num a=>SDL_GPUVertexBufferDescription->a
+sdl_gpu_vertex_buffer_description_alignment::Has_call_stack=>Num a=>SDL_GPUVertexBufferDescription->a
 sdl_gpu_vertex_buffer_description_alignment _=(#alignment SDL_GPUVertexBufferDescription)
 
-sdl_gpu_vertex_buffer_description_peek::Ptr SDL_GPUVertexBufferDescription->IO SDL_GPUVertexBufferDescription
+sdl_gpu_vertex_buffer_description_peek::Has_call_stack=>Ptr SDL_GPUVertexBufferDescription->IO SDL_GPUVertexBufferDescription
 sdl_gpu_vertex_buffer_description_peek _=empty_error
 
-sdl_gpu_vertex_buffer_description_poke::Ptr SDL_GPUVertexBufferDescription->SDL_GPUVertexBufferDescription->IO ()
+sdl_gpu_vertex_buffer_description_poke::Has_call_stack=>Ptr SDL_GPUVertexBufferDescription->SDL_GPUVertexBufferDescription->IO ()
 sdl_gpu_vertex_buffer_description_poke ptr vertex_buffer_description=case vertex_buffer_description of
     SDL_GPUVertexBufferDescription {sdl_slot,sdl_pitch,sdl_input_rate,sdl_instance_step_rate}->do
         fillBytes ptr 0 (#size SDL_GPUVertexBufferDescription)
@@ -363,16 +364,16 @@ instance Storable SDL_GPUGraphicsPipelineTargetInfo where
     peek=sdl_gpu_graphics_pipeline_target_info_peek
     poke=sdl_gpu_graphics_pipeline_target_info_poke
 
-sdl_gpu_graphics_pipeline_target_info_size_of::Num a=>SDL_GPUGraphicsPipelineTargetInfo->a
+sdl_gpu_graphics_pipeline_target_info_size_of::Has_call_stack=>Num a=>SDL_GPUGraphicsPipelineTargetInfo->a
 sdl_gpu_graphics_pipeline_target_info_size_of _=(#size SDL_GPUGraphicsPipelineTargetInfo)
 
-sdl_gpu_graphics_pipeline_target_info_alignment::Num a=>SDL_GPUGraphicsPipelineTargetInfo->a
+sdl_gpu_graphics_pipeline_target_info_alignment::Has_call_stack=>Num a=>SDL_GPUGraphicsPipelineTargetInfo->a
 sdl_gpu_graphics_pipeline_target_info_alignment _=(#alignment SDL_GPUGraphicsPipelineTargetInfo)
 
-sdl_gpu_graphics_pipeline_target_info_peek::Ptr SDL_GPUGraphicsPipelineTargetInfo->IO SDL_GPUGraphicsPipelineTargetInfo
+sdl_gpu_graphics_pipeline_target_info_peek::Has_call_stack=>Ptr SDL_GPUGraphicsPipelineTargetInfo->IO SDL_GPUGraphicsPipelineTargetInfo
 sdl_gpu_graphics_pipeline_target_info_peek _=empty_error
 
-sdl_gpu_graphics_pipeline_target_info_poke::Ptr SDL_GPUGraphicsPipelineTargetInfo->SDL_GPUGraphicsPipelineTargetInfo->IO ()
+sdl_gpu_graphics_pipeline_target_info_poke::Has_call_stack=>Ptr SDL_GPUGraphicsPipelineTargetInfo->SDL_GPUGraphicsPipelineTargetInfo->IO ()
 sdl_gpu_graphics_pipeline_target_info_poke ptr graphics_pipeline_target_info=case graphics_pipeline_target_info of
     SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions,sdl_num_color_targets,sdl_has_depth_stencil_target}->do
         fillBytes ptr 0 (#size SDL_GPUGraphicsPipelineTargetInfo)
@@ -388,16 +389,16 @@ instance Storable SDL_GPUGraphicsPipelineCreateInfo where
     peek=sdl_gpu_graphics_pipeline_create_info_peek
     poke=sdl_gpu_graphics_pipeline_create_info_poke
 
-sdl_gpu_graphics_pipeline_create_info_size_of::Num a=>SDL_GPUGraphicsPipelineCreateInfo->a
+sdl_gpu_graphics_pipeline_create_info_size_of::Has_call_stack=>Num a=>SDL_GPUGraphicsPipelineCreateInfo->a
 sdl_gpu_graphics_pipeline_create_info_size_of _=(#size SDL_GPUGraphicsPipelineCreateInfo)
 
-sdl_gpu_graphics_pipeline_create_info_alignment::Num a=>SDL_GPUGraphicsPipelineCreateInfo->a
+sdl_gpu_graphics_pipeline_create_info_alignment::Has_call_stack=>Num a=>SDL_GPUGraphicsPipelineCreateInfo->a
 sdl_gpu_graphics_pipeline_create_info_alignment _=(#alignment SDL_GPUGraphicsPipelineCreateInfo)
 
-sdl_gpu_graphics_pipeline_create_info_peek::Ptr SDL_GPUGraphicsPipelineCreateInfo->IO SDL_GPUGraphicsPipelineCreateInfo
+sdl_gpu_graphics_pipeline_create_info_peek::Has_call_stack=>Ptr SDL_GPUGraphicsPipelineCreateInfo->IO SDL_GPUGraphicsPipelineCreateInfo
 sdl_gpu_graphics_pipeline_create_info_peek _=empty_error
 
-sdl_gpu_graphics_pipeline_create_info_poke::Ptr SDL_GPUGraphicsPipelineCreateInfo->SDL_GPUGraphicsPipelineCreateInfo->IO ()
+sdl_gpu_graphics_pipeline_create_info_poke::Has_call_stack=>Ptr SDL_GPUGraphicsPipelineCreateInfo->SDL_GPUGraphicsPipelineCreateInfo->IO ()
 sdl_gpu_graphics_pipeline_create_info_poke ptr graphics_pipeline_create_info=case graphics_pipeline_create_info of
     SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader,sdl_fragment_shader,sdl_vertex_input_state,sdl_primitive_type,sdl_target_info}->do
         fillBytes ptr 0 (#size SDL_GPUGraphicsPipelineCreateInfo)
@@ -415,16 +416,16 @@ instance Storable SDL_GPUTextureCreateInfo where
     peek=sdl_gpu_texture_create_info_peek
     poke=sdl_gpu_texture_create_info_poke
 
-sdl_gpu_texture_create_info_size_of::Num a=>SDL_GPUTextureCreateInfo->a
+sdl_gpu_texture_create_info_size_of::Has_call_stack=>Num a=>SDL_GPUTextureCreateInfo->a
 sdl_gpu_texture_create_info_size_of _=(#size SDL_GPUTextureCreateInfo)
 
-sdl_gpu_texture_create_info_alignment::Num a=>SDL_GPUTextureCreateInfo->a
+sdl_gpu_texture_create_info_alignment::Has_call_stack=>Num a=>SDL_GPUTextureCreateInfo->a
 sdl_gpu_texture_create_info_alignment _=(#alignment SDL_GPUTextureCreateInfo)
 
-sdl_gpu_texture_create_info_peek::Ptr SDL_GPUTextureCreateInfo->IO SDL_GPUTextureCreateInfo
+sdl_gpu_texture_create_info_peek::Has_call_stack=>Ptr SDL_GPUTextureCreateInfo->IO SDL_GPUTextureCreateInfo
 sdl_gpu_texture_create_info_peek _=empty_error
 
-sdl_gpu_texture_create_info_poke::Ptr SDL_GPUTextureCreateInfo->SDL_GPUTextureCreateInfo->IO ()
+sdl_gpu_texture_create_info_poke::Has_call_stack=>Ptr SDL_GPUTextureCreateInfo->SDL_GPUTextureCreateInfo->IO ()
 sdl_gpu_texture_create_info_poke ptr texture_create_info=case texture_create_info of
     SDL_GPUTextureCreateInfo {sdl_type,sdl_format,sdl_usage,sdl_width,sdl_height,sdl_layer_count_or_depth,sdl_num_levels,sdl_sample_count}->do
         fillBytes ptr 0 (#size SDL_GPUTextureCreateInfo)
@@ -445,16 +446,16 @@ instance Storable SDL_GPUSamplerCreateInfo where
     peek=sdl_gpu_sampler_create_info_peek
     poke=sdl_gpu_sampler_create_info_poke
 
-sdl_gpu_sampler_create_info_size_of::Num a=>SDL_GPUSamplerCreateInfo->a
+sdl_gpu_sampler_create_info_size_of::Has_call_stack=>Num a=>SDL_GPUSamplerCreateInfo->a
 sdl_gpu_sampler_create_info_size_of _=(#size SDL_GPUSamplerCreateInfo)
 
-sdl_gpu_sampler_create_info_alignment::Num a=>SDL_GPUSamplerCreateInfo->a
+sdl_gpu_sampler_create_info_alignment::Has_call_stack=>Num a=>SDL_GPUSamplerCreateInfo->a
 sdl_gpu_sampler_create_info_alignment _=(#alignment SDL_GPUSamplerCreateInfo)
 
-sdl_gpu_sampler_create_info_peek::Ptr SDL_GPUSamplerCreateInfo->IO SDL_GPUSamplerCreateInfo
+sdl_gpu_sampler_create_info_peek::Has_call_stack=>Ptr SDL_GPUSamplerCreateInfo->IO SDL_GPUSamplerCreateInfo
 sdl_gpu_sampler_create_info_peek _=empty_error
 
-sdl_gpu_sampler_create_info_poke::Ptr SDL_GPUSamplerCreateInfo->SDL_GPUSamplerCreateInfo->IO ()
+sdl_gpu_sampler_create_info_poke::Has_call_stack=>Ptr SDL_GPUSamplerCreateInfo->SDL_GPUSamplerCreateInfo->IO ()
 sdl_gpu_sampler_create_info_poke ptr sampler_create_info=case sampler_create_info of
     SDL_GPUSamplerCreateInfo {sdl_min_filter,sdl_mag_filter,sdl_mipmap_mode,sdl_address_mode_u,sdl_address_mode_v,sdl_address_mode_w}->do
         fillBytes ptr 0 (#size SDL_GPUSamplerCreateInfo)
@@ -473,16 +474,16 @@ instance Storable SDL_GPUTextureSamplerBinding where
     peek=sdl_gpu_texture_sampler_binding_peek
     poke=sdl_gpu_texture_sampler_binding_poke
 
-sdl_gpu_texture_sampler_binding_size_of::Num a=>SDL_GPUTextureSamplerBinding->a
+sdl_gpu_texture_sampler_binding_size_of::Has_call_stack=>Num a=>SDL_GPUTextureSamplerBinding->a
 sdl_gpu_texture_sampler_binding_size_of _=(#size SDL_GPUTextureSamplerBinding)
 
-sdl_gpu_texture_sampler_binding_alignment::Num a=>SDL_GPUTextureSamplerBinding->a
+sdl_gpu_texture_sampler_binding_alignment::Has_call_stack=>Num a=>SDL_GPUTextureSamplerBinding->a
 sdl_gpu_texture_sampler_binding_alignment _=(#alignment SDL_GPUTextureSamplerBinding)
 
-sdl_gpu_texture_sampler_binding_peek::Ptr SDL_GPUTextureSamplerBinding->IO SDL_GPUTextureSamplerBinding
+sdl_gpu_texture_sampler_binding_peek::Has_call_stack=>Ptr SDL_GPUTextureSamplerBinding->IO SDL_GPUTextureSamplerBinding
 sdl_gpu_texture_sampler_binding_peek _=empty_error
 
-sdl_gpu_texture_sampler_binding_poke::Ptr SDL_GPUTextureSamplerBinding->SDL_GPUTextureSamplerBinding->IO ()
+sdl_gpu_texture_sampler_binding_poke::Has_call_stack=>Ptr SDL_GPUTextureSamplerBinding->SDL_GPUTextureSamplerBinding->IO ()
 sdl_gpu_texture_sampler_binding_poke ptr texture_sampler_binding=case texture_sampler_binding of
     SDL_GPUTextureSamplerBinding {sdl_texture,sdl_sampler}->do
         fillBytes ptr 0 (#size SDL_GPUTextureSamplerBinding)
@@ -497,16 +498,16 @@ instance Storable SDL_GPUTextureTransferInfo where
     peek=sdl_gpu_texture_transfer_info_peek
     poke=sdl_gpu_texture_transfer_info_poke
 
-sdl_gpu_texture_transfer_info_size_of::Num a=>SDL_GPUTextureTransferInfo->a
+sdl_gpu_texture_transfer_info_size_of::Has_call_stack=>Num a=>SDL_GPUTextureTransferInfo->a
 sdl_gpu_texture_transfer_info_size_of _=(#size SDL_GPUTextureTransferInfo)
 
-sdl_gpu_texture_transfer_info_alignment::Num a=>SDL_GPUTextureTransferInfo->a
+sdl_gpu_texture_transfer_info_alignment::Has_call_stack=>Num a=>SDL_GPUTextureTransferInfo->a
 sdl_gpu_texture_transfer_info_alignment _=(#alignment SDL_GPUTextureTransferInfo)
 
-sdl_gpu_texture_transfer_info_peek::Ptr SDL_GPUTextureTransferInfo->IO SDL_GPUTextureTransferInfo
+sdl_gpu_texture_transfer_info_peek::Has_call_stack=>Ptr SDL_GPUTextureTransferInfo->IO SDL_GPUTextureTransferInfo
 sdl_gpu_texture_transfer_info_peek _=empty_error
 
-sdl_gpu_texture_transfer_info_poke::Ptr SDL_GPUTextureTransferInfo->SDL_GPUTextureTransferInfo->IO ()
+sdl_gpu_texture_transfer_info_poke::Has_call_stack=>Ptr SDL_GPUTextureTransferInfo->SDL_GPUTextureTransferInfo->IO ()
 sdl_gpu_texture_transfer_info_poke ptr texture_transfer_info=case texture_transfer_info of
     SDL_GPUTextureTransferInfo {sdl_transfer_buffer,sdl_offset,sdl_pixels_per_row,sdl_rows_per_layer}->do
         fillBytes ptr 0 (#size SDL_GPUTextureTransferInfo)
@@ -523,16 +524,16 @@ instance Storable SDL_GPUTextureRegion where
     peek=sdl_gpu_texture_region_peek
     poke=sdl_gpu_texture_region_poke
 
-sdl_gpu_texture_region_size_of::Num a=>SDL_GPUTextureRegion->a
+sdl_gpu_texture_region_size_of::Has_call_stack=>Num a=>SDL_GPUTextureRegion->a
 sdl_gpu_texture_region_size_of _=(#size SDL_GPUTextureRegion)
 
-sdl_gpu_texture_region_alignment::Num a=>SDL_GPUTextureRegion->a
+sdl_gpu_texture_region_alignment::Has_call_stack=>Num a=>SDL_GPUTextureRegion->a
 sdl_gpu_texture_region_alignment _=(#alignment SDL_GPUTextureRegion)
 
-sdl_gpu_texture_region_peek::Ptr SDL_GPUTextureRegion->IO SDL_GPUTextureRegion
+sdl_gpu_texture_region_peek::Has_call_stack=>Ptr SDL_GPUTextureRegion->IO SDL_GPUTextureRegion
 sdl_gpu_texture_region_peek _=empty_error
 
-sdl_gpu_texture_region_poke::Ptr SDL_GPUTextureRegion->SDL_GPUTextureRegion->IO ()
+sdl_gpu_texture_region_poke::Has_call_stack=>Ptr SDL_GPUTextureRegion->SDL_GPUTextureRegion->IO ()
 sdl_gpu_texture_region_poke ptr texture_region=case texture_region of
     SDL_GPUTextureRegion {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z,sdl_w,sdl_h,sdl_d}->do
         fillBytes ptr 0 (#size SDL_GPUTextureRegion)
@@ -554,16 +555,16 @@ instance Storable SDL_GPUTextureLocation where
     peek=sdl_gpu_texture_location_peek
     poke=sdl_gpu_texture_location_poke
 
-sdl_gpu_texture_location_size_of::Num a=>SDL_GPUTextureLocation->a
+sdl_gpu_texture_location_size_of::Has_call_stack=>Num a=>SDL_GPUTextureLocation->a
 sdl_gpu_texture_location_size_of _=(#size SDL_GPUTextureLocation)
 
-sdl_gpu_texture_location_alignment::Num a=>SDL_GPUTextureLocation->a
+sdl_gpu_texture_location_alignment::Has_call_stack=>Num a=>SDL_GPUTextureLocation->a
 sdl_gpu_texture_location_alignment _=(#alignment SDL_GPUTextureLocation)
 
-sdl_gpu_texture_location_peek::Ptr SDL_GPUTextureLocation->IO SDL_GPUTextureLocation
+sdl_gpu_texture_location_peek::Has_call_stack=>Ptr SDL_GPUTextureLocation->IO SDL_GPUTextureLocation
 sdl_gpu_texture_location_peek _=empty_error
 
-sdl_gpu_texture_location_poke::Ptr SDL_GPUTextureLocation->SDL_GPUTextureLocation->IO ()
+sdl_gpu_texture_location_poke::Has_call_stack=>Ptr SDL_GPUTextureLocation->SDL_GPUTextureLocation->IO ()
 sdl_gpu_texture_location_poke ptr texture_location=case texture_location of
     SDL_GPUTextureLocation {sdl_texture,sdl_mip_level,sdl_layer,sdl_x,sdl_y,sdl_z}->do
         fillBytes ptr 0 (#size SDL_GPUTextureLocation)
@@ -582,13 +583,13 @@ instance Storable IMG_Animation where
     peek=img_animation_peek
     poke=img_animation_poke
 
-img_animation_size_of::Num a=>IMG_Animation->a
+img_animation_size_of::Has_call_stack=>Num a=>IMG_Animation->a
 img_animation_size_of _=(#size IMG_Animation)
 
-img_animation_alignment::Num a=>IMG_Animation->a
+img_animation_alignment::Has_call_stack=>Num a=>IMG_Animation->a
 img_animation_alignment _=(#alignment IMG_Animation)
 
-img_animation_peek::Ptr IMG_Animation->IO IMG_Animation
+img_animation_peek::Has_call_stack=>Ptr IMG_Animation->IO IMG_Animation
 img_animation_peek ptr=do
     img_w<-(#peek IMG_Animation,w) ptr
     img_h<-(#peek IMG_Animation,h) ptr
@@ -597,7 +598,7 @@ img_animation_peek ptr=do
     img_delays<-(#peek IMG_Animation,delays) ptr
     return (IMG_Animation {img_w=img_w,img_h=img_h,img_count=img_count,img_frames=img_frames,img_delays=img_delays})
 
-img_animation_poke::Ptr IMG_Animation->IMG_Animation->IO ()
+img_animation_poke::Has_call_stack=>Ptr IMG_Animation->IMG_Animation->IO ()
 img_animation_poke ptr animation=case animation of
     IMG_Animation {img_w,img_h,img_count,img_frames,img_delays}->do
         fillBytes ptr 0 (#size IMG_Animation)
@@ -607,406 +608,406 @@ img_animation_poke ptr animation=case animation of
         (#poke IMG_Animation,frames) ptr img_frames
         (#poke IMG_Animation,delays) ptr img_delays
 
-sdl_init_video::Word32
+sdl_init_video::Has_call_stack=>Word32
 sdl_init_video=(#const SDL_INIT_VIDEO)
 
-sdl_gpu_swapchaincomposition_sdr::Word32
+sdl_gpu_swapchaincomposition_sdr::Has_call_stack=>Word32
 sdl_gpu_swapchaincomposition_sdr=(#const SDL_GPU_SWAPCHAINCOMPOSITION_SDR)
 
-sdl_gpu_presentmode_mailbox::Word32
+sdl_gpu_presentmode_mailbox::Has_call_stack=>Word32
 sdl_gpu_presentmode_mailbox=(#const SDL_GPU_PRESENTMODE_MAILBOX)
 
-sdl_gpu_shaderformat_dxil::Word32
+sdl_gpu_shaderformat_dxil::Has_call_stack=>Word32
 sdl_gpu_shaderformat_dxil=(#const SDL_GPU_SHADERFORMAT_DXIL)
 
-sdl_gpu_loadop_clear::Word32
+sdl_gpu_loadop_clear::Has_call_stack=>Word32
 sdl_gpu_loadop_clear=(#const SDL_GPU_LOADOP_CLEAR)
 
-sdl_gpu_storeop_store::Word32
+sdl_gpu_storeop_store::Has_call_stack=>Word32
 sdl_gpu_storeop_store=(#const SDL_GPU_STOREOP_STORE)
 
-sdl_gpu_transferbufferusage_upload::Word32
+sdl_gpu_transferbufferusage_upload::Has_call_stack=>Word32
 sdl_gpu_transferbufferusage_upload=(#const SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD)
 
-sdl_gpu_vertexinputrate_vertex::Word32
+sdl_gpu_vertexinputrate_vertex::Has_call_stack=>Word32
 sdl_gpu_vertexinputrate_vertex=(#const SDL_GPU_VERTEXINPUTRATE_VERTEX)
 
-sdl_gpu_primitivetype_trianglelist::Word32
+sdl_gpu_primitivetype_trianglelist::Has_call_stack=>Word32
 sdl_gpu_primitivetype_trianglelist=(#const SDL_GPU_PRIMITIVETYPE_TRIANGLELIST)
 
-sdl_gpu_shaderstage_vertex::Word32
+sdl_gpu_shaderstage_vertex::Has_call_stack=>Word32
 sdl_gpu_shaderstage_vertex=(#const SDL_GPU_SHADERSTAGE_VERTEX)
 
-sdl_gpu_shaderstage_fragment::Word32
+sdl_gpu_shaderstage_fragment::Has_call_stack=>Word32
 sdl_gpu_shaderstage_fragment=(#const SDL_GPU_SHADERSTAGE_FRAGMENT)
 
-sdl_gpu_bufferusage_vertex::Word32
+sdl_gpu_bufferusage_vertex::Has_call_stack=>Word32
 sdl_gpu_bufferusage_vertex=(#const SDL_GPU_BUFFERUSAGE_VERTEX)
 
-sdl_gpu_bufferusage_index::Word32
+sdl_gpu_bufferusage_index::Has_call_stack=>Word32
 sdl_gpu_bufferusage_index=(#const SDL_GPU_BUFFERUSAGE_INDEX)
 
-sdl_gpu_bufferusage_graphics_storage_read::Word32
+sdl_gpu_bufferusage_graphics_storage_read::Has_call_stack=>Word32
 sdl_gpu_bufferusage_graphics_storage_read=(#const SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ)
 
-sdl_gpu_vertexelementformat_float::Word32
+sdl_gpu_vertexelementformat_float::Has_call_stack=>Word32
 sdl_gpu_vertexelementformat_float=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT)
 
-sdl_gpu_vertexelementformat_float2::Word32
+sdl_gpu_vertexelementformat_float2::Has_call_stack=>Word32
 sdl_gpu_vertexelementformat_float2=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2)
 
-sdl_gpu_vertexelementformat_float4::Word32
+sdl_gpu_vertexelementformat_float4::Has_call_stack=>Word32
 sdl_gpu_vertexelementformat_float4=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4)
 
-sdl_gpu_blendfactor_invalid::Word32
+sdl_gpu_blendfactor_invalid::Has_call_stack=>Word32
 sdl_gpu_blendfactor_invalid=(#const SDL_GPU_BLENDFACTOR_INVALID)
 
-sdl_gpu_blendfactor_zero::Word32
+sdl_gpu_blendfactor_zero::Has_call_stack=>Word32
 sdl_gpu_blendfactor_zero=(#const SDL_GPU_BLENDFACTOR_ZERO)
 
-sdl_gpu_blendfactor_one::Word32
+sdl_gpu_blendfactor_one::Has_call_stack=>Word32
 sdl_gpu_blendfactor_one=(#const SDL_GPU_BLENDFACTOR_ONE)
 
-sdl_gpu_blendfactor_constant_color::Word32
+sdl_gpu_blendfactor_constant_color::Has_call_stack=>Word32
 sdl_gpu_blendfactor_constant_color=(#const SDL_GPU_BLENDFACTOR_CONSTANT_COLOR)
 
-sdl_gpu_blendfactor_dst_color::Word32
+sdl_gpu_blendfactor_dst_color::Has_call_stack=>Word32
 sdl_gpu_blendfactor_dst_color=(#const SDL_GPU_BLENDFACTOR_DST_COLOR)
 
-sdl_gpu_blendfactor_src_color::Word32
+sdl_gpu_blendfactor_src_color::Has_call_stack=>Word32
 sdl_gpu_blendfactor_src_color=(#const SDL_GPU_BLENDFACTOR_SRC_COLOR)
 
-sdl_gpu_blendfactor_dst_alpha::Word32
+sdl_gpu_blendfactor_dst_alpha::Has_call_stack=>Word32
 sdl_gpu_blendfactor_dst_alpha=(#const SDL_GPU_BLENDFACTOR_DST_ALPHA)
 
-sdl_gpu_blendfactor_src_alpha::Word32
+sdl_gpu_blendfactor_src_alpha::Has_call_stack=>Word32
 sdl_gpu_blendfactor_src_alpha=(#const SDL_GPU_BLENDFACTOR_SRC_ALPHA)
 
-sdl_gpu_blendfactor_src_alpha_saturate::Word32
+sdl_gpu_blendfactor_src_alpha_saturate::Has_call_stack=>Word32
 sdl_gpu_blendfactor_src_alpha_saturate=(#const SDL_GPU_BLENDFACTOR_SRC_ALPHA_SATURATE)
 
-sdl_gpu_blendfactor_one_minus_constant_color::Word32
+sdl_gpu_blendfactor_one_minus_constant_color::Has_call_stack=>Word32
 sdl_gpu_blendfactor_one_minus_constant_color=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_CONSTANT_COLOR)
 
-sdl_gpu_blendfactor_one_minus_dst_color::Word32
+sdl_gpu_blendfactor_one_minus_dst_color::Has_call_stack=>Word32
 sdl_gpu_blendfactor_one_minus_dst_color=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_DST_COLOR)
 
-sdl_gpu_blendfactor_one_minus_src_color::Word32
+sdl_gpu_blendfactor_one_minus_src_color::Has_call_stack=>Word32
 sdl_gpu_blendfactor_one_minus_src_color=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_COLOR)
 
-sdl_gpu_blendfactor_one_minus_dst_alpha::Word32
+sdl_gpu_blendfactor_one_minus_dst_alpha::Has_call_stack=>Word32
 sdl_gpu_blendfactor_one_minus_dst_alpha=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_DST_ALPHA)
 
-sdl_gpu_blendfactor_one_minus_src_alpha::Word32
+sdl_gpu_blendfactor_one_minus_src_alpha::Has_call_stack=>Word32
 sdl_gpu_blendfactor_one_minus_src_alpha=(#const SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA)
 
-sdl_gpu_blendop_invalid::Word32
+sdl_gpu_blendop_invalid::Has_call_stack=>Word32
 sdl_gpu_blendop_invalid=(#const SDL_GPU_BLENDOP_INVALID)
 
-sdl_gpu_blendop_min::Word32
+sdl_gpu_blendop_min::Has_call_stack=>Word32
 sdl_gpu_blendop_min=(#const SDL_GPU_BLENDOP_MIN)
 
-sdl_gpu_blendop_max::Word32
+sdl_gpu_blendop_max::Has_call_stack=>Word32
 sdl_gpu_blendop_max=(#const SDL_GPU_BLENDOP_MAX)
 
-sdl_gpu_blendop_add::Word32
+sdl_gpu_blendop_add::Has_call_stack=>Word32
 sdl_gpu_blendop_add=(#const SDL_GPU_BLENDOP_ADD)
 
-sdl_gpu_blendop_subtract::Word32
+sdl_gpu_blendop_subtract::Has_call_stack=>Word32
 sdl_gpu_blendop_subtract=(#const SDL_GPU_BLENDOP_SUBTRACT)
 
-sdl_gpu_blendop_reverse_subtract::Word32
+sdl_gpu_blendop_reverse_subtract::Has_call_stack=>Word32
 sdl_gpu_blendop_reverse_subtract=(#const SDL_GPU_BLENDOP_REVERSE_SUBTRACT)
 
-sdl_gpu_colorcomponent_r::Word8
+sdl_gpu_colorcomponent_r::Has_call_stack=>Word8
 sdl_gpu_colorcomponent_r=(#const SDL_GPU_COLORCOMPONENT_R)
 
-sdl_gpu_colorcomponent_g::Word8
+sdl_gpu_colorcomponent_g::Has_call_stack=>Word8
 sdl_gpu_colorcomponent_g=(#const SDL_GPU_COLORCOMPONENT_G)
 
-sdl_gpu_colorcomponent_b::Word8
+sdl_gpu_colorcomponent_b::Has_call_stack=>Word8
 sdl_gpu_colorcomponent_b=(#const SDL_GPU_COLORCOMPONENT_B)
 
-sdl_gpu_colorcomponent_a::Word8
+sdl_gpu_colorcomponent_a::Has_call_stack=>Word8
 sdl_gpu_colorcomponent_a=(#const SDL_GPU_COLORCOMPONENT_A)
 
-sdl_gpu_indexelementsize_32bit::Word32
+sdl_gpu_indexelementsize_32bit::Has_call_stack=>Word32
 sdl_gpu_indexelementsize_32bit=(#const SDL_GPU_INDEXELEMENTSIZE_32BIT)
 
-sdl_gpu_textureformat_r8g8b8a8_unorm::Word32
+sdl_gpu_textureformat_r8g8b8a8_unorm::Has_call_stack=>Word32
 sdl_gpu_textureformat_r8g8b8a8_unorm=(#const SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM)
 
-sdl_gpu_texturetype_2d::Word32
+sdl_gpu_texturetype_2d::Has_call_stack=>Word32
 sdl_gpu_texturetype_2d=(#const SDL_GPU_TEXTURETYPE_2D)
 
-sdl_gpu_textureusage_color_target::Word32
+sdl_gpu_textureusage_color_target::Has_call_stack=>Word32
 sdl_gpu_textureusage_color_target=(#const SDL_GPU_TEXTUREUSAGE_COLOR_TARGET)
 
-sdl_gpu_textureusage_sampler::Word32
+sdl_gpu_textureusage_sampler::Has_call_stack=>Word32
 sdl_gpu_textureusage_sampler=(#const SDL_GPU_TEXTUREUSAGE_SAMPLER)
 
-sdl_gpu_samplecount_1::Word32
+sdl_gpu_samplecount_1::Has_call_stack=>Word32
 sdl_gpu_samplecount_1=(#const SDL_GPU_SAMPLECOUNT_1)
 
-sdl_gpu_filter_nearest::Word32
+sdl_gpu_filter_nearest::Has_call_stack=>Word32
 sdl_gpu_filter_nearest=(#const SDL_GPU_FILTER_NEAREST)
 
-sdl_gpu_filter_linear::Word32
+sdl_gpu_filter_linear::Has_call_stack=>Word32
 sdl_gpu_filter_linear=(#const SDL_GPU_FILTER_LINEAR)
 
-sdl_gpu_samplermipmapmode_nearest::Word32
+sdl_gpu_samplermipmapmode_nearest::Has_call_stack=>Word32
 sdl_gpu_samplermipmapmode_nearest=(#const SDL_GPU_SAMPLERMIPMAPMODE_NEAREST)
 
-sdl_gpu_samplermipmapmode_linear::Word32
+sdl_gpu_samplermipmapmode_linear::Has_call_stack=>Word32
 sdl_gpu_samplermipmapmode_linear=(#const SDL_GPU_SAMPLERMIPMAPMODE_LINEAR)
 
-sdl_gpu_sampleraddressmode_repeat::Word32
+sdl_gpu_sampleraddressmode_repeat::Has_call_stack=>Word32
 sdl_gpu_sampleraddressmode_repeat=(#const SDL_GPU_SAMPLERADDRESSMODE_REPEAT)
 
-sdl_gpu_sampleraddressmode_mirrored_repeat::Word32
+sdl_gpu_sampleraddressmode_mirrored_repeat::Has_call_stack=>Word32
 sdl_gpu_sampleraddressmode_mirrored_repeat=(#const SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT)
 
-sdl_gpu_sampleraddressmode_clamp_to_edge::Word32
+sdl_gpu_sampleraddressmode_clamp_to_edge::Has_call_stack=>Word32
 sdl_gpu_sampleraddressmode_clamp_to_edge=(#const SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE)
 
-sdl_window_fullscreen::Word64
+sdl_window_fullscreen::Has_call_stack=>Word64
 sdl_window_fullscreen=(#const SDL_WINDOW_FULLSCREEN)
 
-sdl_window_hidden::Word64
+sdl_window_hidden::Has_call_stack=>Word64
 sdl_window_hidden=(#const SDL_WINDOW_HIDDEN)
 
-sdl_window_borderless::Word64
+sdl_window_borderless::Has_call_stack=>Word64
 sdl_window_borderless=(#const SDL_WINDOW_BORDERLESS)
 
-sdl_window_resizable::Word64
+sdl_window_resizable::Has_call_stack=>Word64
 sdl_window_resizable=(#const SDL_WINDOW_RESIZABLE)
 
-sdl_window_always_on_top::Word64
+sdl_window_always_on_top::Has_call_stack=>Word64
 sdl_window_always_on_top=(#const SDL_WINDOW_ALWAYS_ON_TOP)
 
-sdl_system_cursor_default::Word32
+sdl_system_cursor_default::Has_call_stack=>Word32
 sdl_system_cursor_default=(#const SDL_SYSTEM_CURSOR_DEFAULT)
 
-sdl_system_cursor_pointer::Word32
+sdl_system_cursor_pointer::Has_call_stack=>Word32
 sdl_system_cursor_pointer=(#const SDL_SYSTEM_CURSOR_POINTER)
 
-sdl_pixelformat_rgba32::Word32
+sdl_pixelformat_rgba32::Has_call_stack=>Word32
 sdl_pixelformat_rgba32=(#const SDL_PIXELFORMAT_RGBA32)
 
-sdl_event_size::Int
+sdl_event_size::Has_call_stack=>Int
 sdl_event_size=(#size SDL_Event)
 
-sdl_event_alignment::Int
+sdl_event_alignment::Has_call_stack=>Int
 sdl_event_alignment=(#alignment SDL_Event)
 
-sdl_user_event_data1_poke::Ptr ()->Ptr ()->IO ()
+sdl_user_event_data1_poke::Has_call_stack=>Ptr ()->Ptr ()->IO ()
 sdl_user_event_data1_poke ptr data1=(#poke SDL_UserEvent,data1) ptr data1
 
-sdl_user_event_data1_peek::Ptr ()->IO (Ptr ())
+sdl_user_event_data1_peek::Has_call_stack=>Ptr ()->IO (Ptr ())
 sdl_user_event_data1_peek ptr=(#peek SDL_UserEvent,data1) ptr
 
-sdl_event_type_peek::Ptr ()->IO Word32
+sdl_event_type_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_event_type_peek ptr=(#peek SDL_Event,type) ptr
 
-sdl_windowevent_windowid_peek::Ptr ()->IO Word32
+sdl_windowevent_windowid_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_windowevent_windowid_peek ptr=(#peek SDL_WindowEvent,windowID) ptr
 
-sdl_windowevent_data1_peek::Ptr ()->IO Word32
+sdl_windowevent_data1_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_windowevent_data1_peek ptr=(#peek SDL_WindowEvent,data1) ptr
 
-sdl_windowevent_data2_peek::Ptr ()->IO Word32
+sdl_windowevent_data2_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_windowevent_data2_peek ptr=(#peek SDL_WindowEvent,data2) ptr
 
-sdl_mousebuttonevent_windowid_peek::Ptr ()->IO Word32
+sdl_mousebuttonevent_windowid_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_mousebuttonevent_windowid_peek ptr=(#peek SDL_MouseButtonEvent,windowID) ptr
 
-sdl_mousebuttonevent_button_peek::Ptr ()->IO Word8
+sdl_mousebuttonevent_button_peek::Has_call_stack=>Ptr ()->IO Word8
 sdl_mousebuttonevent_button_peek ptr=(#peek SDL_MouseButtonEvent,button) ptr
 
-sdl_mousebuttonevent_x_peek::Ptr ()->IO CFloat
+sdl_mousebuttonevent_x_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousebuttonevent_x_peek ptr=(#peek SDL_MouseButtonEvent,x) ptr
 
-sdl_mousebuttonevent_y_peek::Ptr ()->IO CFloat
+sdl_mousebuttonevent_y_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousebuttonevent_y_peek ptr=(#peek SDL_MouseButtonEvent,y) ptr
 
-sdl_mousemotionevent_windowid_peek::Ptr ()->IO Word32
+sdl_mousemotionevent_windowid_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_mousemotionevent_windowid_peek ptr=(#peek SDL_MouseMotionEvent,windowID) ptr
 
-sdl_mousemotionevent_x_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_x_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousemotionevent_x_peek ptr=(#peek SDL_MouseMotionEvent,x) ptr
 
-sdl_mousemotionevent_y_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_y_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousemotionevent_y_peek ptr=(#peek SDL_MouseMotionEvent,y) ptr
 
-sdl_mousemotionevent_xrel_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_xrel_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousemotionevent_xrel_peek ptr=(#peek SDL_MouseMotionEvent,xrel) ptr
 
-sdl_mousemotionevent_yrel_peek::Ptr ()->IO CFloat
+sdl_mousemotionevent_yrel_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousemotionevent_yrel_peek ptr=(#peek SDL_MouseMotionEvent,yrel) ptr
 
-sdl_mousewheelevent_windowid_peek::Ptr ()->IO Word32
+sdl_mousewheelevent_windowid_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_mousewheelevent_windowid_peek ptr=(#peek SDL_MouseWheelEvent,windowID) ptr
 
-sdl_mousewheelevent_x_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_x_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousewheelevent_x_peek ptr=(#peek SDL_MouseWheelEvent,x) ptr
 
-sdl_mousewheelevent_y_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_y_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousewheelevent_y_peek ptr=(#peek SDL_MouseWheelEvent,y) ptr
 
-sdl_mousewheelevent_mouse_x_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_mouse_x_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousewheelevent_mouse_x_peek ptr=(#peek SDL_MouseWheelEvent,mouse_x) ptr
 
-sdl_mousewheelevent_mouse_y_peek::Ptr ()->IO CFloat
+sdl_mousewheelevent_mouse_y_peek::Has_call_stack=>Ptr ()->IO CFloat
 sdl_mousewheelevent_mouse_y_peek ptr=(#peek SDL_MouseWheelEvent,mouse_y) ptr
 
-sdl_keyboardevent_windowid_peek::Ptr ()->IO Word32
+sdl_keyboardevent_windowid_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_keyboardevent_windowid_peek ptr=(#peek SDL_KeyboardEvent,windowID) ptr
 
-sdl_keyboardevent_key_peek::Ptr ()->IO Word32
+sdl_keyboardevent_key_peek::Has_call_stack=>Ptr ()->IO Word32
 sdl_keyboardevent_key_peek ptr=(#peek SDL_KeyboardEvent,key) ptr
 
-sdl_surface_w_peek::Ptr SDL_Surface->IO CInt
+sdl_surface_w_peek::Has_call_stack=>Ptr SDL_Surface->IO CInt
 sdl_surface_w_peek ptr=(#peek SDL_Surface,w) ptr
 
-sdl_surface_h_peek::Ptr SDL_Surface->IO CInt
+sdl_surface_h_peek::Has_call_stack=>Ptr SDL_Surface->IO CInt
 sdl_surface_h_peek ptr=(#peek SDL_Surface,h) ptr
 
-sdl_surface_pitch_peek::Ptr SDL_Surface->IO CInt
+sdl_surface_pitch_peek::Has_call_stack=>Ptr SDL_Surface->IO CInt
 sdl_surface_pitch_peek ptr=(#peek SDL_Surface,pitch) ptr
 
-sdl_surface_pixels_peek::Ptr SDL_Surface->IO (Ptr ())
+sdl_surface_pixels_peek::Has_call_stack=>Ptr SDL_Surface->IO (Ptr ())
 sdl_surface_pixels_peek ptr=(#peek SDL_Surface,pixels) ptr
 
-pattern SDL_EVENT_QUIT::Word32
+pattern SDL_EVENT_QUIT::Has_call_stack=>Word32
 pattern SDL_EVENT_QUIT=(#const SDL_EVENT_QUIT)
 
-pattern SDL_EVENT_WINDOW_CLOSE_REQUESTED::Word32
+pattern SDL_EVENT_WINDOW_CLOSE_REQUESTED::Has_call_stack=>Word32
 pattern SDL_EVENT_WINDOW_CLOSE_REQUESTED=(#const SDL_EVENT_WINDOW_CLOSE_REQUESTED)
 
-pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED::Word32
+pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED::Has_call_stack=>Word32
 pattern SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED=(#const SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
 
-pattern SDL_BUTTON_LEFT::Word8
+pattern SDL_BUTTON_LEFT::Has_call_stack=>Word8
 pattern SDL_BUTTON_LEFT=(#const SDL_BUTTON_LEFT)
 
-pattern SDL_BUTTON_MIDDLE::Word8
+pattern SDL_BUTTON_MIDDLE::Has_call_stack=>Word8
 pattern SDL_BUTTON_MIDDLE=(#const SDL_BUTTON_MIDDLE)
 
-pattern SDL_BUTTON_RIGHT::Word8
+pattern SDL_BUTTON_RIGHT::Has_call_stack=>Word8
 pattern SDL_BUTTON_RIGHT=(#const SDL_BUTTON_RIGHT)
 
-pattern SDL_EVENT_KEY_UP::Word32
+pattern SDL_EVENT_KEY_UP::Has_call_stack=>Word32
 pattern SDL_EVENT_KEY_UP=(#const SDL_EVENT_KEY_UP)
 
-pattern SDL_EVENT_KEY_DOWN::Word32
+pattern SDL_EVENT_KEY_DOWN::Has_call_stack=>Word32
 pattern SDL_EVENT_KEY_DOWN=(#const SDL_EVENT_KEY_DOWN)
 
-pattern SDL_EVENT_MOUSE_BUTTON_UP::Word32
+pattern SDL_EVENT_MOUSE_BUTTON_UP::Has_call_stack=>Word32
 pattern SDL_EVENT_MOUSE_BUTTON_UP=(#const SDL_EVENT_MOUSE_BUTTON_UP)
 
-pattern SDL_EVENT_MOUSE_BUTTON_DOWN::Word32
+pattern SDL_EVENT_MOUSE_BUTTON_DOWN::Has_call_stack=>Word32
 pattern SDL_EVENT_MOUSE_BUTTON_DOWN=(#const SDL_EVENT_MOUSE_BUTTON_DOWN)
 
-pattern SDL_EVENT_MOUSE_MOTION::Word32
+pattern SDL_EVENT_MOUSE_MOTION::Has_call_stack=>Word32
 pattern SDL_EVENT_MOUSE_MOTION=(#const SDL_EVENT_MOUSE_MOTION)
 
-pattern SDL_EVENT_MOUSE_WHEEL::Word32
+pattern SDL_EVENT_MOUSE_WHEEL::Has_call_stack=>Word32
 pattern SDL_EVENT_MOUSE_WHEEL=(#const SDL_EVENT_MOUSE_WHEEL)
 
-pattern SDLK_A::Word32
+pattern SDLK_A::Has_call_stack=>Word32
 pattern SDLK_A=(#const SDLK_A)
 
-pattern SDLK_B::Word32
+pattern SDLK_B::Has_call_stack=>Word32
 pattern SDLK_B=(#const SDLK_B)
 
-pattern SDLK_C::Word32
+pattern SDLK_C::Has_call_stack=>Word32
 pattern SDLK_C=(#const SDLK_C)
 
-pattern SDLK_D::Word32
+pattern SDLK_D::Has_call_stack=>Word32
 pattern SDLK_D=(#const SDLK_D)
 
-pattern SDLK_E::Word32
+pattern SDLK_E::Has_call_stack=>Word32
 pattern SDLK_E=(#const SDLK_E)
 
-pattern SDLK_F::Word32
+pattern SDLK_F::Has_call_stack=>Word32
 pattern SDLK_F=(#const SDLK_F)
 
-pattern SDLK_G::Word32
+pattern SDLK_G::Has_call_stack=>Word32
 pattern SDLK_G=(#const SDLK_G)
 
-pattern SDLK_H::Word32
+pattern SDLK_H::Has_call_stack=>Word32
 pattern SDLK_H=(#const SDLK_H)
 
-pattern SDLK_I::Word32
+pattern SDLK_I::Has_call_stack=>Word32
 pattern SDLK_I=(#const SDLK_I)
 
-pattern SDLK_J::Word32
+pattern SDLK_J::Has_call_stack=>Word32
 pattern SDLK_J=(#const SDLK_J)
 
-pattern SDLK_K::Word32
+pattern SDLK_K::Has_call_stack=>Word32
 pattern SDLK_K=(#const SDLK_K)
 
-pattern SDLK_L::Word32
+pattern SDLK_L::Has_call_stack=>Word32
 pattern SDLK_L=(#const SDLK_L)
 
-pattern SDLK_M::Word32
+pattern SDLK_M::Has_call_stack=>Word32
 pattern SDLK_M=(#const SDLK_M)
 
-pattern SDLK_N::Word32
+pattern SDLK_N::Has_call_stack=>Word32
 pattern SDLK_N=(#const SDLK_N)
 
-pattern SDLK_O::Word32
+pattern SDLK_O::Has_call_stack=>Word32
 pattern SDLK_O=(#const SDLK_O)
 
-pattern SDLK_P::Word32
+pattern SDLK_P::Has_call_stack=>Word32
 pattern SDLK_P=(#const SDLK_P)
 
-pattern SDLK_Q::Word32
+pattern SDLK_Q::Has_call_stack=>Word32
 pattern SDLK_Q=(#const SDLK_Q)
 
-pattern SDLK_R::Word32
+pattern SDLK_R::Has_call_stack=>Word32
 pattern SDLK_R=(#const SDLK_R)
 
-pattern SDLK_S::Word32
+pattern SDLK_S::Has_call_stack=>Word32
 pattern SDLK_S=(#const SDLK_S)
 
-pattern SDLK_T::Word32
+pattern SDLK_T::Has_call_stack=>Word32
 pattern SDLK_T=(#const SDLK_T)
 
-pattern SDLK_U::Word32
+pattern SDLK_U::Has_call_stack=>Word32
 pattern SDLK_U=(#const SDLK_U)
 
-pattern SDLK_V::Word32
+pattern SDLK_V::Has_call_stack=>Word32
 pattern SDLK_V=(#const SDLK_V)
 
-pattern SDLK_W::Word32
+pattern SDLK_W::Has_call_stack=>Word32
 pattern SDLK_W=(#const SDLK_W)
 
-pattern SDLK_X::Word32
+pattern SDLK_X::Has_call_stack=>Word32
 pattern SDLK_X=(#const SDLK_X)
 
-pattern SDLK_Y::Word32
+pattern SDLK_Y::Has_call_stack=>Word32
 pattern SDLK_Y=(#const SDLK_Y)
 
-pattern SDLK_Z::Word32
+pattern SDLK_Z::Has_call_stack=>Word32
 pattern SDLK_Z=(#const SDLK_Z)
 
-pattern SDLK_LEFT::Word32
+pattern SDLK_LEFT::Has_call_stack=>Word32
 pattern SDLK_LEFT=(#const SDLK_LEFT)
 
-pattern SDLK_DOWN::Word32
+pattern SDLK_DOWN::Has_call_stack=>Word32
 pattern SDLK_DOWN=(#const SDLK_DOWN)
 
-pattern SDLK_RIGHT::Word32
+pattern SDLK_RIGHT::Has_call_stack=>Word32
 pattern SDLK_RIGHT=(#const SDLK_RIGHT)
 
-pattern SDLK_UP::Word32
+pattern SDLK_UP::Has_call_stack=>Word32
 pattern SDLK_UP=(#const SDLK_UP)
 
-pattern SDLK_PAGEDOWN::Word32
+pattern SDLK_PAGEDOWN::Has_call_stack=>Word32
 pattern SDLK_PAGEDOWN=(#const SDLK_PAGEDOWN)
 
-pattern SDLK_PAGEUP::Word32
+pattern SDLK_PAGEUP::Has_call_stack=>Word32
 pattern SDLK_PAGEUP=(#const SDLK_PAGEUP)
 
 {-# INLINE sdl_f_color_size_of #-}
