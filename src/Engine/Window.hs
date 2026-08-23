@@ -17,7 +17,7 @@ import qualified Foreign.C.Types as FCT
 remove_window::ET.Has_call_stack=>Int->Engine a b c d e->IO (Engine a b c d e)
 remove_window window_id engine=let (window,single_window)=int_map_delete_lookup window_id engine.window in case single_window of
     Window {sdl_window_id,sdl_window,graphics_pipeline}->do
-        catch_false (SDLF.sdl_wait_for_gpu_idle engine.device)
+        sdl_catch_false (SDLF.sdl_wait_for_gpu_idle engine.device)
         SDLF.sdl_release_window_from_gpu_device engine.device sdl_window
         SDLF.sdl_release_gpu_graphics_pipeline engine.device graphics_pipeline
         SDLF.sdl_destroy_window sdl_window

@@ -9,11 +9,11 @@ import Engine.Projection
 import Engine.Request
 import Engine.Selector
 import Engine.Type
+import Engine.Underlying
 import qualified SDL.Function as SDLF
 import qualified SDL.Include as SDLI
 import qualified Error.Function as EF
 import qualified Error.Type as ET
-import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.HashMap.Strict as DHMS
 import qualified Data.HashSet as DHS
@@ -28,40 +28,28 @@ import qualified Foreign.StablePtr as FSP
 loop_engine_off::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off event engine=do
     (new_engine,switch)<-run_request False engine
-    value<-SDLF.sdl_wait_event event
-    if FMU.toBool value
-        then do
-            event_type<-SDLI.sdl_event_type_peek event
-            loop_event switch event_type event new_engine
-        else EF.empty_error
+    sdl_catch_false (SDLF.sdl_wait_event event)
+    event_type<-SDLI.sdl_event_type_peek event
+    loop_event switch event_type event new_engine
 
 loop_engine_off_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_off_a event engine=do
-    value<-SDLF.sdl_wait_event event
-    if FMU.toBool value
-        then do
-            event_type<-SDLI.sdl_event_type_peek event
-            loop_event False event_type event engine
-        else EF.empty_error
+    sdl_catch_false (SDLF.sdl_wait_event event)
+    event_type<-SDLI.sdl_event_type_peek event
+    loop_event False event_type event engine
 
 loop_engine_on::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on event engine=do
     (new_engine,switch)<-run_request False engine
-    value<-SDLF.sdl_wait_event event
-    if FMU.toBool value
-        then do
-            event_type<-SDLI.sdl_event_type_peek event
-            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
-        else EF.empty_error
+    sdl_catch_false (SDLF.sdl_wait_event event)
+    event_type<-SDLI.sdl_event_type_peek event
+    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
 
 loop_engine_on_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
 loop_engine_on_a event engine=do
-    value<-SDLF.sdl_wait_event event
-    if FMU.toBool value
-        then do
-            event_type<-SDLI.sdl_event_type_peek event
-            if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {count=count,time=time}) else loop_event True event_type event engine
-        else EF.empty_error
+    sdl_catch_false (SDLF.sdl_wait_event event)
+    event_type<-SDLI.sdl_event_type_peek event
+    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {count=count,time=time}) else loop_event True event_type event engine
 
 get_interval::ET.Has_call_stack=>Timer->DW.Word64
 get_interval timer=case timer of
@@ -241,8 +229,7 @@ push_event engine custom=do
         FS.poke (FP.castPtr sdl_event) (engine.event_number+1)
         let new_sdl_event=FP.castPtr sdl_event
         SDLI.sdl_user_event_data1_poke new_sdl_event (FSP.castStablePtrToPtr ptr)
-        value<-SDLF.sdl_push_event new_sdl_event
-        CM.unless (FMU.toBool value) EF.empty_error
+        sdl_catch_false (SDLF.sdl_push_event new_sdl_event)
 
 pop_event::ET.Has_call_stack=>FP.Ptr ()->IO a
 pop_event sdl_event=do

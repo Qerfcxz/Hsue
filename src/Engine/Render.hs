@@ -32,10 +32,10 @@ for_render window command_buffer action=FMA.alloca $ \ptr_texture->FMA.alloca $ 
     if FMU.toBool value
         then do
             texture<-FS.peek ptr_texture
-            if texture==FP.nullPtr then catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer) else do
+            if texture==FP.nullPtr then sdl_catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer) else do
                 action texture
-                catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
-        else catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer)
+                sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+        else sdl_catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer)
 
 do_render::ET.Has_call_stack=>Engine a b c d e->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUTexture->Maybe Int->DS.Seq (Submit_mode,DW.Word32,DW.Word32)->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO ()
 do_render engine window command_buffer texture maybe_sampler_id draw_call vertex index parameter=do
@@ -43,7 +43,7 @@ do_render engine window command_buffer texture maybe_sampler_id draw_call vertex
     case window.color of
         Color {red,green,blue,alpha}->FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=red,sdl_g=green,sdl_b=blue,sdl_a=alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
             render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-            catch_null render_pass
+            sdl_catch_null render_pass
             CM.when value (do_render_a engine window command_buffer render_pass maybe_sampler_id draw_call)
             SDLF.sdl_end_gpu_render_pass render_pass
 
@@ -95,7 +95,7 @@ do_render_canvas engine width height command_buffer texture maybe_sampler_id dra
     value<-update_buffer engine.device command_buffer engine.vertex_buffer engine.index_buffer engine.parameter_buffer engine.transfer_buffer engine.max_vertex_size engine.max_index_size engine.max_parameter_size vertex index parameter
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
         render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-        catch_null render_pass
+        sdl_catch_null render_pass
         CM.when value (do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_id draw_call)
         SDLF.sdl_end_gpu_render_pass render_pass
 
@@ -118,11 +118,11 @@ for_canvas_widget_render::ET.Has_call_stack=>Maybe Int->Projection_path->Selecto
 for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_selector widget engine=case widget of
     Collector {submit}->let (vertex,index,parameter,draw_call)=for_submit submit in for_canvas_widget_render_a projection_path canvas_widget_render_selector engine $ \half_width half_height canvas_id this_engine->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
-        catch_null command_buffer
+        sdl_catch_null command_buffer
         case int_map_lookup canvas_id this_engine.canvas of
             Bound_canvas {texture}->do
                 do_render_canvas this_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
-                catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+                sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return this_engine
             _->EF.empty_error
     _->EF.empty_error
@@ -145,14 +145,14 @@ for_canvas_widget_render_c visual action engine=case visual of
 update_buffer::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUBuffer->FP.Ptr SDLT.SDL_GPUTransferBuffer->Int->Int->Int->DS.Seq Vertex->DS.Seq DW.Word32->DS.Seq Parameter->IO Bool
 update_buffer device command_buffer vertex_buffer index_buffer parameter_buffer transfer_buffer max_vertex_size max_index_size max_parameter_size vertex index parameter=let vertex_length=DS.length vertex in let index_length=DS.length index in let parameter_length=DS.length parameter in if vertex_length==0||index_length==0||parameter_length==0 then return False else let single_vertex_size=FS.sizeOf (undefined::Vertex) in let single_index_size=FS.sizeOf (undefined::DW.Word32) in let single_parameter_size=FS.sizeOf (undefined::Parameter) in let vertex_size=vertex_length*single_vertex_size in let index_size=index_length*single_index_size in let parameter_size=parameter_length*single_parameter_size in if max_vertex_size<vertex_size||max_index_size<index_size||max_parameter_size<parameter_size then EF.empty_error else do
     map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer device transfer_buffer (FMU.fromBool True)
-    catch_null map_transfer_buffer
+    sdl_catch_null map_transfer_buffer
     seq_poke_array single_vertex_size vertex (FP.castPtr map_transfer_buffer)
     seq_poke_array single_index_size index (FP.plusPtr map_transfer_buffer max_vertex_size)
     let size=max_vertex_size+max_index_size
     seq_poke_array single_parameter_size parameter (FP.plusPtr map_transfer_buffer size)
     SDLF.sdl_unmap_gpu_transfer_buffer device transfer_buffer
     copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
-    catch_null copy_pass
+    sdl_catch_null copy_pass
     FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=transfer_buffer,sdl_offset=0}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=vertex_buffer,sdl_offset=0,sdl_size=fromIntegral vertex_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
     FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=transfer_buffer,sdl_offset=fromIntegral max_vertex_size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=index_buffer,sdl_offset=0,sdl_size=fromIntegral index_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
     FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=transfer_buffer,sdl_offset=fromIntegral size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=parameter_buffer,sdl_offset=0,sdl_size=fromIntegral parameter_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))

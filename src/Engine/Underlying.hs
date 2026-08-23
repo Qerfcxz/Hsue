@@ -6,6 +6,7 @@ module Engine.Underlying where
 
 import Engine.Type
 import qualified SDL.Function as SDLF
+import qualified Error.Function as EF
 import qualified Error.Type as ET
 import qualified Control.Monad as CM
 import qualified Data.ByteString as DBS
@@ -27,23 +28,26 @@ sdl_error=do
     string<-FCS.peekCString ptr
     error string
 
-catch_false::ET.Has_call_stack=>IO FCT.CBool->IO ()
-catch_false io=do
+sdl_catch_false::ET.Has_call_stack=>IO FCT.CBool->IO ()
+sdl_catch_false io=do
     value<-io
     CM.unless (FMU.toBool value) sdl_error
 
-catch_zero::ET.Has_call_stack=>Eq a=>Num a=>a->IO ()
-catch_zero number=case number of
+sdl_catch_zero::ET.Has_call_stack=>Eq a=>Num a=>a->IO ()
+sdl_catch_zero number=case number of
     0->sdl_error
     _->return ()
 
-catch_null::ET.Has_call_stack=>FP.Ptr a->IO ()
-catch_null ptr=CM.when (ptr==FP.nullPtr) sdl_error
+sdl_catch_null::ET.Has_call_stack=>FP.Ptr a->IO ()
+sdl_catch_null ptr=CM.when (ptr==FP.nullPtr) sdl_error
 
-return_catch_null::ET.Has_call_stack=>IO (FP.Ptr a)->IO (FP.Ptr a)
-return_catch_null io=do
+sdl_return_catch_null::ET.Has_call_stack=>IO (FP.Ptr a)->IO (FP.Ptr a)
+sdl_return_catch_null io=do
     ptr<-io
     if ptr==FP.nullPtr then sdl_error else return ptr
+
+catch_null::ET.Has_call_stack=>FP.Ptr a->IO ()
+catch_null ptr=CM.when (ptr==FP.nullPtr) EF.empty_error
 
 with_string::ET.Has_call_stack=>String->(FP.Ptr FCT.CChar->IO a)->IO a
 with_string string=DBS.useAsCString (DTE.encodeUtf8 (DT.pack string))
@@ -105,10 +109,12 @@ nanosecond=1000000000
 millisecond::ET.Has_call_stack=>Num a=>a
 millisecond=1000000
 
-{-# INLINE catch_false #-}
-{-# INLINE catch_zero #-}
+{-# INLINE sdl_error #-}
+{-# INLINE sdl_catch_false #-}
+{-# INLINE sdl_catch_zero #-}
+{-# INLINE sdl_catch_null #-}
+{-# INLINE sdl_return_catch_null #-}
 {-# INLINE catch_null #-}
-{-# INLINE return_catch_null #-}
 {-# INLINE with_string #-}
 {-# INLINE seq_poke_array #-}
 {-# INLINE seq_poke_array_a #-}

@@ -32,8 +32,8 @@ import qualified Foreign.Storable as FS
 
 init_engine::ET.Has_call_stack=>IO ()
 init_engine=do
-    catch_false (FCS.withCString "SDL_TIMER_RESOLUTION" (FCS.withCString "1" . SDLF.sdl_set_hint))
-    catch_false (SDLF.sdl_init SDLI.sdl_init_video)
+    sdl_catch_false (FCS.withCString "SDL_TIMER_RESOLUTION" (FCS.withCString "1" . SDLF.sdl_set_hint))
+    sdl_catch_false (SDLF.sdl_init SDLI.sdl_init_video)
 
 quit_engine::ET.Has_call_stack=>IO ()
 quit_engine=SDLF.sdl_quit
@@ -41,41 +41,42 @@ quit_engine=SDLF.sdl_quit
 create_engine::ET.Has_call_stack=>a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a b c d e)
 create_engine custom main_id projection_strategy max_picture_size max_vertex_size max_index_size max_parameter_size exponent_width exponent_height initial_canvas_id initial_album_id initial_font_id count maybe_interval time padding width height font_size pixel_range sampler_create_info blend_state=do
     system_cursor_default<-SDLF.sdl_create_system_cursor SDLI.sdl_system_cursor_default
-    catch_null system_cursor_default
+    sdl_catch_null system_cursor_default
     system_cursor_pointer<-SDLF.sdl_create_system_cursor SDLI.sdl_system_cursor_pointer
-    catch_null system_cursor_pointer
+    sdl_catch_null system_cursor_pointer
     device<-SDLF.sdl_create_gpu_device SDLI.sdl_gpu_shaderformat_dxil (FMU.fromBool True) FP.nullPtr
-    catch_null device
+    sdl_catch_null device
     default_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 0 0 "Default"
     vertex_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_vertex 0 1 1 "Vertex"
     fragment_shader<-load_shader device SDLI.sdl_gpu_shaderformat_dxil SDLI.sdl_gpu_shaderstage_fragment 1 0 0 "Fragment"
     canvas_graphics_pipeline<-create_canvas_graphics_pipeline device vertex_shader fragment_shader blend_state
     let new_width=DB.shiftL 1 exponent_width
     let new_height=DB.shiftL 1 exponent_height
-    texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture device)
-    sampler<-FMU.with (from_sampler_create_info sampler_create_info) (return_catch_null . SDLF.sdl_create_gpu_sampler device)
+    texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture device)
+    sampler<-FMU.with (from_sampler_create_info sampler_create_info) (sdl_return_catch_null . SDLF.sdl_create_gpu_sampler device)
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer device
-    catch_null command_buffer
+    sdl_catch_null command_buffer
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
         render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
-        catch_null render_pass
+        sdl_catch_null render_pass
         SDLF.sdl_end_gpu_render_pass render_pass
-    catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
-    let create_buffer=return_catch_null . SDLF.sdl_create_gpu_buffer device
+    sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+    let create_buffer=sdl_return_catch_null . SDLF.sdl_create_gpu_buffer device
     let new_max_vertex_size=fromIntegral max_vertex_size
     let new_max_index_size=fromIntegral max_index_size
     let new_max_parameter_size=fromIntegral max_parameter_size
     vertex_buffer<-FMU.with (SDLI.SDL_GPUBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_bufferusage_vertex,sdl_size=new_max_vertex_size}) create_buffer
     index_buffer<-FMU.with (SDLI.SDL_GPUBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_bufferusage_index,sdl_size=new_max_index_size}) create_buffer
     parameter_buffer<-FMU.with (SDLI.SDL_GPUBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_bufferusage_graphics_storage_read,sdl_size=new_max_parameter_size}) create_buffer
-    transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=new_max_vertex_size+new_max_index_size+new_max_parameter_size}) (return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
-    picture_transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=fromIntegral max_picture_size}) (return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
+    transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=new_max_vertex_size+new_max_index_size+new_max_parameter_size}) (sdl_return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
+    picture_transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=fromIntegral max_picture_size}) (sdl_return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
     event_number<-SDLF.sdl_register_events 2
+    sdl_catch_zero event_number
     callback<-SDLF.wrapper $ \_ _ interval->do
         FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \ptr->do
             FMU.fillBytes ptr 0 SDLI.sdl_event_size
             FS.poke (FP.castPtr ptr) event_number
-            catch_false (SDLF.sdl_push_event ptr)
+            sdl_catch_false (SDLF.sdl_push_event ptr)
         return interval
     new_texture<-create_white_texture device picture_transfer_buffer max_picture_size width height
     let (atlas,left,down,right,up)=atlas_insert width height padding (init_atlas new_width new_height)
@@ -85,7 +86,7 @@ create_engine custom main_id projection_strategy max_picture_size max_vertex_siz
         Just interval->if 0<interval
             then do
                 timer_id<-SDLF.sdl_add_timer_ns interval callback FP.nullPtr
-                catch_zero timer_id
+                sdl_catch_zero timer_id
                 return (Engine {custom=custom,main_id=main_id,projection_strategy=projection_strategy,callback=callback,atlas=atlas,canvas=DIM.empty,album=DIM.singleton initial_album_id (Album {width=width,height=height,texture=new_texture}),leaf=DIM.empty,node=DIM.empty,window=DIM.empty,font=DIM.empty,atlas_font=DIM.empty,window_map=DHMS.empty,font_map=DHMS.empty,system_cursor_map=DHMS.insert System_cursor_pointer system_cursor_pointer (DHMS.singleton System_cursor_default system_cursor_default),request=DS.empty,key=DHS.empty,device=device,texture=texture,sampler=DIM.empty,default_sampler=sampler,canvas_graphics_pipeline=canvas_graphics_pipeline,pipeline=DIM.empty,shader=DIM.empty,default_shader=default_shader,vertex_shader=vertex_shader,fragment_shader=fragment_shader,vertex_buffer=vertex_buffer,index_buffer=index_buffer,parameter_buffer=parameter_buffer,transfer_buffer=transfer_buffer,picture_transfer_buffer=picture_transfer_buffer,max_picture_size=max_picture_size,max_vertex_size=max_vertex_size,max_index_size=max_index_size,max_parameter_size=max_parameter_size,exponent_width=exponent_width,exponent_height=exponent_height,initial_canvas_id=initial_canvas_id,canvas_id=initial_canvas_id,initial_album_id=initial_album_id,album_id=album_id,initial_font_id=initial_font_id,font_id=initial_font_id,count=count,timer=On {timer_id=timer_id,interval=interval},time=time,event_number=event_number,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range})
             else EF.empty_error
 
@@ -96,7 +97,7 @@ clean_engine engine=do
     DF.traverse_ (\atlas_font->SDLF.sdl_release_gpu_texture engine.device atlas_font.texture) (DIM.elems engine.atlas_font)
     case engine.timer of
         Off->return ()
-        On {timer_id}->catch_false (SDLF.sdl_remove_timer timer_id)
+        On {timer_id}->sdl_catch_false (SDLF.sdl_remove_timer timer_id)
     DF.traverse_ (clean_canvas engine.device) (DIM.elems engine.canvas)
     DF.traverse_ (\album->SDLF.sdl_release_gpu_texture engine.device album.texture) (DIM.elems engine.album)
     FP.freeHaskellFunPtr engine.callback
@@ -118,7 +119,7 @@ clean_engine engine=do
 
 clean_window::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->Window->IO ()
 clean_window device window=do
-    catch_false (SDLF.sdl_wait_for_gpu_idle device)
+    sdl_catch_false (SDLF.sdl_wait_for_gpu_idle device)
     SDLF.sdl_release_window_from_gpu_device device window.sdl_window
     SDLF.sdl_release_gpu_graphics_pipeline device window.graphics_pipeline
     SDLF.sdl_destroy_window window.sdl_window

@@ -37,9 +37,9 @@ atlas_insert_a width height atlas=case atlas of
 from_image::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->String->IO (FP.Ptr SDLT.SDL_GPUTexture,DW.Word32,DW.Word32)
 from_image device picture_transfer_buffer picture_size path=with_string path $ \this_path->do
     surface<-SDLF.img_load this_path
-    catch_null surface
+    sdl_catch_null surface
     new_surface<-SDLF.sdl_convert_surface surface SDLI.sdl_pixelformat_rgba32
-    catch_null new_surface
+    sdl_catch_null new_surface
     SDLF.sdl_destroy_surface surface
     width<-SDLI.sdl_surface_w_peek new_surface
     height<-SDLI.sdl_surface_h_peek new_surface
@@ -61,29 +61,29 @@ from_pixel device picture_transfer_buffer picture_size pixel width height=let si
 
 upload_texture::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->DW.Word32->DW.Word32->(FP.Ptr ()->IO ())->IO (FP.Ptr SDLT.SDL_GPUTexture)
 upload_texture device picture_transfer_buffer width height action=do
-    texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (return_catch_null . SDLF.sdl_create_gpu_texture device)
+    texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler,sdl_width=width,sdl_height=height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture device)
     map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer device picture_transfer_buffer (FMU.fromBool True)
-    catch_null map_transfer_buffer
+    sdl_catch_null map_transfer_buffer
     action map_transfer_buffer
     SDLF.sdl_unmap_gpu_transfer_buffer device picture_transfer_buffer
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer device
-    catch_null command_buffer
+    sdl_catch_null command_buffer
     copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
-    catch_null copy_pass
+    sdl_catch_null copy_pass
     FMU.with (SDLI.SDL_GPUTextureTransferInfo {sdl_transfer_buffer=picture_transfer_buffer,sdl_offset=0,sdl_pixels_per_row=width,sdl_rows_per_layer=height}) $ \texture_transfer_info->FMU.with (SDLI.SDL_GPUTextureRegion {sdl_texture=texture,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0,sdl_w=width,sdl_h=height,sdl_d=1}) $ \texture_region->SDLF.sdl_upload_to_gpu_texture copy_pass texture_transfer_info texture_region (FMU.fromBool False)
     SDLF.sdl_end_gpu_copy_pass copy_pass
-    catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+    sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
     return texture
 
 copy_texture::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->DW.Word32->DW.Word32->DW.Word32->DW.Word32->IO ()
 copy_texture device texture_from texture_to x y width height=do
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer device
-    catch_null command_buffer
+    sdl_catch_null command_buffer
     copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
-    catch_null copy_pass
+    sdl_catch_null copy_pass
     FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) $ \texture_location_from->FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->SDLF.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False)
     SDLF.sdl_end_gpu_copy_pass copy_pass
-    catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
+    sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
 
 create_white_texture::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
 create_white_texture device picture_transfer_buffer picture_size width height=let size=fromIntegral (4*width*height) in do

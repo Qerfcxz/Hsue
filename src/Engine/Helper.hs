@@ -70,7 +70,7 @@ insert_foldable_enumeration foldable=hash_map_insert (from_foldable_enumeration 
 get_clipboard_text::ET.Has_call_stack=>IO String
 get_clipboard_text=do
     ptr<-SDLF.sdl_get_clipboard_text
-    catch_null ptr
+    sdl_catch_null ptr
     string<-DBS.packCString ptr
     SDLF.sdl_free (FP.castPtr ptr)
     return (DT.unpack (DTE.decodeUtf8 string))
