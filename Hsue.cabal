@@ -7,17 +7,14 @@ author:             Qerfcxz
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 
-flag has-call-stack
-    default:     False
-    manual:      True
-
 common warnings
     ghc-options: -Wall
 
 library
     import:           warnings
-    if flag(has-call-stack)
-        cpp-options: -DHAS_CALL_STACK
+    ghc-options:
+        -finfo-table-map
+        -fdistinct-constructor-tables
     exposed-modules:
         Engine.Animation
         Engine.Atlas
@@ -43,10 +40,9 @@ library
         SDL.Function
         SDL.Include
         SDL.Type
-        Error.Function
-        Error.Type
+        Error.Error
     build-depends:
-        base ^>=4.18.3.0,
+        base ^>=4.20.2.0,
         bytestring ==0.12.2.0,
         containers ==0.8,
         hashable ==1.5.1.0,
