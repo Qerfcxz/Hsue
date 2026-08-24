@@ -34,15 +34,8 @@ trigger_selector this_maybe bounded=Trigger_selector {maybe_value=if this_maybe 
 default_selector::ET.Has_call_stack=>Bool->Bool->Selector ()
 default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
 
-simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
-simple_calculate_typesetting height line_spacing article index=let new_index=simple_calculate_typesetting_a article 0 in if new_index==0||new_index<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (new_index-1)*line_spacing)/2 in (if index==new_index-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
-
-simple_calculate_typesetting_a::ET.Has_call_stack=>DS.Seq (DS.Seq Row)->Int->Int
-simple_calculate_typesetting_a article index=case article of
-    DS.Empty->index
-    other_paragraph DS.:|> paragraph->case paragraph of
-        DS.Empty->simple_calculate_typesetting_a other_paragraph (index+1)
-        _ DS.:|> row->row.index+index+1
+simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
+simple_calculate_typesetting height line_spacing _ number index=if number==0||number<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (number-1)*line_spacing)/2 in (if index==number-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
 
 origin_point::ET.Has_call_stack=>Point
 origin_point=Point {x=0,y=0}

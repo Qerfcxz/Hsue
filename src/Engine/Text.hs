@@ -27,8 +27,8 @@ import qualified Foreign.Marshal.Array as FMA
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-do_typesetting::ET.Has_call_stack=>Int->FCT.CFloat->(DS.Seq (DS.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat)
-do_typesetting index height calculate_typesetting article=let (new_article,y,new_index)=do_typesetting_a 0 (-height) (calculate_typesetting article) article DS.empty in (new_article,y+do_typesetting_c new_index (index-1) (calculate_typesetting article))
+do_typesetting::ET.Has_call_stack=>Int->FCT.CFloat->(DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat)
+do_typesetting number height calculate_typesetting article=let (new_article,y,index)=do_typesetting_a 0 (-height) (calculate_typesetting article number) article DS.empty in (new_article,y+do_typesetting_c index (number-1) (calculate_typesetting article number))
 
 do_typesetting_a::ET.Has_call_stack=>Int->FCT.CFloat->(Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat))->DS.Seq (DS.Seq Row)->DS.Seq (DS.Seq Row)->(DS.Seq (DS.Seq Row),FCT.CFloat,Int)
 do_typesetting_a index y calculate_typesetting article this_article=case article of
