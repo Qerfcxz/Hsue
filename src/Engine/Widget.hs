@@ -119,7 +119,7 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
 create_vector_widget::ET.Has_call_stack=>Custom_widget_request e=>Int->Int->DVM.IOVector (Widget a b c d e)->DS.Seq (Widget_request a b c d e)->Engine a b c d e->IO (Engine a b c d e)
 create_vector_widget leaf_id index vector_widget vector_widget_request engine=case vector_widget_request of
     DS.Empty->return engine
-    (widget_request DS.:<| other_widget_request)->do
+    widget_request DS.:<| other_widget_request->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
         DVM.unsafeWrite vector_widget index widget
         create_vector_widget leaf_id (index+1) vector_widget other_widget_request new_engine
@@ -153,8 +153,8 @@ create_visual visual_request engine=case visual_request of
     Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
             new_engine<-update_font charset engine
-            return (new_engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text new_engine.font new_engine.font_map article calculate_width) in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,max_y)=do_typesetting half_height calculate_typesetting (for_text engine.font engine.font_map article calculate_width) in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_article,charset=charset,locked=False})
+            return (new_engine,let (new_article,index)=for_text new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting index half_height calculate_typesetting new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,index)=for_text engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting index half_height calculate_typesetting new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_new_article,charset=charset,locked=False})
     Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
@@ -294,10 +294,8 @@ remove_node_node node_id engine=let (node,single_node)=int_map_delete_lookup nod
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}
-{-# INLINE from_same_insert_widget_b #-}
 {-# INLINE from_insert_widget #-}
 {-# INLINE from_insert_widget_a #-}
-{-# INLINE from_insert_widget_b #-}
 {-# INLINE do_image #-}
 {-# INLINE create_picture #-}
 {-# INLINE create_atlas #-}

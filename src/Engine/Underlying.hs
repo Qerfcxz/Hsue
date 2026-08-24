@@ -130,7 +130,6 @@ millisecond=1000000
 {-# INLINE seq_poke_array #-}
 {-# INLINE seq_poke_array_a #-}
 {-# INLINE triple_reverse #-}
-{-# INLINE vector_io_map #-}
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}
 {-# INLINE combine_arrange #-}

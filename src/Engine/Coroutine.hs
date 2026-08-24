@@ -232,10 +232,10 @@ step_coroutine::ET.Has_call_stack=>DV.Vector (Linear_coroutine a b c d e)->Int->
 step_coroutine linear_coroutine program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget=case newborn_main_index_group of
     DS.Empty->case main_index_group of
         DS.Empty->return (widget,engine,update,variable,user_variable,program_counter,index_group,survived_main_index_group,index_group_index,program_counter_index)
-        (main_index DS.:<| other_main_index)->let (new_program_counter,maybe_single_program_counter)=int_map_delete_maybe_lookup main_index program_counter in case maybe_single_program_counter of
+        main_index DS.:<| other_main_index->let (new_program_counter,maybe_single_program_counter)=int_map_delete_maybe_lookup main_index program_counter in case maybe_single_program_counter of
             Nothing->step_coroutine linear_coroutine program_counter_index index_group_index survived_main_index_group DS.empty other_main_index index_group new_program_counter layout user_variable variable updater update event engine widget
             Just single_program_counter->step_coroutine_a linear_coroutine main_index single_program_counter.clone_index single_program_counter.code_index program_counter_index index_group_index survived_main_index_group DS.empty other_main_index index_group new_program_counter layout user_variable variable updater update event engine widget
-    (main_index DS.:<| other_main_index)->let (new_program_counter,maybe_single_program_counter)=int_map_delete_maybe_lookup main_index program_counter in case maybe_single_program_counter of
+    main_index DS.:<| other_main_index->let (new_program_counter,maybe_single_program_counter)=int_map_delete_maybe_lookup main_index program_counter in case maybe_single_program_counter of
         Nothing->step_coroutine linear_coroutine program_counter_index index_group_index survived_main_index_group DS.empty (other_main_index DS.>< main_index_group) index_group new_program_counter layout user_variable variable updater update event engine widget
         Just single_program_counter->step_coroutine_a linear_coroutine main_index single_program_counter.clone_index single_program_counter.code_index program_counter_index index_group_index survived_main_index_group DS.empty (other_main_index DS.>< main_index_group) index_group new_program_counter layout user_variable variable updater update event engine widget
 
@@ -368,10 +368,5 @@ run_create_active_group group_code_index int index clone_index program_counter_i
 {-# INLINE raw_coroutine_binary_operator #-}
 {-# INLINE from_coroutine #-}
 {-# INLINE clone_coroutine #-}
-{-# INLINE clone_coroutine_a #-}
 {-# INLINE user_variable_getter #-}
 {-# INLINE run_kill_group #-}
-{-# INLINE run_kill_group_a #-}
-{-# INLINE run_clone #-}
-{-# INLINE run_create_group #-}
-{-# INLINE run_create_active_group #-}

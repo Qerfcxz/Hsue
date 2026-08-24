@@ -253,8 +253,7 @@ for_unlock_visual visual engine=case visual of
 
 update_article::ET.Has_call_stack=>DIM.IntMap Font->Row->Row
 update_article font row=case row of
-    Blank->Blank
-    Row {row_core,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a font) row_core,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
+    Row {row_core,index,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a font) row_core,index=index,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
 
 update_article_a::ET.Has_call_stack=>DIM.IntMap Font->Character->Character
 update_article_a font character=case character of

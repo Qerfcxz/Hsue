@@ -181,7 +181,7 @@ run_widget event engine this_widget=case this_widget of
 run_request::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
 run_request switch engine=case engine.request of
     DS.Empty->return (engine,switch)
-    (request DS.:<| other_request)->do
+    request DS.:<| other_request->do
         (new_engine,new_switch)<-do_request request (engine {request=other_request})
         run_request (switch/=new_switch) new_engine
 
@@ -244,7 +244,6 @@ pop_event sdl_event=do
 {-# INLINE loop_event_a #-}
 {-# INLINE loop_event_b #-}
 {-# INLINE run_event #-}
-{-# INLINE run_event_a #-}
 {-# INLINE run_event_b #-}
 {-# INLINE run_event_c #-}
 {-# INLINE run_widget #-}

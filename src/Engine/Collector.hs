@@ -112,12 +112,10 @@ to_Parameter x y matrix maybe_border=case maybe_border of
 
 begin_text::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Row->Bool
 begin_text this_y height row=case row of
-    Blank->True
     Row {y,min_down}->y+height<this_y+min_down
 
 end_text::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Row->Bool
 end_text this_y height row=case row of
-    Blank->True
     Row {y,max_up}->y<=this_y+max_up+height
 
 collect_convex_polygon::ET.Has_call_stack=>Int->DW.Word32
@@ -129,7 +127,6 @@ collect_convex_polygon index=let (quotient,remainder)=divMod index 3 in let new_
 
 collect_text::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->Row->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)->(DS.Seq Vertex,DS.Seq DW.Word32,DW.Word32)
 collect_text color origin_x origin_y this_y row primitive=case row of
-    Blank->primitive
     Row {row_core,x,y}->case color of
         Color {red,green,blue,alpha}->DF.foldl' (flip (collect_character red green blue alpha (origin_x+x) (origin_y+this_y-y))) primitive row_core
 

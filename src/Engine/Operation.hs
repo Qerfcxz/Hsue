@@ -94,6 +94,5 @@ lock_visual visual=case visual of
 {-# INLINE default_update_group_widget #-}
 {-# INLINE get_sdl_pipeline #-}
 {-# INLINE update_shader_reference #-}
-{-# INLINE widget_lookup #-}
 {-# INLINE lock_widget #-}
 {-# INLINE lock_visual #-}

@@ -35,7 +35,14 @@ default_selector::ET.Has_call_stack=>Bool->Bool->Selector ()
 default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
 
 simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
-simple_calculate_typesetting height line_spacing article row_number=let new_row_number=DF.sum (fmap DS.length article) in if new_row_number==0||new_row_number<=row_number then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (new_row_number-1)*line_spacing)/2 in (if row_number==new_row_number-1 then padding else half_line_spacing,if row_number==0 then padding else half_line_spacing,0)
+simple_calculate_typesetting height line_spacing article index=let new_index=simple_calculate_typesetting_a article 0 in if new_index==0||new_index<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (new_index-1)*line_spacing)/2 in (if index==new_index-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
+
+simple_calculate_typesetting_a::ET.Has_call_stack=>DS.Seq (DS.Seq Row)->Int->Int
+simple_calculate_typesetting_a article index=case article of
+    DS.Empty->index
+    other_paragraph DS.:|> paragraph->case paragraph of
+        DS.Empty->simple_calculate_typesetting_a other_paragraph (index+1)
+        _ DS.:|> row->row.index+index+1
 
 origin_point::ET.Has_call_stack=>Point
 origin_point=Point {x=0,y=0}
@@ -51,10 +58,10 @@ y_scalable_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Matrix
 y_scalable_matrix y y_y matrix=case matrix of
     Matrix {x,x_x,x_y,y_x}->Matrix {x=x,y=y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
 
-white_color::Color
+white_color::ET.Has_call_stack=>Color
 white_color=Color {red=1,green=1,blue=1,alpha=1}
 
-default_arrange::Arrange
+default_arrange::ET.Has_call_stack=>Arrange
 default_arrange=Arrange {point=origin_point,matrix=identity_matrix,color=white_color}
 
 fit_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
