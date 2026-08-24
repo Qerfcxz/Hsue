@@ -24,7 +24,7 @@ step_animation_a loop time widget=case widget of
 
 step_animation_visual::ET.Has_call_stack=>Bool->FCT.CFloat->Visual->Visual
 step_animation_visual loop time visual=case visual of
-    Animation {arrange,delay,moment,half_width,half_height,reciprocal_width,reciprocal_height,padding,width_number,height_number,album_number,album_id,count,index}->let (new_index,new_moment)=step_animation_b loop delay count index (moment+time) in Animation {arrange=arrange,delay=delay,moment=new_moment,half_width=half_width,half_height=half_height,reciprocal_width=reciprocal_width,reciprocal_height=reciprocal_height,padding=padding,width_number=width_number,height_number=height_number,album_number=album_number,album_id=album_id,count=count,index=new_index}
+    Animation {arrange,delay,moment,half_width,half_height,padding,exponent_width,exponent_height,width_number,height_number,album_number,album_id,count,index}->let (new_index,new_moment)=step_animation_b loop delay count index (moment+time) in Animation {arrange=arrange,delay=delay,moment=new_moment,half_width=half_width,half_height=half_height,padding=padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=album_number,album_id=album_id,count=count,index=new_index}
     _->visual
 
 step_animation_b::ET.Has_call_stack=>Bool->DVS.Vector FCT.CFloat->Int->Int->FCT.CFloat->(Int,FCT.CFloat)

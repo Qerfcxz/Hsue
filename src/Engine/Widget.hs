@@ -149,7 +149,7 @@ create_visual visual_request engine=case visual_request of
     Large_atlas_request {arrange,clip_request,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
-    Animation_request {arrange,min_delay,animation_width,animation_height,padding,path}->create_animation arrange min_delay animation_width animation_height padding path engine
+    Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
     Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
             new_engine<-update_font charset engine
@@ -160,7 +160,7 @@ create_visual visual_request engine=case visual_request of
         temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
             Nothing->return (engine {canvas=int_map_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
-            Just canvas_id->return (engine {canvas=int_map_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max canvas_id engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
+            Just canvas_id->return (engine {canvas=int_map_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max (canvas_id+1) engine.canvas_id},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
 
 do_image::ET.Has_call_stack=>(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual)->String->Engine a b c d e->IO (Engine a b c d e,Visual)
 do_image action path engine=do
@@ -184,32 +184,32 @@ create_large_atlas::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Clip_request->Cli
 create_large_atlas width height clip_request=case clip_request of
     Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
-create_animation::ET.Has_call_stack=>Arrange->FCT.CFloat->DW.Word32->DW.Word32->Int->String->Engine a b c d e->IO (Engine a b c d e,Visual)
-create_animation arrange min_delay width height padding path engine=with_string path $ \this_path->do
+create_animation::ET.Has_call_stack=>Arrange->FCT.CFloat->Int->Int->Int->String->Engine a b c d e->IO (Engine a b c d e,Visual)
+create_animation arrange min_delay padding exponent_width exponent_height path engine=with_string path $ \this_path->do
     ptr_animation<-SDLF.img_load_animation this_path
     sdl_catch_null ptr_animation
     animation<-FS.peek ptr_animation
     case animation of
-        SDLI.IMG_Animation {img_w,img_h,img_count,img_frames,img_delays}->let new_width=fromIntegral width in let new_height=fromIntegral height in let size=4*new_width*new_height in do
+        SDLI.IMG_Animation {img_w,img_h,img_count,img_frames,img_delays}->let width=DB.shiftL 1 exponent_width in let height=DB.shiftL 1 exponent_height in let size=4*width*height in do
             CM.when (engine.max_picture_size<fromIntegral size) EF.empty_error
             let frame_width=fromIntegral img_w
             let frame_height=fromIntegral img_h
             let pack_width=frame_width+2*padding
             let pack_height=frame_height+2*padding
-            let width_number=div new_width pack_width
-            let height_number=div new_height pack_height
+            let width_number=div width pack_width
+            let height_number=div height pack_height
             let number=width_number*height_number
             CM.when (number==0) EF.empty_error
             let count=fromIntegral img_count
             delay<-DVS.generateM count (fmap (\this_delay->max min_delay (fromIntegral this_delay*millisecond)) . FS.peekElemOff img_delays)
-            new_engine<-create_animation_a img_frames width height padding new_width size frame_width frame_height pack_width pack_height width_number number count 0 engine.album_id engine
+            new_engine<-create_animation_a (create_animation_b img_frames padding width size frame_width frame_height pack_width pack_height width_number) (fromIntegral width) (fromIntegral height) number count 0 engine.album_id engine
             SDLF.img_free_animation ptr_animation
-            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,reciprocal_width=1/fromIntegral width,reciprocal_height=1/fromIntegral height,padding=fromIntegral padding,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
+            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,padding=fromIntegral padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
 
-create_animation_a::ET.Has_call_stack=>FP.Ptr (FP.Ptr SDLT.SDL_Surface)->DW.Word32->DW.Word32->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Engine a b c d e->IO (Engine a b c d e)
-create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count index album_id engine=if count<=index then return engine else do
-    texture<-upload_texture engine.device engine.picture_transfer_buffer width height (create_animation_b frame padding this_width size frame_width frame_height pack_width pack_height width_number number count index)
-    create_animation_a frame width height padding this_width size frame_width frame_height pack_width pack_height width_number number count (index+number) (album_id+1) (engine {album=int_map_insert album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
+create_animation_a::ET.Has_call_stack=>(Int->Int->Int->FP.Ptr ()->IO ())->DW.Word32->DW.Word32->Int->Int->Int->Int->Engine a b c d e->IO (Engine a b c d e)
+create_animation_a action width height number count index album_id engine=if count<=index then return engine else do
+    texture<-upload_texture engine.device engine.picture_transfer_buffer width height (action number count index)
+    create_animation_a action width height number count (index+number) (album_id+1) (engine {album=int_map_insert album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
 
 create_animation_b::ET.Has_call_stack=>FP.Ptr (FP.Ptr SDLT.SDL_Surface)->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->FP.Ptr ()->IO ()
 create_animation_b frame padding width size frame_width frame_height pack_width pack_height width_number number count index map_transfer_buffer=do

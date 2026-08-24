@@ -37,14 +37,8 @@ default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe 
 simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
 simple_calculate_typesetting height line_spacing article row_number=let new_row_number=DF.sum (fmap DS.length article) in if new_row_number==0||new_row_number<=row_number then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (new_row_number-1)*line_spacing)/2 in (if row_number==new_row_number-1 then padding else half_line_spacing,if row_number==0 then padding else half_line_spacing,0)
 
-origin::ET.Has_call_stack=>Point
-origin=Point {x=0,y=0}
-
-fit_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
-fit_matrix engine window_id widget_width widget_height width height=let window=int_map_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
-
-fit_window_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
-fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=int_map_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
+origin_point::ET.Has_call_stack=>Point
+origin_point=Point {x=0,y=0}
 
 identity_matrix::ET.Has_call_stack=>Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
@@ -57,9 +51,17 @@ y_scalable_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Matrix
 y_scalable_matrix y y_y matrix=case matrix of
     Matrix {x,x_x,x_y,y_x}->Matrix {x=x,y=y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
 
-update_arrange_matrix::ET.Has_call_stack=>(Matrix->Matrix)->Arrange->Arrange
-update_arrange_matrix update arrange=case arrange of
-    Arrange {point,matrix,color}->Arrange {point=point,matrix=update matrix,color=color}
+white_color::Color
+white_color=Color {red=1,green=1,blue=1,alpha=1}
+
+default_arrange::Arrange
+default_arrange=Arrange {point=origin_point,matrix=identity_matrix,color=white_color}
+
+fit_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
+fit_matrix engine window_id widget_width widget_height width height=let window=int_map_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
+
+fit_window_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
+fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=int_map_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
 from_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->Integer
 from_foldable_enumeration=DF.foldl' (\int value->int DB..|. DB.bit (fromEnum value)) 0
@@ -93,13 +95,14 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE trigger_selector #-}
 {-# INLINE default_selector #-}
 {-# INLINE simple_calculate_typesetting #-}
-{-# INLINE origin #-}
-{-# INLINE fit_matrix #-}
-{-# INLINE fit_window_matrix #-}
+{-# INLINE origin_point #-}
 {-# INLINE identity_matrix #-}
 {-# INLINE x_scalable_matrix #-}
 {-# INLINE y_scalable_matrix #-}
-{-# INLINE update_arrange_matrix #-}
+{-# INLINE white_color #-}
+{-# INLINE default_arrange #-}
+{-# INLINE fit_matrix #-}
+{-# INLINE fit_window_matrix #-}
 {-# INLINE from_foldable_enumeration #-}
 {-# INLINE insert_foldable_enumeration #-}
 {-# INLINE get_clipboard_text #-}

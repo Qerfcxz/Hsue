@@ -16,6 +16,7 @@ import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
+import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
@@ -87,9 +88,19 @@ combine_arrange first_arrange second_arrange=case first_arrange of
                     Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
                         Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_point_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_point_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},color=multiply_color first_color second_color}
 
-quick_create_vertex::Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Vertex
+quick_create_vertex::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Vertex
 quick_create_vertex color x y u v=case color of
     Color {red,green,blue,alpha}->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x,y=y,u=u,v=v,parameter_id=0,font_size=0}
+
+quick_create_rectangle_vertex::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Vertex
+quick_create_rectangle_vertex color left down right up min_u min_v max_u max_v=case color of
+    Color {red,green,blue,alpha}->DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0}
+
+quick_create_rectangle_text_vertex::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Vertex->DS.Seq Vertex
+quick_create_rectangle_text_vertex red green blue alpha left down right up min_u min_v max_u max_v font_size vertex=vertex DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=min_v,parameter_id=0,font_size=font_size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=min_v,parameter_id=0,font_size=font_size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=max_v,parameter_id=0,font_size=font_size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=max_v,parameter_id=0,font_size=font_size}
+
+quick_create_rectangle_index::ET.Has_call_stack=>DS.Seq DW.Word32
+quick_create_rectangle_index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3
 
 to_extended::ET.Has_call_stack=>FCT.CFloat->Extended
 to_extended number=Finite {number=number}
@@ -119,10 +130,14 @@ millisecond=1000000
 {-# INLINE seq_poke_array #-}
 {-# INLINE seq_poke_array_a #-}
 {-# INLINE triple_reverse #-}
+{-# INLINE vector_io_map #-}
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}
 {-# INLINE combine_arrange #-}
 {-# INLINE quick_create_vertex #-}
+{-# INLINE quick_create_rectangle_vertex #-}
+{-# INLINE quick_create_rectangle_text_vertex #-}
+{-# INLINE quick_create_rectangle_index #-}
 {-# INLINE to_extended #-}
 {-# INLINE from_extended #-}
 {-# INLINE mebibyte #-}
