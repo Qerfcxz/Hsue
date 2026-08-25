@@ -157,7 +157,7 @@ consume_widget widget=case widget of
 for_submit::ET.Has_call_stack=>DIM.IntMap (DS.Seq Submit)->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Submit_mode,DW.Word32,DW.Word32))
 for_submit submit=let (vertex,index,parameter,draw_call,_,_,_)=DIM.foldl' (DF.foldl' (flip for_submit_a)) (DS.empty,DS.empty,DS.empty,DS.empty,0,0,0) submit in (vertex,index,parameter,draw_call)
 
-for_submit_a::ET.Has_call_stack=>Submit->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Submit_mode,DW.Word32,DW.Word32),DW.Word32,DW.Word32,FCT.CFloat)->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Submit_mode,DW.Word32,DW.Word32),DW.Word32,DW.Word32,FCT.CFloat)
+for_submit_a::ET.Has_call_stack=>Submit->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Submit_mode,DW.Word32,DW.Word32),DW.Word32,DW.Word32,DW.Word32)->(DS.Seq Vertex,DS.Seq DW.Word32,DS.Seq Parameter,DS.Seq (Submit_mode,DW.Word32,DW.Word32),DW.Word32,DW.Word32,DW.Word32)
 for_submit_a submit (this_vertex,this_index,this_parameter,draw_call,vertex_offset,index_offset,parameter_id)=case submit of
     Submit {submit_mode,vertex,index,parameter,vertex_size,index_size}->(this_vertex DS.>< fmap (\single_vertex->single_vertex {parameter_id=parameter_id}) vertex,this_index DS.>< fmap (vertex_offset+) index,this_parameter DS.|> parameter,for_submit_b submit_mode index_size index_offset draw_call,vertex_offset+vertex_size,index_offset+index_size,parameter_id+1)
 

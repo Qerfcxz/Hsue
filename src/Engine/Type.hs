@@ -427,7 +427,7 @@ layout_poke ptr layout=case layout of
         FS.pokeByteOff ptr 0 address
         FS.pokeByteOff ptr 8 size
 
-data Vertex=Vertex {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,parameter_id::FCT.CFloat,font_size::FCT.CFloat}
+data Vertex=Vertex {parameter_id::DW.Word32,font_size::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
 instance FS.Storable Vertex where
     sizeOf=vertex_size_of
@@ -446,17 +446,17 @@ vertex_peek _=EF.empty_error
 
 vertex_poke::ET.Has_call_stack=>FP.Ptr Vertex->Vertex->IO ()
 vertex_poke ptr vertex=case vertex of
-    Vertex {red,green,blue,alpha,x,y,u,v,parameter_id,font_size}->do
-        FS.pokeByteOff ptr 0 red
-        FS.pokeByteOff ptr 4 green
-        FS.pokeByteOff ptr 8 blue
-        FS.pokeByteOff ptr 12 alpha
-        FS.pokeByteOff ptr 16 x
-        FS.pokeByteOff ptr 20 y
-        FS.pokeByteOff ptr 24 u
-        FS.pokeByteOff ptr 28 v
-        FS.pokeByteOff ptr 32 parameter_id
-        FS.pokeByteOff ptr 36 font_size
+    Vertex {parameter_id,font_size,x,y,u,v,red,green,blue,alpha}->do
+        FS.pokeByteOff ptr 0 parameter_id
+        FS.pokeByteOff ptr 4 font_size
+        FS.pokeByteOff ptr 8 x
+        FS.pokeByteOff ptr 12 y
+        FS.pokeByteOff ptr 16 u
+        FS.pokeByteOff ptr 20 v
+        FS.pokeByteOff ptr 24 red
+        FS.pokeByteOff ptr 28 green
+        FS.pokeByteOff ptr 32 blue
+        FS.pokeByteOff ptr 36 alpha
 
 data Parameter=Parameter {x::FCT.CFloat,y::FCT.CFloat,x_x::FCT.CFloat,x_y::FCT.CFloat,y_x::FCT.CFloat,y_y::FCT.CFloat,border_flag::FCT.CFloat,border_left::FCT.CFloat,border_down::FCT.CFloat,border_right::FCT.CFloat,border_up::FCT.CFloat}
 

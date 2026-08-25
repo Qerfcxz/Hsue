@@ -650,6 +650,9 @@ sdl_gpu_bufferusage_index=(#const SDL_GPU_BUFFERUSAGE_INDEX)
 sdl_gpu_bufferusage_graphics_storage_read::Has_call_stack=>Word32
 sdl_gpu_bufferusage_graphics_storage_read=(#const SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ)
 
+sdl_gpu_vertexelementformat_uint::Has_call_stack=>Word32
+sdl_gpu_vertexelementformat_uint=(#const SDL_GPU_VERTEXELEMENTFORMAT_UINT)
+
 sdl_gpu_vertexelementformat_float::Has_call_stack=>Word32
 sdl_gpu_vertexelementformat_float=(#const SDL_GPU_VERTEXELEMENTFORMAT_FLOAT)
 
@@ -1112,6 +1115,7 @@ pattern SDLK_PAGEUP=(#const SDLK_PAGEUP)
 {-# INLINE sdl_gpu_bufferusage_vertex #-}
 {-# INLINE sdl_gpu_bufferusage_index #-}
 {-# INLINE sdl_gpu_bufferusage_graphics_storage_read #-}
+{-# INLINE sdl_gpu_vertexelementformat_uint #-}
 {-# INLINE sdl_gpu_vertexelementformat_float #-}
 {-# INLINE sdl_gpu_vertexelementformat_float2 #-}
 {-# INLINE sdl_gpu_vertexelementformat_float4 #-}

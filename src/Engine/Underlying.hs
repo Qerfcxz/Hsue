@@ -90,14 +90,14 @@ combine_arrange first_arrange second_arrange=case first_arrange of
 
 quick_create_vertex::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Vertex
 quick_create_vertex color x y u v=case color of
-    Color {red,green,blue,alpha}->Vertex {red=red,green=green,blue=blue,alpha=alpha,x=x,y=y,u=u,v=v,parameter_id=0,font_size=0}
+    Color {red,green,blue,alpha}->Vertex {parameter_id=0,font_size=0,x=x,y=y,u=u,v=v,red=red,green=green,blue=blue,alpha=alpha}
 
 quick_create_rectangle_vertex::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Vertex
 quick_create_rectangle_vertex color left down right up min_u min_v max_u max_v=case color of
-    Color {red,green,blue,alpha}->DS.singleton (Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=max_v,parameter_id=0,font_size=0}) DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=max_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=min_v,parameter_id=0,font_size=0} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=min_v,parameter_id=0,font_size=0}
+    Color {red,green,blue,alpha}->DS.singleton (Vertex {parameter_id=0,font_size=0,x=left,y=down,u=min_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha}) DS.|> Vertex {parameter_id=0,font_size=0,x=right,y=down,u=max_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=0,x=right,y=up,u=max_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=0,x=left,y=up,u=min_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha}
 
 quick_create_rectangle_text_vertex::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Vertex->DS.Seq Vertex
-quick_create_rectangle_text_vertex red green blue alpha left down right up min_u min_v max_u max_v font_size vertex=vertex DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=down,u=min_u,v=min_v,parameter_id=0,font_size=font_size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=down,u=max_u,v=min_v,parameter_id=0,font_size=font_size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=right,y=up,u=max_u,v=max_v,parameter_id=0,font_size=font_size} DS.|> Vertex {red=red,green=green,blue=blue,alpha=alpha,x=left,y=up,u=min_u,v=max_v,parameter_id=0,font_size=font_size}
+quick_create_rectangle_text_vertex red green blue alpha left down right up min_u min_v max_u max_v font_size vertex=vertex DS.|> Vertex {parameter_id=0,font_size=font_size,x=left,y=down,u=min_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=font_size,x=right,y=down,u=max_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=font_size,x=right,y=up,u=max_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=font_size,x=left,y=up,u=min_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha}
 
 quick_create_rectangle_index::ET.Has_call_stack=>DS.Seq DW.Word32
 quick_create_rectangle_index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3

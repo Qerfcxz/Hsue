@@ -19,13 +19,17 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
+poke_vertex_attribute::FP.Ptr SDLI.SDL_GPUVertexAttribute->IO ()
+poke_vertex_attribute vertex_attribute=do
+    FS.pokeElemOff vertex_attribute 0 SDLI.SDL_GPUVertexAttribute {sdl_location=0,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_uint,sdl_offset=0}
+    FS.pokeElemOff vertex_attribute 1 SDLI.SDL_GPUVertexAttribute {sdl_location=1,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float,sdl_offset=4}
+    FS.pokeElemOff vertex_attribute 2 SDLI.SDL_GPUVertexAttribute {sdl_location=2,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float2,sdl_offset=8}
+    FS.pokeElemOff vertex_attribute 3 SDLI.SDL_GPUVertexAttribute {sdl_location=3,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float2,sdl_offset=16}
+    FS.pokeElemOff vertex_attribute 4 SDLI.SDL_GPUVertexAttribute {sdl_location=4,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float4,sdl_offset=24}
+
 create_graphics_pipeline::ET.Has_call_stack=>FP.Ptr SDLT.SDL_Window->FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUShader->FP.Ptr SDLT.SDL_GPUShader->Blend_state->IO (FP.Ptr SDLT.SDL_GPUGraphicsPipeline)
 create_graphics_pipeline window device vertex_shader fragment_shader blend_state=FMA.allocaArray 5 $ \vertex_attribute->do
-    FS.pokeElemOff vertex_attribute 0 SDLI.SDL_GPUVertexAttribute {sdl_location=0,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float4,sdl_offset=0}
-    FS.pokeElemOff vertex_attribute 1 SDLI.SDL_GPUVertexAttribute {sdl_location=1,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float2,sdl_offset=16}
-    FS.pokeElemOff vertex_attribute 2 SDLI.SDL_GPUVertexAttribute {sdl_location=2,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float2,sdl_offset=24}
-    FS.pokeElemOff vertex_attribute 3 SDLI.SDL_GPUVertexAttribute {sdl_location=3,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float,sdl_offset=32}
-    FS.pokeElemOff vertex_attribute 4 SDLI.SDL_GPUVertexAttribute {sdl_location=4,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float,sdl_offset=36}
+    poke_vertex_attribute vertex_attribute
     FMU.with SDLI.SDL_GPUVertexBufferDescription {sdl_slot=0,sdl_pitch=40,sdl_input_rate=SDLI.sdl_gpu_vertexinputrate_vertex,sdl_instance_step_rate=0} $ \vertex_buffer_description->do
         format<-SDLF.sdl_get_gpu_swapchain_texture_format device window
         sdl_catch_zero format
@@ -33,11 +37,7 @@ create_graphics_pipeline window device vertex_shader fragment_shader blend_state
 
 create_canvas_graphics_pipeline::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUShader->FP.Ptr SDLT.SDL_GPUShader->Blend_state->IO (FP.Ptr SDLT.SDL_GPUGraphicsPipeline)
 create_canvas_graphics_pipeline device vertex_shader fragment_shader blend_state=FMA.allocaArray 5 $ \vertex_attribute->do
-    FS.pokeElemOff vertex_attribute 0 SDLI.SDL_GPUVertexAttribute {sdl_location=0,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float4,sdl_offset=0}
-    FS.pokeElemOff vertex_attribute 1 SDLI.SDL_GPUVertexAttribute {sdl_location=1,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float2,sdl_offset=16}
-    FS.pokeElemOff vertex_attribute 2 SDLI.SDL_GPUVertexAttribute {sdl_location=2,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float2,sdl_offset=24}
-    FS.pokeElemOff vertex_attribute 3 SDLI.SDL_GPUVertexAttribute {sdl_location=3,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float,sdl_offset=32}
-    FS.pokeElemOff vertex_attribute 4 SDLI.SDL_GPUVertexAttribute {sdl_location=4,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float,sdl_offset=36}
+    poke_vertex_attribute vertex_attribute
     FMU.with SDLI.SDL_GPUVertexBufferDescription {sdl_slot=0,sdl_pitch=40,sdl_input_rate=SDLI.sdl_gpu_vertexinputrate_vertex,sdl_instance_step_rate=0} $ \vertex_buffer_description->FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader,sdl_fragment_shader=fragment_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=vertex_buffer_description,sdl_num_vertex_buffers=1,sdl_vertex_attributes=vertex_attribute,sdl_num_vertex_attributes=5},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline device))
 
 load_shader::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->String->IO (FP.Ptr SDLT.SDL_GPUShader)
@@ -103,6 +103,7 @@ from_sampler_create_info sampler_create_info=case sampler_create_info of
     Sampler_create_info {min_filter,mag_filter,mipmap_mode,address_mode_u,address_mode_v,address_mode_w}->
         SDLI.SDL_GPUSamplerCreateInfo {sdl_min_filter=from_filter min_filter,sdl_mag_filter=from_filter mag_filter,sdl_mipmap_mode=from_sampler_mipmap_mode mipmap_mode,sdl_address_mode_u=from_sampler_address_mode address_mode_u,sdl_address_mode_v=from_sampler_address_mode address_mode_v,sdl_address_mode_w=from_sampler_address_mode address_mode_w}
 
+{-# INLINE poke_vertex_attribute #-}
 {-# INLINE from_blend_factor #-}
 {-# INLINE from_blend_op #-}
 {-# INLINE from_color_component_flag #-}
