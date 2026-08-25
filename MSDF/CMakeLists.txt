@@ -216,6 +216,7 @@ endif()
 add_library(msdf SHARED msdf.cpp)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DEPS REQUIRED freetype2 libpng)
+target_include_directories(msdf PRIVATE ${DEPS_INCLUDE_DIRS})
 target_link_libraries(msdf PRIVATE
     msdf-atlas-gen
     msdfgen::msdfgen-ext
