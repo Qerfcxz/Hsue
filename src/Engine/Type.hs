@@ -231,11 +231,11 @@ data Timer=Off|On {timer_id::DW.Word32,interval::DW.Word64}
 
 data Window=Window {window_id::Int,sdl_window_id::DW.Word32,sdl_window::FP.Ptr SDLT.SDL_Window,graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,design_width::FCT.CFloat,design_height::FCT.CFloat,adaptive_width::FCT.CFloat,adaptive_height::FCT.CFloat,width::FCT.CFloat,height::FCT.CFloat,color::Color}
 
-data Cursor=Cursor {visible::Bool,which::Bool,x::FCT.CFloat,start_multiline::Int,start_line::Int,start_element::Int,end_multiline::Int,end_line::Int,end_element::Int}
+data Cursor=Cursor {visible::Bool,which::Bool,x::FCT.CFloat,start_line::Int,start_seat::Int,end_line::Int,end_seat::Int}
 
-data Unfinished=Unfinished
+data Line=Line {line_break::Bool,width::FCT.CFloat,seat::DS.Seq Seat}
 
-data Line=Line {unfinished::Unfinished,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,lower::FCT.CFloat,upper::FCT.CFloat,enter::Bool}
+data Seat=Seat {char::Char,advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
 data Row=Row {row_core::DS.Seq Character,index::Int,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
 
@@ -245,9 +245,9 @@ data Sentence=Sentence {sentence_core::DS.Seq Phrase,path::String}
 
 data Phrase=Phrase {phrase_core::DT.Text,font_size::FCT.CFloat,color::Color}
 
-data Visual=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,album_id::Int,index::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,padding::FCT.CFloat,exponent_width::Int,exponent_height::Int,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,article::DS.Seq (DS.Seq Row),charset::DHMS.HashMap String (DHS.HashSet Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),cursor::Cursor,line::DS.Seq Line}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}
+data Visual=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,album_id::Int,index::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,padding::FCT.CFloat,exponent_width::Int,exponent_height::Int,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,article::DS.Seq (DS.Seq Row),charset::DHMS.HashMap String (DHS.HashSet Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),cursor::Cursor,line::DS.Seq Line,appended_typesetting::DS.Seq Typesetting,typesetting::DVS.Vector Typesetting,max_typesetting_size::Int}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}
 
-data Visual_request=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::String}|Large_picture_request {arrange::Arrange,path::String}|Atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Large_atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,padding::Int,exponent_width::Int,exponent_height::Int,path::String}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,article::DS.Seq (DS.Seq Sentence),calculate_width::DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}
+data Visual_request=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::String}|Large_picture_request {arrange::Arrange,path::String}|Atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Large_atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,padding::Int,exponent_width::Int,exponent_height::Int,path::String}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,article::DS.Seq (DS.Seq Sentence),calculate_width::DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),max_typesetting_size::Int}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}
 
 data Clip_request=Clip_request {x::FCT.CFloat,y::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -330,6 +330,38 @@ instance DH.Hashable Color_component_flag where
 
 color_component_flag_hashWithSalt::ET.Has_call_stack=>Int->Color_component_flag->Int
 color_component_flag_hashWithSalt=DH.hashUsing fromEnum
+
+data Typesetting=Typesetting {x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,lower::FCT.CFloat,upper::FCT.CFloat}
+
+instance FS.Storable Typesetting where
+    sizeOf=typesetting_size_of
+    alignment=typesetting_alignment
+    peek=typesetting_peek
+    poke=typesetting_poke
+
+typesetting_size_of::ET.Has_call_stack=>Num a=>Typesetting->a
+typesetting_size_of _=20
+
+typesetting_alignment::ET.Has_call_stack=>Num a=>Typesetting->a
+typesetting_alignment _=4
+
+typesetting_peek::ET.Has_call_stack=>FP.Ptr Typesetting->IO Typesetting
+typesetting_peek ptr=do
+    x<-FS.peekByteOff ptr 0
+    y<-FS.peekByteOff ptr 4
+    width<-FS.peekByteOff ptr 8
+    lower<-FS.peekByteOff ptr 12
+    upper<-FS.peekByteOff ptr 16
+    return (Typesetting {x=x,y=y,width=width,lower=lower,upper=upper})
+
+typesetting_poke::ET.Has_call_stack=>FP.Ptr Typesetting->Typesetting->IO ()
+typesetting_poke ptr typesetting=case typesetting of
+    Typesetting {x,y,width,lower,upper}->do
+        FS.pokeByteOff ptr 0 x
+        FS.pokeByteOff ptr 4 y
+        FS.pokeByteOff ptr 8 width
+        FS.pokeByteOff ptr 12 lower
+        FS.pokeByteOff ptr 16 upper
 
 data Clip=Clip {x::FCT.CFloat,y::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -558,6 +590,10 @@ class Custom_widget_request a where
 {-# INLINE system_cursor_hashWithSalt #-}
 {-# INLINE window_flag_hashWithSalt #-}
 {-# INLINE color_component_flag_hashWithSalt #-}
+{-# INLINE typesetting_size_of #-}
+{-# INLINE typesetting_alignment #-}
+{-# INLINE typesetting_peek #-}
+{-# INLINE typesetting_poke #-}
 {-# INLINE clip_size_of #-}
 {-# INLINE clip_alignment #-}
 {-# INLINE clip_peek #-}
