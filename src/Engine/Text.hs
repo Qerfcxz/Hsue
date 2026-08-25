@@ -24,6 +24,7 @@ import qualified Data.Text as DT
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Array as FMA
+import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
@@ -80,44 +81,60 @@ to_charset_a::ET.Has_call_stack=>Sentence->DHMS.HashMap String (DHS.HashSet Char
 to_charset_a sentence charset=case sentence of
     Sentence {sentence_core,path}->DHMS.insert path (DF.foldl' (\this_charset phrase->DT.foldl' (flip DHS.insert) this_charset phrase.phrase_core) (DHMS.findWithDefault DHS.empty path charset) sentence_core) charset
 
-update_font::ET.Has_call_stack=>DHMS.HashMap String (DHS.HashSet Char)->Engine a b c d e->IO (Engine a b c d e)
-update_font charset engine=DHMS.foldlWithKey' (\action path char->action>>=update_font_a path char) (return engine) charset
-
-update_font_a::ET.Has_call_stack=>String->DHS.HashSet Char->Engine a b c d e->IO (Engine a b c d e)
-update_font_a path char engine=let code=DHS.foldl' (\this_code single_char->DIS.insert (DC.ord single_char) this_code) DIS.empty char in case DHMS.lookup path engine.font_map of
-    Nothing->update_font_b engine.font_id path code (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
+from_maybe_charset::ET.Has_call_stack=>String->Maybe (DHS.HashSet Char)->Engine a b c d e->IO (Engine a b c d e)
+from_maybe_charset path maybe_charset engine=case DHMS.lookup path engine.font_map of
+    Nothing->from_maybe_charset_a engine.font_id DIS.empty path maybe_charset (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->case DIM.lookup font_id engine.font of
-        Nothing->update_font_b font_id path code engine
-        Just font->update_font_b font_id path (DIS.difference code (DIM.keysSet font.glyph)) engine
+        Nothing->from_maybe_charset_a font_id DIS.empty path maybe_charset engine
+        Just font->from_maybe_charset_a font_id (DIM.keysSet font.glyph) path maybe_charset engine
 
-update_font_b::ET.Has_call_stack=>Int->String->DIS.IntSet->Engine a b c d e->IO (Engine a b c d e)
-update_font_b font_id path code engine=if DIS.null code then return engine else with_string path $ \this_path->let size=DIS.size code in FMA.allocaArray size $ \ptr_charset->do
-    DIS.foldr (flip . update_font_c) (const (return ())) code ptr_charset
-    ptr_msdf_output<-MSDFF.msdf_generator this_path ptr_charset (fromIntegral size) engine.font_size engine.pixel_range
+from_maybe_charset_a::ET.Has_call_stack=>Int->DIS.IntSet->String->Maybe (DHS.HashSet Char)->Engine a b c d e->IO (Engine a b c d e)
+from_maybe_charset_a font_id unicode path maybe_charset engine=case maybe_charset of
+    Just charset->from_charset_a False font_id (DIS.difference (DHS.foldl' (\this_unicode char->DIS.insert (DC.ord char) this_unicode) DIS.empty charset) unicode) path engine
+    Nothing->from_charset_a True font_id unicode path engine
+
+fold_from_charset::ET.Has_call_stack=>DHMS.HashMap String (DHS.HashSet Char)->Engine a b c d e->IO (Engine a b c d e)
+fold_from_charset charset engine=DHMS.foldlWithKey' (\action path char->action>>=from_charset path char) (return engine) charset
+
+from_charset::ET.Has_call_stack=>String->DHS.HashSet Char->Engine a b c d e->IO (Engine a b c d e)
+from_charset path charset engine=let unicode=DHS.foldl' (\this_unicode char->DIS.insert (DC.ord char) this_unicode) DIS.empty charset in case DHMS.lookup path engine.font_map of
+    Nothing->from_charset_a False engine.font_id unicode path (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
+    Just font_id->case DIM.lookup font_id engine.font of
+        Nothing->from_charset_a False font_id unicode path engine
+        Just font->from_charset_a False font_id (DIS.difference unicode (DIM.keysSet font.glyph)) path engine
+
+from_charset_a::ET.Has_call_stack=>Bool->Int->DIS.IntSet->String->Engine a b c d e->IO (Engine a b c d e)
+from_charset_a exclude font_id unicode path engine=if not exclude&&DIS.null unicode then return engine else with_string path $ \this_path->let size=DIS.size unicode in FMA.allocaArray size $ \ptr_charset->do
+    DIS.foldr (flip . from_charset_b) (const (return ())) unicode ptr_charset
+    ptr_msdf_output<-MSDFF.msdf_generator this_path (FMU.fromBool exclude) ptr_charset (fromIntegral size) engine.font_size engine.pixel_range
     catch_null ptr_msdf_output
     msdf_output<-FS.peek ptr_msdf_output
     case msdf_output of
-        MSDFT.MSDF_Output {msdf_pixel,msdf_width,msdf_height,msdf_descent,msdf_ascent,msdf_glyph,msdf_count}->let new_msdf_width=fromIntegral msdf_width in let new_msdf_height=fromIntegral msdf_height in do
-            texture<-from_pixel engine.device engine.picture_transfer_buffer engine.max_picture_size msdf_pixel new_msdf_width new_msdf_height
-            let (atlas,left,down,_,_)=atlas_insert new_msdf_width new_msdf_height engine.padding engine.atlas
-            copy_texture engine.device texture engine.texture left down new_msdf_width new_msdf_height
-            SDLF.sdl_release_gpu_texture engine.device texture
-            glyph<-update_font_d (fromIntegral left) (fromIntegral down) engine.exponent_width engine.exponent_height 0 (fromIntegral msdf_count) msdf_glyph DIM.empty
-            MSDFF.msdf_cleaner ptr_msdf_output
-            case DIM.lookup font_id engine.font of
-                Nothing->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=glyph}) engine.font})
-                Just font->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=DIM.union glyph font.glyph}) engine.font})
+        MSDFT.MSDF_Output {msdf_pixel,msdf_width,msdf_height,msdf_descent,msdf_ascent,msdf_glyph,msdf_count}->if msdf_count==0
+            then do
+                MSDFF.msdf_cleaner ptr_msdf_output
+                return engine
+            else let new_msdf_width=fromIntegral msdf_width in let new_msdf_height=fromIntegral msdf_height in do
+                texture<-from_pixel engine.device engine.picture_transfer_buffer engine.max_picture_size msdf_pixel new_msdf_width new_msdf_height
+                let (atlas,left,down,_,_)=atlas_insert new_msdf_width new_msdf_height engine.padding engine.atlas
+                copy_texture engine.device texture engine.texture left down new_msdf_width new_msdf_height
+                SDLF.sdl_release_gpu_texture engine.device texture
+                glyph<-from_charset_c (fromIntegral left) (fromIntegral down) engine.exponent_width engine.exponent_height 0 (fromIntegral msdf_count) msdf_glyph DIM.empty
+                MSDFF.msdf_cleaner ptr_msdf_output
+                case DIM.lookup font_id engine.font of
+                    Nothing->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=glyph}) engine.font})
+                    Just font->return (engine {atlas=atlas,font=DIM.insert font_id (Font {descent=msdf_descent,ascent=msdf_ascent,glyph=DIM.union glyph font.glyph}) engine.font})
 
-update_font_c::ET.Has_call_stack=>Int->FP.Ptr DW.Word32->(FP.Ptr DW.Word32->IO ())->IO ()
-update_font_c int ptr action=do
+from_charset_b::ET.Has_call_stack=>Int->FP.Ptr DW.Word32->(FP.Ptr DW.Word32->IO ())->IO ()
+from_charset_b int ptr action=do
     FS.poke ptr (fromIntegral int)
     action (FP.plusPtr ptr 4)
 
-update_font_d::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Int->Int->Int->Int->FP.Ptr MSDFT.MSDF_Glyph->DIM.IntMap Glyph->IO (DIM.IntMap Glyph)
-update_font_d x y exponent_width exponent_height index msdf_count msdf_glyph glyph=if msdf_count<=index then return glyph else do
+from_charset_c::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Int->Int->Int->Int->FP.Ptr MSDFT.MSDF_Glyph->DIM.IntMap Glyph->IO (DIM.IntMap Glyph)
+from_charset_c x y exponent_width exponent_height index msdf_count msdf_glyph glyph=if msdf_count<=index then return glyph else do
     single_msdf_glyph<-FS.peekElemOff msdf_glyph index
     case single_msdf_glyph of
-        MSDFT.MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_left,msdf_plane_down,msdf_plane_right,msdf_plane_up,msdf_atlas_left,msdf_atlas_down,msdf_atlas_right,msdf_atlas_up}->update_font_d x y exponent_width exponent_height (index+1) msdf_count msdf_glyph (DIM.insert (fromIntegral msdf_unicode) (Glyph {advance=msdf_advance,left=msdf_plane_left,down=msdf_plane_down,right=msdf_plane_right,up=msdf_plane_up,min_u=scaleFloat (-exponent_width) (x+msdf_atlas_left),min_v=scaleFloat (-exponent_height) (y+msdf_atlas_down),max_u=scaleFloat (-exponent_width) (x+msdf_atlas_right),max_v=scaleFloat (-exponent_height) (y+msdf_atlas_up)}) glyph)
+        MSDFT.MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_left,msdf_plane_down,msdf_plane_right,msdf_plane_up,msdf_atlas_left,msdf_atlas_down,msdf_atlas_right,msdf_atlas_up}->from_charset_c x y exponent_width exponent_height (index+1) msdf_count msdf_glyph (DIM.insert (fromIntegral msdf_unicode) (Glyph {advance=msdf_advance,left=msdf_plane_left,down=msdf_plane_down,right=msdf_plane_right,up=msdf_plane_up,min_u=scaleFloat (-exponent_width) (x+msdf_atlas_left),min_v=scaleFloat (-exponent_height) (y+msdf_atlas_down),max_u=scaleFloat (-exponent_width) (x+msdf_atlas_right),max_v=scaleFloat (-exponent_height) (y+msdf_atlas_up)}) glyph)
 
 scroll_text::ET.Has_call_stack=>FCT.CFloat->Visual->Visual
 scroll_text scroll visual=case visual of
@@ -138,7 +155,12 @@ scroll_bottom_text visual=case visual of
 {-# INLINE for_text #-}
 {-# INLINE to_charset #-}
 {-# INLINE to_charset_a #-}
-{-# INLINE update_font_c #-}
+{-# INLINE from_maybe_charset #-}
+{-# INLINE from_maybe_charset_a #-}
+{-# INLINE fold_from_charset #-}
+{-# INLINE from_charset #-}
+{-# INLINE from_charset_a #-}
+{-# INLINE from_charset_b #-}
 {-# INLINE scroll_text #-}
 {-# INLINE scroll_top_text #-}
 {-# INLINE scroll_bottom_text #-}

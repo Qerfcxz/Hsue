@@ -179,8 +179,8 @@ do_request request engine=case request of
     Unlock {leaf_id}->do
         (leaf,new_engine)<-CMTS.runStateT (int_map_functor_update leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
-    Load_charset {charset}->do
-        new_engine<-update_font charset engine
+    Update_font {path,maybe_charset}->do
+        new_engine<-from_maybe_charset path maybe_charset engine
         return (new_engine,False)
     Render {window_id,render_selector,projection_move,maybe_sampler_id}->let (new_engine,widget)=move_lookup projection_move engine in do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
@@ -246,7 +246,7 @@ for_unlock_visual visual engine=case visual of
     Atlas {arrange,clip_request,path,index,locked}->if locked then create_atlas arrange clip_request path index engine else return (engine,visual)
     Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset,locked}->if locked
         then do
-            new_engine<-update_font charset engine
+            new_engine<-fold_from_charset charset engine
             return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,visual)
     _->return (engine,visual)

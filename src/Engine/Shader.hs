@@ -19,7 +19,7 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-poke_vertex_attribute::FP.Ptr SDLI.SDL_GPUVertexAttribute->IO ()
+poke_vertex_attribute::ET.Has_call_stack=>FP.Ptr SDLI.SDL_GPUVertexAttribute->IO ()
 poke_vertex_attribute vertex_attribute=do
     FS.pokeElemOff vertex_attribute 0 SDLI.SDL_GPUVertexAttribute {sdl_location=0,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_uint,sdl_offset=0}
     FS.pokeElemOff vertex_attribute 1 SDLI.SDL_GPUVertexAttribute {sdl_location=1,sdl_buffer_slot=0,sdl_format=SDLI.sdl_gpu_vertexelementformat_float,sdl_offset=4}

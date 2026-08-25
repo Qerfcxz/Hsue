@@ -241,8 +241,6 @@ pop_event sdl_event=do
 
 {-# INLINE get_interval #-}
 {-# INLINE to_mouse_button #-}
-{-# INLINE loop_event_a #-}
-{-# INLINE loop_event_b #-}
 {-# INLINE run_event #-}
 {-# INLINE run_event_b #-}
 {-# INLINE run_event_c #-}

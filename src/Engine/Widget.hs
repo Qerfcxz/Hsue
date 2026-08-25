@@ -152,7 +152,7 @@ create_visual visual_request engine=case visual_request of
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
     Text_request {arrange,text_width,text_height,article,calculate_width,calculate_typesetting,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
-            new_engine<-update_font charset engine
+            new_engine<-fold_from_charset charset engine
             return (new_engine,let (new_article,number)=for_text new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_new_article,charset=charset,locked=False})
         else return (engine,let (new_article,number)=for_text engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,article=new_new_article,charset=charset,locked=False})
     Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do

@@ -9,7 +9,7 @@ import Foreign.C.Types
 import Foreign.Ptr
 
 foreign import ccall safe "MSDF_Generator"
-    msdf_generator::CString->Ptr Word32->CInt->CFloat->CFloat->IO (Ptr MSDF_Output)
+    msdf_generator::CString->CBool->Ptr Word32->CInt->CFloat->CFloat->IO (Ptr MSDF_Output)
 
 foreign import ccall safe "MSDF_Cleaner"
     msdf_cleaner::Ptr MSDF_Output->IO ()
