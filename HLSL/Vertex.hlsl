@@ -4,11 +4,11 @@ cbuffer Window:register(b0,space1) {
     float pixel_range;
 }
 struct VSInput {
-    float4 color:TEXCOORD0;
-    float2 xy:TEXCOORD1;
-    float2 uv:TEXCOORD2;
-    float parameter_id:TEXCOORD3;
-    float font_size:TEXCOORD4;
+    uint parameter_id:TEXCOORD0;
+    float font_size:TEXCOORD1;
+    float2 xy:TEXCOORD2;
+    float2 uv:TEXCOORD3;
+    float4 color:TEXCOORD4;
 };
 struct VSOutput {
     float4 color:TEXCOORD0;
@@ -36,7 +36,7 @@ float2 apply_matrix(float2 matrix_xy,float2 matrix_x,float2 matrix_y,float2 xy) 
 VSOutput main(VSInput input) {
     VSOutput output;
     output.color=input.color;
-    Parameter parameter=parameter_buffer[(uint)input.parameter_id];
+    Parameter parameter=parameter_buffer[input.parameter_id];
     float2 new_xy=apply_matrix(parameter.xy,parameter.matrix_x,parameter.matrix_y,input.xy);
     output.position=float4(2*new_xy.x/window_size.x,2*new_xy.y/window_size.y,0,1);
     output.uv=input.uv;
