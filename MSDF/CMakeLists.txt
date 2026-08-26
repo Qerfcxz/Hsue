@@ -213,7 +213,7 @@ if(MSDF_ATLAS_INSTALL)
     )
 endif()
 
-add_library(msdf SHARED msdf.cpp)
+add_library(msdf SHARED MSDF.cpp MSDF.h)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(DEPS REQUIRED freetype2 libpng)
 target_include_directories(msdf PRIVATE ${DEPS_INCLUDE_DIRS})
