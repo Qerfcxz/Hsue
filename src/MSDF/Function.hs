@@ -2,7 +2,7 @@
 
 module MSDF.Function where
 
-import MSDF.Type
+import MSDF.Include
 import Data.Word
 import Foreign.C.String
 import Foreign.C.Types

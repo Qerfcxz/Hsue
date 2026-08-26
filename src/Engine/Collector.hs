@@ -181,8 +181,6 @@ get_submit_a widget this_submit=case widget of
 {-# INLINE maybe_collect_update #-}
 {-# INLINE collect #-}
 {-# INLINE collect_a #-}
-{-# INLINE to_collect #-}
-{-# INLINE to_collect_visual #-}
 {-# INLINE to_Parameter #-}
 {-# INLINE begin_text #-}
 {-# INLINE end_text #-}

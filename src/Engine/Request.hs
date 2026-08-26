@@ -127,7 +127,7 @@ do_request request engine=case request of
     Remove_sampler {sampler_id}->let (sampler,single_sampler)=int_map_delete_lookup sampler_id engine.sampler in do
         SDLF.sdl_release_gpu_sampler engine.device single_sampler
         return (engine {sampler=sampler},False)
-    Create_atlas_font {atlas_font_id,exponent_width,exponent_height,padding,width,height,font_size,pixel_range,path}->let new_width=DB.shiftL 1 exponent_width in let new_height=DB.shiftL 1 exponent_height in do
+    Create_atlas_font {atlas_font_id,exponent_width,exponent_height,padding,width,height,font_size,pixel_range,path,maybe_charset}->let new_width=DB.shiftL 1 exponent_width in let new_height=DB.shiftL 1 exponent_height in do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
         sdl_catch_null command_buffer
@@ -140,7 +140,8 @@ do_request request engine=case request of
         let (atlas,left,down,right,up)=atlas_insert width height padding (init_atlas new_width new_height)
         copy_texture engine.device white_texture texture left down width height
         SDLF.sdl_release_gpu_texture engine.device white_texture
-        return (engine {atlas_font=int_map_insert atlas_font_id (Atlas_font {font_atlas=atlas,texture=texture,exponent_width=exponent_width,exponent_height=exponent_height,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range,descent=0,ascent=0,glyph=DIM.empty,path=path,reference=0}) engine.atlas_font},False)
+        new_engine<-update_atlas_font atlas_font_id path maybe_charset (engine {atlas_font=int_map_insert atlas_font_id (Atlas_font {font_atlas=atlas,texture=texture,exponent_width=exponent_width,exponent_height=exponent_height,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range,descent=0,ascent=0,glyph=DIM.empty,path=path,reference=0}) engine.atlas_font})
+        return (new_engine,False)
     Remove_atlas_font {atlas_font_id}->let (atlas_font,single_atlas_font)=int_map_delete_lookup atlas_font_id engine.atlas_font in case single_atlas_font of
         Atlas_font {texture,reference}->if reference==0
             then do
@@ -180,7 +181,10 @@ do_request request engine=case request of
         (leaf,new_engine)<-CMTS.runStateT (int_map_functor_update leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
     Update_font {path,maybe_charset}->do
-        new_engine<-from_maybe_charset path maybe_charset engine
+        new_engine<-update_font path maybe_charset engine
+        return (new_engine,False)
+    Update_atlas_font {atlas_font_id,path,maybe_charset}->do
+        new_engine<-update_atlas_font atlas_font_id path maybe_charset engine
         return (new_engine,False)
     Render {window_id,render_selector,projection_move,maybe_sampler_id}->let (new_engine,widget)=move_lookup projection_move engine in do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
@@ -246,7 +250,7 @@ for_unlock_visual visual engine=case visual of
     Atlas {arrange,clip_request,path,index,locked}->if locked then create_atlas arrange clip_request path index engine else return (engine,visual)
     Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset,locked}->if locked
         then do
-            new_engine<-fold_from_charset charset engine
+            new_engine<-from_charset charset engine
             return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,visual)
     _->return (engine,visual)
@@ -281,7 +285,5 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
 {-# INLINE create_request #-}
 {-# INLINE from_system_cursor #-}
 {-# INLINE for_unlock #-}
-{-# INLINE for_unlock_visual #-}
 {-# INLINE update_article #-}
 {-# INLINE update_article_a #-}
-{-# INLINE do_shader_canvas #-}

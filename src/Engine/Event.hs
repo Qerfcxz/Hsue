@@ -245,6 +245,5 @@ pop_event sdl_event=do
 {-# INLINE run_event_b #-}
 {-# INLINE run_event_c #-}
 {-# INLINE run_widget #-}
-{-# INLINE to_key #-}
 {-# INLINE push_event #-}
 {-# INLINE pop_event #-}
