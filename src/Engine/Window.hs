@@ -14,7 +14,7 @@ import qualified Data.IntSet as DIS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 
-remove_window::ET.Has_call_stack=>Int->Engine a b c d e->IO (Engine a b c d e)
+remove_window::ET.Has_call_stack=>Int->Engine a->IO (Engine a)
 remove_window window_id engine=let (window,single_window)=int_map_delete_lookup window_id engine.window in case single_window of
     Window {sdl_window_id,sdl_window,graphics_pipeline}->do
         sdl_catch_false (SDLF.sdl_wait_for_gpu_idle engine.device)
@@ -26,10 +26,10 @@ remove_window window_id engine=let (window,single_window)=int_map_delete_lookup 
 adaptive_window::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(FCT.CFloat,FCT.CFloat)
 adaptive_window design_width design_height width height=if design_width*height<design_height*width then (design_height/height*width,design_height) else (design_width,design_width/width*height)
 
-create_adaptive_window_trigger_request::ET.Has_call_stack=>(Event a->Engine b a c d e->Maybe Int)->DIS.IntSet->Widget_request b a c d e
+create_adaptive_window_trigger_request::ET.Has_call_stack=>(Event a->Engine a->Maybe Int)->DIS.IntSet->Widget_request a
 create_adaptive_window_trigger_request next window_id=Trigger_request {next=next,trigger=create_adaptive_window_trigger_request_a window_id}
 
-create_adaptive_window_trigger_request_a::ET.Has_call_stack=>DIS.IntSet->Event a->Engine b a c d e->Engine b a c d e
+create_adaptive_window_trigger_request_a::ET.Has_call_stack=>DIS.IntSet->Event a->Engine a->Engine a
 create_adaptive_window_trigger_request_a this_window_id event engine=case event of
     At {window_id,action}->case action of
         Resize {width,height}->if DIS.member window_id this_window_id then engine {window=int_map_update window_id (create_adaptive_window_trigger_request_b width height) engine.window} else engine
@@ -48,7 +48,6 @@ from_window_flag window_flag=case window_flag of
     Window_resizable->SDLI.sdl_window_resizable
     Window_always_on_top->SDLI.sdl_window_always_on_top
 
-{-# INLINE remove_window #-}
 {-# INLINE adaptive_window #-}
 {-# INLINE create_adaptive_window_trigger_request #-}
 {-# INLINE create_adaptive_window_trigger_request_a #-}

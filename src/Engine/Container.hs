@@ -67,7 +67,7 @@ int_map_applicative_update update first_int_map second_int_map=if DIS.isSubsetOf
 int_map_applicative_update_a::ET.Has_call_stack=>Applicative c=>Int->(a->b->c b)->DIM.IntMap a->b->c b
 int_map_applicative_update_a key update int_map value=case DIM.lookup key int_map of
     Nothing->pure value
-    Just new_value->update new_value value
+    Just another_value->update another_value value
 
 int_map_monad_fold::ET.Has_call_stack=>Monad c=>(Int->a->b->c b)->DIM.IntMap a->b->c b
 int_map_monad_fold transform=DIM.foldrWithKey (\key first_value update second_value->transform key first_value second_value>>=update) return
@@ -77,8 +77,8 @@ int_map_monad_action action int_map value=DIM.foldlWithKey' (\this_action index 
 
 int_map_monad_action_a::ET.Has_call_stack=>Monad c=>Int->(Int->a->b->c (b,d))->a->(b,DIM.IntMap d)->c (b,DIM.IntMap d)
 int_map_monad_action_a index action first_value (second_value,int_map)=do
-    (new_second_value,new_first_value)<-action index first_value second_value
-    return (new_second_value,int_map_insert index new_first_value int_map)
+    (new_second_value,another_value)<-action index first_value second_value
+    return (new_second_value,int_map_insert index another_value int_map)
 
 int_set_insert::ET.Has_call_stack=>Int->DIS.IntSet->DIS.IntSet
 int_set_insert key int_set=if DIS.member key int_set then EF.empty_error else DIS.insert key int_set

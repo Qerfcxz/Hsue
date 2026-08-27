@@ -57,10 +57,10 @@ white_color=Color {red=1,green=1,blue=1,alpha=1}
 default_arrange::ET.Has_call_stack=>Arrange
 default_arrange=Arrange {point=origin_point,matrix=identity_matrix,color=white_color}
 
-fit_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
+fit_matrix::ET.Has_call_stack=>Engine a->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
 fit_matrix engine window_id widget_width widget_height width height=let window=int_map_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
-fit_window_matrix::ET.Has_call_stack=>Engine a b c d e->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
+fit_window_matrix::ET.Has_call_stack=>Engine a->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
 fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=int_map_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
 from_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->Integer
@@ -85,7 +85,7 @@ set_clipboard_text string=with_string string $ \ptr->do
     value<-SDLF.sdl_set_clipboard_text ptr
     return (FMU.toBool value)
 
-quick_create_engine::ET.Has_call_stack=>a->(Event b->Engine a b c d e->Maybe Int)->(Event b->Engine a b c d e->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a b c d e)
+quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a)
 quick_create_engine state main_id projection_strategy max_picture_size max_vertex_size max_index_size max_parameter_size exponent_width exponent_height maybe_interval padding width height font_size pixel_range sampler_create_info blend_state=case maybe_interval of
     Nothing->create_engine state main_id projection_strategy (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) exponent_width exponent_height 0 0 0 0 Nothing 0 padding width height font_size pixel_range sampler_create_info blend_state
     Just interval->create_engine state main_id projection_strategy (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) exponent_width exponent_height 0 0 0 0 (Just (div nanosecond interval)) 0 padding width height font_size pixel_range sampler_create_info blend_state
@@ -105,7 +105,3 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE fit_window_matrix #-}
 {-# INLINE from_foldable_enumeration #-}
 {-# INLINE insert_foldable_enumeration #-}
-{-# INLINE get_clipboard_text #-}
-{-# INLINE has_clipboard_text #-}
-{-# INLINE set_clipboard_text #-}
-{-# INLINE quick_create_engine #-}

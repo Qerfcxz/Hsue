@@ -1,9 +1,12 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 
 module Engine.Type where
 
@@ -26,15 +29,15 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-newtype Dynamic_bool a b c d e=Dynamic_bool {dynamic_bool::(Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Bool}
+newtype Dynamic_bool a=Dynamic_bool {dynamic_bool::(Int->Int)->Event a->Engine a->Widget a->Bool}
 
-instance Eq (Dynamic_bool a b c d e) where
+instance Eq (Dynamic_bool a) where
     (==)=dynamic_bool_equal
 
-dynamic_bool_equal::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Bool
+dynamic_bool_equal::ET.Has_call_stack=>Dynamic_bool a->Dynamic_bool a->Bool
 dynamic_bool_equal _ _=EF.empty_error
 
-instance DB.Bits (Dynamic_bool a b c d e) where
+instance DB.Bits (Dynamic_bool a) where
     (.&.)=dynamic_bool_and
     (.|.)=dynamic_bool_or
     xor=dynamic_bool_xor
@@ -48,57 +51,57 @@ instance DB.Bits (Dynamic_bool a b c d e) where
     bit=dynamic_bool_bit
     popCount=dynamic_bool_pop_count
 
-dynamic_bool_and::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_and::ET.Has_call_stack=>Dynamic_bool a->Dynamic_bool a->Dynamic_bool a
 dynamic_bool_and first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator (DB..&.) first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
 
-dynamic_bool_or::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_or::ET.Has_call_stack=>Dynamic_bool a->Dynamic_bool a->Dynamic_bool a
 dynamic_bool_or first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator (DB..|.) first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
 
-dynamic_bool_xor::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_xor::ET.Has_call_stack=>Dynamic_bool a->Dynamic_bool a->Dynamic_bool a
 dynamic_bool_xor first_dynamic_bool second_dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_binary_operator DB.xor first_dynamic_bool.dynamic_bool second_dynamic_bool.dynamic_bool}
 
-dynamic_bool_complement::ET.Has_call_stack=>Dynamic_bool a b c d e->Dynamic_bool a b c d e
+dynamic_bool_complement::ET.Has_call_stack=>Dynamic_bool a->Dynamic_bool a
 dynamic_bool_complement dynamic_bool=Dynamic_bool {dynamic_bool=dynamic_bool_unary_operator DB.complement dynamic_bool.dynamic_bool}
 
-dynamic_bool_shift::ET.Has_call_stack=>Dynamic_bool a b c d e->Int->Dynamic_bool a b c d e
+dynamic_bool_shift::ET.Has_call_stack=>Dynamic_bool a->Int->Dynamic_bool a
 dynamic_bool_shift dynamic_bool int=if int==0 then dynamic_bool else Dynamic_bool {dynamic_bool=dynamic_bool_false}
 
-dynamic_bool_rotate::ET.Has_call_stack=>Dynamic_bool a b c d e->Int->Dynamic_bool a b c d e
+dynamic_bool_rotate::ET.Has_call_stack=>Dynamic_bool a->Int->Dynamic_bool a
 dynamic_bool_rotate dynamic_bool _=dynamic_bool
 
-dynamic_bool_bit_size::ET.Has_call_stack=>Dynamic_bool a b c d e->Int
+dynamic_bool_bit_size::ET.Has_call_stack=>Dynamic_bool a->Int
 dynamic_bool_bit_size _=1
 
-dynamic_bool_bit_size_maybe::ET.Has_call_stack=>Dynamic_bool a b c d e->Maybe Int
+dynamic_bool_bit_size_maybe::ET.Has_call_stack=>Dynamic_bool a->Maybe Int
 dynamic_bool_bit_size_maybe _=Just 1
 
-dynamic_bool_is_signed::ET.Has_call_stack=>Dynamic_bool a b c d e->Bool
+dynamic_bool_is_signed::ET.Has_call_stack=>Dynamic_bool a->Bool
 dynamic_bool_is_signed _=False
 
-dynamic_bool_test_bit::ET.Has_call_stack=>Dynamic_bool a b c d e->Int->Bool
+dynamic_bool_test_bit::ET.Has_call_stack=>Dynamic_bool a->Int->Bool
 dynamic_bool_test_bit _ _=EF.empty_error
 
-dynamic_bool_bit::ET.Has_call_stack=>Int->Dynamic_bool a b c d e
+dynamic_bool_bit::ET.Has_call_stack=>Int->Dynamic_bool a
 dynamic_bool_bit int=if int==0 then Dynamic_bool {dynamic_bool=dynamic_bool_true} else Dynamic_bool {dynamic_bool=dynamic_bool_false}
 
-dynamic_bool_pop_count::ET.Has_call_stack=>Dynamic_bool a b c d e->Int
+dynamic_bool_pop_count::ET.Has_call_stack=>Dynamic_bool a->Int
 dynamic_bool_pop_count _=EF.empty_error
 
-dynamic_bool_true::ET.Has_call_stack=>(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_true::ET.Has_call_stack=>(Int->Int)->Event a->Engine a->Widget a->Bool
 dynamic_bool_true _ _ _ _=True
 
-dynamic_bool_false::ET.Has_call_stack=>(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_false::ET.Has_call_stack=>(Int->Int)->Event a->Engine a->Widget a->Bool
 dynamic_bool_false _ _ _ _=False
 
-dynamic_bool_unary_operator::ET.Has_call_stack=>(Bool->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_unary_operator::ET.Has_call_stack=>(Bool->Bool)->((Int->Int)->Event a->Engine a->Widget a->Bool)->(Int->Int)->Event a->Engine a->Widget a->Bool
 dynamic_bool_unary_operator operator dynamic_bool getter event engine widget=operator (dynamic_bool getter event engine widget)
 
-dynamic_bool_binary_operator::ET.Has_call_stack=>(Bool->Bool->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Bool
+dynamic_bool_binary_operator::ET.Has_call_stack=>(Bool->Bool->Bool)->((Int->Int)->Event a->Engine a->Widget a->Bool)->((Int->Int)->Event a->Engine a->Widget a->Bool)->(Int->Int)->Event a->Engine a->Widget a->Bool
 dynamic_bool_binary_operator operator first_dynamic_bool second_dynamic_bool getter event engine widget=operator (first_dynamic_bool getter event engine widget) (second_dynamic_bool getter event engine widget)
 
-newtype Dynamic_int a b c d e=Dynamic_int {dynamic_int::(Int->Int)->Event b->Engine a b c d e->Widget a b c d e->Int}
+newtype Dynamic_int a=Dynamic_int {dynamic_int::(Int->Int)->Event a->Engine a->Widget a->Int}
 
-instance Num (Dynamic_int a b c d e) where
+instance Num (Dynamic_int a) where
     (+)=dynamic_int_addition
     (*)=dynamic_int_multiplication
     abs=dynamic_int_abs
@@ -106,106 +109,110 @@ instance Num (Dynamic_int a b c d e) where
     fromInteger=dynamic_int_from_integer
     negate=dynamic_int_negate
 
-dynamic_int_addition::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_addition::ET.Has_call_stack=>Dynamic_int a->Dynamic_int a->Dynamic_int a
 dynamic_int_addition first_dynamic_int second_dynamic_int=Dynamic_int {dynamic_int=dynamic_int_binary_operator (+) first_dynamic_int.dynamic_int second_dynamic_int.dynamic_int}
 
-dynamic_int_multiplication::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_multiplication::ET.Has_call_stack=>Dynamic_int a->Dynamic_int a->Dynamic_int a
 dynamic_int_multiplication first_dynamic_int second_dynamic_int=Dynamic_int {dynamic_int=dynamic_int_binary_operator (*) first_dynamic_int.dynamic_int second_dynamic_int.dynamic_int}
 
-dynamic_int_abs::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_abs::ET.Has_call_stack=>Dynamic_int a->Dynamic_int a
 dynamic_int_abs dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator abs dynamic_int.dynamic_int}
 
-dynamic_int_signum::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_signum::ET.Has_call_stack=>Dynamic_int a->Dynamic_int a
 dynamic_int_signum dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator signum dynamic_int.dynamic_int}
 
-dynamic_int_from_integer::ET.Has_call_stack=>Integer->Dynamic_int a b c d e
+dynamic_int_from_integer::ET.Has_call_stack=>Integer->Dynamic_int a
 dynamic_int_from_integer integer=Dynamic_int {dynamic_int=const (const (const (const (fromInteger integer))))}
 
-dynamic_int_negate::ET.Has_call_stack=>Dynamic_int a b c d e->Dynamic_int a b c d e
+dynamic_int_negate::ET.Has_call_stack=>Dynamic_int a->Dynamic_int a
 dynamic_int_negate dynamic_int=Dynamic_int {dynamic_int=dynamic_int_unary_operator negate dynamic_int.dynamic_int}
 
-dynamic_int_unary_operator::ET.Has_call_stack=>(Int->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int
+dynamic_int_unary_operator::ET.Has_call_stack=>(Int->Int)->((Int->Int)->Event a->Engine a->Widget a->Int)->(Int->Int)->Event a->Engine a->Widget a->Int
 dynamic_int_unary_operator operator dynamic_int getter event engine widget=operator (dynamic_int getter event engine widget)
 
-dynamic_int_binary_operator::ET.Has_call_stack=>(Int->Int->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->((Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int)->(Int->Int)->Event a->Engine b a c d e->Widget b a c d e->Int
+dynamic_int_binary_operator::ET.Has_call_stack=>(Int->Int->Int)->((Int->Int)->Event a->Engine a->Widget a->Int)->((Int->Int)->Event a->Engine a->Widget a->Int)->(Int->Int)->Event a->Engine a->Widget a->Int
 dynamic_int_binary_operator operator first_dynamic_int second_dynamic_int getter event engine widget=operator (first_dynamic_int getter event engine widget) (second_dynamic_int getter event engine widget)
 
-newtype Raw_coroutine a b c d e f=Raw_coroutine {iterator::Int->(Int,DS.Seq (Coroutine a b c d e),f)}
+newtype Raw_coroutine a b=Raw_coroutine {iterator::Int->(Int,DS.Seq (Coroutine a),b)}
 
-instance Functor (Raw_coroutine a b c d e) where
+instance Functor (Raw_coroutine a) where
     fmap=raw_coroutine_fmap
 
-raw_coroutine_fmap::ET.Has_call_stack=>(a->b)->Raw_coroutine c d e f g a->Raw_coroutine c d e f g b
+raw_coroutine_fmap::ET.Has_call_stack=>(a->b)->Raw_coroutine c a->Raw_coroutine c b
 raw_coroutine_fmap function raw_coroutine=Raw_coroutine {iterator=raw_coroutine_fmap_a function raw_coroutine.iterator}
 
-raw_coroutine_fmap_a::ET.Has_call_stack=>(a->b)->(Int->(Int,DS.Seq (Coroutine c d e f g),a))->Int->(Int,DS.Seq (Coroutine c d e f g),b)
+raw_coroutine_fmap_a::ET.Has_call_stack=>(a->b)->(Int->(Int,DS.Seq (Coroutine c),a))->Int->(Int,DS.Seq (Coroutine c),b)
 raw_coroutine_fmap_a function iterator int=let (new_int,coroutine_sequence,value)=iterator int in (new_int,coroutine_sequence,function value)
 
-instance Applicative (Raw_coroutine a b c d e) where
+instance Applicative (Raw_coroutine a) where
     pure=raw_coroutine_pure
     (<*>)=raw_coroutine_apply
 
-raw_coroutine_pure::ET.Has_call_stack=>a->Raw_coroutine b c d e f a
+raw_coroutine_pure::ET.Has_call_stack=>a->Raw_coroutine b a
 raw_coroutine_pure value=Raw_coroutine {iterator=raw_coroutine_pure_a value}
 
-raw_coroutine_pure_a::ET.Has_call_stack=>a->Int->(Int,DS.Seq (Coroutine b c d e f),a)
+raw_coroutine_pure_a::ET.Has_call_stack=>a->Int->(Int,DS.Seq (Coroutine b),a)
 raw_coroutine_pure_a value int=(int,DS.empty,value)
 
-raw_coroutine_apply::ET.Has_call_stack=>Raw_coroutine a b c d e (f->g)->Raw_coroutine a b c d e f->Raw_coroutine a b c d e g
+raw_coroutine_apply::ET.Has_call_stack=>Raw_coroutine a (b->c)->Raw_coroutine a b->Raw_coroutine a c
 raw_coroutine_apply first_raw_coroutine second_raw_coroutine=Raw_coroutine {iterator=raw_coroutine_apply_a first_raw_coroutine.iterator second_raw_coroutine.iterator}
 
-raw_coroutine_apply_a::ET.Has_call_stack=>(Int->(Int,DS.Seq (Coroutine a b c d e),f->g))->(Int->(Int,DS.Seq (Coroutine a b c d e),f))->Int->(Int,DS.Seq (Coroutine a b c d e),g)
+raw_coroutine_apply_a::ET.Has_call_stack=>(Int->(Int,DS.Seq (Coroutine a),b->c))->(Int->(Int,DS.Seq (Coroutine a),b))->Int->(Int,DS.Seq (Coroutine a),c)
 raw_coroutine_apply_a function_iterator value_iterator int=let (function_int,function_coroutine_sequence,function)=function_iterator int in
     let (value_int,value_coroutine_sequence,value)=value_iterator function_int in (value_int,function_coroutine_sequence DS.>< value_coroutine_sequence,function value)
 
-instance Monad (Raw_coroutine a b c d e) where
+instance Monad (Raw_coroutine a) where
     return=pure
     (>>=)=raw_coroutine_bind
 
-raw_coroutine_bind::ET.Has_call_stack=>Raw_coroutine a b c d e f->(f->Raw_coroutine a b c d e g)->Raw_coroutine a b c d e g
+raw_coroutine_bind::ET.Has_call_stack=>Raw_coroutine a b->(b->Raw_coroutine a c)->Raw_coroutine a c
 raw_coroutine_bind raw_coroutine function=Raw_coroutine {iterator=raw_coroutine_bind_a raw_coroutine.iterator function}
 
-raw_coroutine_bind_a::ET.Has_call_stack=>(Int->(Int,DS.Seq (Coroutine a b c d e),f))->(f->Raw_coroutine a b c d e g)->Int->(Int,DS.Seq (Coroutine a b c d e),g)
+raw_coroutine_bind_a::ET.Has_call_stack=>(Int->(Int,DS.Seq (Coroutine a),b))->(b->Raw_coroutine a c)->Int->(Int,DS.Seq (Coroutine a),c)
 raw_coroutine_bind_a iterator function int=let (new_int,coroutine_sequence,value)=iterator int in let (new_new_int,new_coroutine_sequence,new_value)=(function value).iterator new_int in (new_new_int,coroutine_sequence DS.>< new_coroutine_sequence,new_value)
 
-data Event_result a b c d e f g=Event_result {first_value::f,update::Engine a b c d e->Engine a b c d e,second_value::g}
+data Trigger_result a b=Trigger_result {next::Event a->Engine a->Maybe Int,update::Engine a->Engine a,value::b}
 
-instance Functor (Event_result a b c d e f) where
-    fmap=event_result_fmap
+instance Functor (Trigger_result a) where
+    fmap=trigger_result_fmap
 
-event_result_fmap::ET.Has_call_stack=>(a->b)->Event_result c d e f g h a->Event_result c d e f g h b
-event_result_fmap function event_result=case event_result of
-    Event_result {first_value,update,second_value}->Event_result {first_value=first_value,update=update,second_value=function second_value}
+trigger_result_fmap::ET.Has_call_stack=>(a->b)->Trigger_result c a->Trigger_result c b
+trigger_result_fmap function trigger_result=case trigger_result of
+    Trigger_result {next,update,value}->Trigger_result {next=next,update=update,value=function value}
 
-instance Applicative (Event_result a b c d e f) where
-    pure=event_result_pure
-    (<*>)=event_result_apply
+instance Applicative (Trigger_result a) where
+    pure=trigger_result_pure
+    (<*>)=trigger_result_apply
 
-event_result_pure::ET.Has_call_stack=>a->Event_result b c d e f g a
-event_result_pure _=EF.empty_error
+trigger_result_pure::ET.Has_call_stack=>a->Trigger_result b a
+trigger_result_pure _=EF.empty_error
 
-event_result_apply::ET.Has_call_stack=>Event_result a b c d e f (g->h)->Event_result a b c d e f g->Event_result a b c d e f h
-event_result_apply _ _=EF.empty_error
+trigger_result_apply::ET.Has_call_stack=>Trigger_result a (b->c)->Trigger_result a b->Trigger_result a c
+trigger_result_apply _ _=EF.empty_error
 
-data Engine a b c d e=Engine {custom::a,main_id::Event b->Engine a b c d e->Maybe Int,projection_strategy::Event b->Engine a b c d e->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,canvas::DIM.IntMap Canvas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a b c d e),node::DIM.IntMap (Node a b c d e),window::DIM.IntMap Window,font::DIM.IntMap Font,atlas_font::DIM.IntMap Atlas_font,window_map::DHMS.HashMap DW.Word32 Int,font_map::DHMS.HashMap String Int,system_cursor_map::DHMS.HashMap System_cursor (FP.Ptr SDLT.SDL_Cursor),request::DS.Seq (Request a b c d e),key::DHS.HashSet Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::DIM.IntMap (FP.Ptr SDLT.SDL_GPUSampler),default_sampler::FP.Ptr SDLT.SDL_GPUSampler,canvas_graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,pipeline::DIM.IntMap Pipeline,shader::DIM.IntMap Shader,default_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,max_picture_size::FCT.CInt,max_vertex_size::Int,max_index_size::Int,max_parameter_size::Int,exponent_width::Int,exponent_height::Int,initial_canvas_id::Int,canvas_id::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
+data Engine a=Engine {custom::Custom_state a,main_id::Event a->Engine a->Maybe Int,projection_strategy::Event a->Engine a->Projection_strategy,callback::FP.FunPtr (FP.Ptr ()->DW.Word32->DW.Word64->IO DW.Word64),atlas::Atlas,canvas::DIM.IntMap Canvas,album::DIM.IntMap Album,leaf::DIM.IntMap (Projection a),node::DIM.IntMap (Node a),window::DIM.IntMap Window,font::DIM.IntMap Font,atlas_font::DIM.IntMap Atlas_font,window_map::DHMS.HashMap DW.Word32 Int,font_map::DHMS.HashMap String Int,system_cursor_map::DHMS.HashMap System_cursor (FP.Ptr SDLT.SDL_Cursor),request::DS.Seq (Request a),key::DHS.HashSet Key,device::FP.Ptr SDLT.SDL_GPUDevice,texture::FP.Ptr SDLT.SDL_GPUTexture,sampler::DIM.IntMap (FP.Ptr SDLT.SDL_GPUSampler),default_sampler::FP.Ptr SDLT.SDL_GPUSampler,canvas_graphics_pipeline::FP.Ptr SDLT.SDL_GPUGraphicsPipeline,pipeline::DIM.IntMap Pipeline,shader::DIM.IntMap Shader,default_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_shader::FP.Ptr SDLT.SDL_GPUShader,fragment_shader::FP.Ptr SDLT.SDL_GPUShader,vertex_buffer::FP.Ptr SDLT.SDL_GPUBuffer,index_buffer::FP.Ptr SDLT.SDL_GPUBuffer,parameter_buffer::FP.Ptr SDLT.SDL_GPUBuffer,transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,picture_transfer_buffer::FP.Ptr SDLT.SDL_GPUTransferBuffer,max_picture_size::FCT.CInt,max_vertex_size::Int,max_index_size::Int,max_parameter_size::Int,exponent_width::Int,exponent_height::Int,initial_canvas_id::Int,canvas_id::Int,initial_album_id::Int,album_id::Int,initial_font_id::Int,font_id::Int,count::Int,timer::Timer,time::DW.Word64,event_number::DW.Word32,padding::DW.Word32,u::FCT.CFloat,v::FCT.CFloat,font_size::FCT.CFloat,pixel_range::FCT.CFloat}
 
-data Projection a b c d e=Without {ancestry_id::DS.Seq Int,object::Widget a b c d e}|With {ancestry_id::DS.Seq Int,object::Widget a b c d e,image::Widget a b c d e}
+data Projection a=Without {ancestry_id::DS.Seq Int,object::Widget a}|With {ancestry_id::DS.Seq Int,object::Widget a,image::Widget a}
 
-data Node a b c d e=Node {ancestry_id::DS.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a b c d e->Event b->Event b,widget_transform::Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e}
+data Node a=Node {ancestry_id::DS.Seq Int,leaf_child::DIS.IntSet,node_child::DIS.IntSet,event_transform::Engine a->Event a->Event a,widget_transform::Event a->Engine a->Widget a->Widget a}
 
-data Widget a b c d e=Group {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,index::Int,group_widget::DIM.IntMap (Widget a b c d e)}|Vector {index::Int,vector_widget::DV.Vector (Widget a b c d e)}|Trigger {next::Event b->Engine a b c d e->Maybe Int,trigger::Event b->Engine a b c d e->Engine a b c d e}|Io_trigger {next::Event b->Engine a b c d e->Maybe Int,io_trigger::Event b->Engine a b c d e->IO (Engine a b c d e)}|Mix_trigger {next::Event b->Engine a b c d e->Maybe Int,mix_trigger::Event b->(Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool}|Widget_trigger {next::Event b->Engine a b c d e->Maybe Int,widget_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e),widget::Widget a b c d e}|Widget_io_trigger {next::Event b->Engine a b c d e->Maybe Int,widget_io_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->IO (Engine a b c d e)),widget::Widget a b c d e}|Widget_mix_trigger {next::Event b->Engine a b c d e->Maybe Int,widget_mix_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool,widget::Widget a b c d e}|Coroutine {index::Int,initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,variable_size::Int,user_variable_size::Int,coroutine_state::DIM.IntMap (Coroutine_state a b c d e),layout::DVS.Vector Layout,linear_coroutine::DV.Vector (Linear_coroutine a b c d e),iterative::Bool}|Store {store::Data}|Collector {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,submit::DIM.IntMap (DS.Seq Submit)}|Visual {visual::Visual}|Group_visual {arrange::Arrange,collect_order::DS.Seq Int,group_visual::DIM.IntMap Visual}|Vector_visual {arrange::Arrange,collect_order::DS.Seq Int,vector_visual::DV.Vector Visual,size::Int}|Custom_widget {custom::d}
+data Widget a=Group {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,index::Int,group_widget::DIM.IntMap (Widget a)}|Vector {index::Int,vector_widget::DV.Vector (Widget a)}|Trigger {next::Event a->Engine a->Maybe Int,trigger::Event a->Engine a->Engine a}|Io_trigger {next::Event a->Engine a->Maybe Int,io_trigger::Event a->Engine a->IO (Engine a)}|Mix_trigger {next::Event a->Engine a->Maybe Int,mix_trigger::Event a->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger {next::Event a->Engine a->Maybe Int,widget_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a),widget::Widget a}|Widget_io_trigger {next::Event a->Engine a->Maybe Int,widget_io_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget::Widget a}|Widget_mix_trigger {next::Event a->Engine a->Maybe Int,widget_mix_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget::Widget a}|Coroutine {index::Int,initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,variable_size::Int,user_variable_size::Int,coroutine_state::DIM.IntMap (Coroutine_state a),layout::DVS.Vector Layout,linear_coroutine::DV.Vector (Linear_coroutine a),iterative::Bool}|Store {store::Data}|Collector {initial_min_index::Int,min_index::Int,initial_max_index::Int,max_index::Int,submit::DIM.IntMap (DS.Seq Submit)}|Visual {visual::Visual a}|Group_visual {arrange::Arrange,collect_order::DS.Seq Int,group_visual::DIM.IntMap (Visual a)}|Vector_visual {arrange::Arrange,collect_order::DS.Seq Int,vector_visual::DV.Vector (Visual a),size::Int}
 
-data Widget_request a b c d e=Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DS.Seq (Insert (Widget_request a b c d e))}|Vector_request {index::Int,vector_widget_request::DS.Seq (Widget_request a b c d e)}|Trigger_request {next::Event b->Engine a b c d e->Maybe Int,trigger::Event b->Engine a b c d e->Engine a b c d e}|Io_trigger_request {next::Event b->Engine a b c d e->Maybe Int,io_trigger::Event b->Engine a b c d e->IO (Engine a b c d e)}|Mix_trigger_request {next::Event b->Engine a b c d e->Maybe Int,mix_trigger::Event b->(Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool}|Widget_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e),widget_request::Widget_request a b c d e}|Widget_io_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_io_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->IO (Engine a b c d e)),widget_request::Widget_request a b c d e}|Widget_mix_trigger_request {next::Event b->Engine a b c d e->Maybe Int,widget_mix_trigger::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e,Engine a b c d e->IO (Engine a b c d e)),order::Bool,widget_request::Widget_request a b c d e}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DS.Seq (Insert (Widget_request a b c d e)),raw_coroutine::Raw_coroutine a b c d e (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {visual_request::Visual_request}|Group_visual_request {arrange::Arrange,collect_order::DS.Seq Int,group_visual_request::DIM.IntMap Visual_request}|Vector_visual_request {arrange::Arrange,collect_order::DS.Seq Int,vector_visual_request::DV.Vector Visual_request}|Custom_widget_request {custom::e}
+data Widget_request a=Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DS.Seq (Insert (Widget_request a))}|Vector_request {index::Int,vector_widget_request::DS.Seq (Widget_request a)}|Trigger_request {next::Event a->Engine a->Maybe Int,trigger::Event a->Engine a->Engine a}|Io_trigger_request {next::Event a->Engine a->Maybe Int,io_trigger::Event a->Engine a->IO (Engine a)}|Mix_trigger_request {next::Event a->Engine a->Maybe Int,mix_trigger::Event a->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Event a->Engine a->Maybe Int,widget_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a),widget_request::Widget_request a}|Widget_io_trigger_request {next::Event a->Engine a->Maybe Int,widget_io_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)),widget_request::Widget_request a}|Widget_mix_trigger_request {next::Event a->Engine a->Maybe Int,widget_mix_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool,widget_request::Widget_request a}|Coroutine_request {index::Int,initial_min_index::Int,initial_max_index::Int,insert_widget_request::DS.Seq (Insert (Widget_request a)),raw_coroutine::Raw_coroutine a (),iterative::Bool}|Store_request {store::Data}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Visual_request {visual_request::Visual_request a}|Group_visual_request {arrange::Arrange,collect_order::DS.Seq Int,group_visual_request::DIM.IntMap (Visual_request a)}|Vector_visual_request {arrange::Arrange,collect_order::DS.Seq Int,vector_visual_request::DV.Vector (Visual_request a)}
 
-data Request a b c d e=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a b c d e}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a b c d e->Event b->Event b,widget_transform::Event b->Engine a b c d e->Widget a b c d e->Widget a b c d e}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,color::Color,window_flag::DHS.HashSet Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::String}|Remove_shader {shader_id::Int}|Create_pipeline {pipeline_id::Int,maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,blend_state::Blend_state}|Remove_pipeline {pipeline_id::Int}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int}|Create_atlas_font {atlas_font_id::Int,exponent_width::Int,exponent_height::Int,padding::DW.Word32,width::DW.Word32,height::DW.Word32,font_size::FCT.CFloat,pixel_range::FCT.CFloat,path::String,maybe_charset::Maybe (DHS.HashSet Char)}|Remove_atlas_font {atlas_font_id::Int}|Set_window_icon {window_id::Int,path::String}|Set_window_size {window_id::Int,window_width::FCT.CInt,window_height::FCT.CInt}|Set_window_position {window_id::Int,x::FCT.CInt,y::FCT.CInt}|Set_window_title {window_id::Int,title::DT.Text}|Set_window_fullscreen {window_id::Int,fullscreen::Bool}|Set_system_cursor {system_cursor::System_cursor}|Clean_atlas|Unlock {leaf_id::Int}|Update_font {path::String,maybe_charset::Maybe (DHS.HashSet Char)}|Update_atlas_font {atlas_font_id::Int,path::String,maybe_charset::Maybe (DHS.HashSet Char)}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int}|Io {io::Engine a b c d e->IO (Engine a b c d e)}|Custom_request {custom::c}
+data Visual a=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,album_id::Int,index::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,padding::FCT.CFloat,exponent_width::Int,exponent_height::Int,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,anchor::Anchor,article::DS.Seq (DS.Seq Row),charset::DHMS.HashMap String (DHS.HashSet Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,cursor::Cursor,line::DS.Seq Line,appended_typesetting::DS.Seq Typesetting,typesetting::DVS.Vector Typesetting,max_typesetting_size::Int}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}|Custom_visual {custom::Custom_visual a}
 
-data Coroutine_state a b c d e=Coroutine_state {widget::Widget a b c d e,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DS.Seq Int),main_index_group::DS.Seq Int,index_group_index::Int,program_counter_index::Int}
+data Visual_request a=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::String}|Large_picture_request {arrange::Arrange,path::String}|Atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Large_atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,padding::Int,exponent_width::Int,exponent_height::Int,path::String}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,calculate_width::DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,article::DS.Seq (DS.Seq Sentence),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,max_typesetting_size::Int}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Custom_visual_request {custom::Custom_visual_request a}
 
-data Coroutine a b c d e=Done|Emit {emit::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e)}|Wait {dynamic_int::Dynamic_int a b c d e}|Forever {coroutine::Coroutine a b c d e}|Then {coroutine_sequence::DS.Seq (Coroutine a b c d e)}|While {dynamic_bool::Dynamic_bool a b c d e,coroutine::Coroutine a b c d e}|Pause {dynamic_bool::Dynamic_bool a b c d e,coroutine::Coroutine a b c d e}|Skip {dynamic_bool::Dynamic_bool a b c d e,coroutine::Coroutine a b c d e}|Assign {dynamic_int::Dynamic_int a b c d e,int::Int}|Repeat {dynamic_int::Dynamic_int a b c d e,coroutine::Coroutine a b c d e}|Clone {int::Int,coroutine::Coroutine a b c d e}|If {dynamic_bool::Dynamic_bool a b c d e,first_coroutine::Coroutine a b c d e,second_coroutine::Coroutine a b c d e}|Dynamic_clone {dynamic_int::Dynamic_int a b c d e,int::Int,coroutine::Coroutine a b c d e}|Case {dynamic_int::Dynamic_int a b c d e,int::Int,coroutine_sequence::DS.Seq (Coroutine a b c d e)}|Fork {int::Int,coroutine::Coroutine a b c d e,coroutine_sequence::DS.Seq (Coroutine a b c d e)}|Race {dynamic_int::Dynamic_int a b c d e,first_int::Int,second_int::Int,coroutine_sequence::DS.Seq (Coroutine a b c d e)}
+data Request a=Reset_timer {interval::DW.Word64}|Stop_timer|Stop_timer_safe|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event a->Event a,widget_transform::Event a->Engine a->Widget a->Widget a}|Remove_node {node_id::Int}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,color::Color,window_flag::DHS.HashSet Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::String}|Remove_shader {shader_id::Int}|Create_pipeline {pipeline_id::Int,maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,blend_state::Blend_state}|Remove_pipeline {pipeline_id::Int}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int}|Create_atlas_font {atlas_font_id::Int,exponent_width::Int,exponent_height::Int,padding::DW.Word32,width::DW.Word32,height::DW.Word32,font_size::FCT.CFloat,pixel_range::FCT.CFloat,path::String,maybe_charset::Maybe (DHS.HashSet Char)}|Remove_atlas_font {atlas_font_id::Int}|Set_window_icon {window_id::Int,path::String}|Set_window_size {window_id::Int,window_width::FCT.CInt,window_height::FCT.CInt}|Set_window_position {window_id::Int,x::FCT.CInt,y::FCT.CInt}|Set_window_title {window_id::Int,title::DT.Text}|Set_window_fullscreen {window_id::Int,fullscreen::Bool}|Set_system_cursor {system_cursor::System_cursor}|Clean_atlas|Unlock {leaf_id::Int}|Update_font {path::String,maybe_charset::Maybe (DHS.HashSet Char)}|Update_atlas_font {atlas_font_id::Int,path::String,maybe_charset::Maybe (DHS.HashSet Char)}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int}|Io {io::Engine a->IO (Engine a)}
 
-data Linear_coroutine a b c d e=Linear_end|Linear_emit {emit::Event b->Engine a b c d e->Widget a b c d e->(Widget a b c d e,Engine a b c d e->Engine a b c d e)}|Linear_wait {int_index::Int}|Linear_countdown {int_index::Int}|Linear_wake {int_index::Int}|Linear_fork {code_index::Int}|Linear_yield {code_index::Int}|Linear_jump {code_index::Int}|Linear_kill {group_int_index::DIM.IntMap Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_kill_clone {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a b c d e}|Linear_true_jump {code_index::Int,dynamic_bool::Dynamic_bool a b c d e}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a b c d e}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_wake_group {int_index::Int,dynamic_int::Dynamic_int a b c d e}|Linear_assign {user_int_index::Int,clone_number::Int,dynamic_int::Dynamic_int a b c d e}|Linear_create_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_create_active_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a b c d e,int::Int}
+data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DS.Seq Int),main_index_group::DS.Seq Int,index_group_index::Int,program_counter_index::Int}
 
-data Event a=Empty|Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}|Custom_event {custom::a}
+data Coroutine a=Done|Emit {emit::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Wait {dynamic_int::Dynamic_int a}|Forever {coroutine::Coroutine a}|Then {coroutine_sequence::DS.Seq (Coroutine a)}|While {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Pause {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Skip {dynamic_bool::Dynamic_bool a,coroutine::Coroutine a}|Assign {dynamic_int::Dynamic_int a,int::Int}|Repeat {dynamic_int::Dynamic_int a,coroutine::Coroutine a}|Clone {int::Int,coroutine::Coroutine a}|If {dynamic_bool::Dynamic_bool a,first_coroutine::Coroutine a,second_coroutine::Coroutine a}|Dynamic_clone {dynamic_int::Dynamic_int a,int::Int,coroutine::Coroutine a}|Case {dynamic_int::Dynamic_int a,int::Int,coroutine_sequence::DS.Seq (Coroutine a)}|Fork {int::Int,coroutine::Coroutine a,coroutine_sequence::DS.Seq (Coroutine a)}|Race {dynamic_int::Dynamic_int a,first_int::Int,second_int::Int,coroutine_sequence::DS.Seq (Coroutine a)}
+
+data Linear_coroutine a=Linear_end|Linear_emit {emit::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Linear_wait {int_index::Int}|Linear_countdown {int_index::Int}|Linear_wake {int_index::Int}|Linear_fork {code_index::Int}|Linear_yield {code_index::Int}|Linear_jump {code_index::Int}|Linear_kill {group_int_index::DIM.IntMap Int}|Linear_one_less_jump {int_index::Int,code_index::Int}|Linear_one_more_jump {int_index::Int,code_index::Int}|Linear_kill_clone {int_index::Int,clone_number::Int}|Linear_dynamic_int {int_index::Int,dynamic_int::Dynamic_int a}|Linear_true_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_false_jump {code_index::Int,dynamic_bool::Dynamic_bool a}|Linear_less_jump {int_index::Int,code_index::Int,int::Int}|Linear_clone {int_index::Int,clone_number::Int,int::Int}|Linear_wake_group {int_index::Int,dynamic_int::Dynamic_int a}|Linear_assign {user_int_index::Int,clone_number::Int,dynamic_int::Dynamic_int a}|Linear_create_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_create_active_group {first_int_index::Int,second_int_index::Int,group_code_index::DIM.IntMap Int,int::Int}|Linear_dynamic_clone {int_index::Int,code_index::Int,clone_number::Int,dynamic_int::Dynamic_int a,int::Int}
+
+data Event a=Empty|Quit|Time {tick::Int,time::DW.Word64,interval::DW.Word64}|At {window_id::Int,action::Action}|Custom_event {custom::Custom_event a}
 
 data Selector a=None_selector|Combine_selector {combine_selector::DS.Seq (Selector a)}|Self_selector {value::a}|All_selector {maybe_value::Maybe a,value::a}|Trigger_selector {maybe_value::Maybe a,value::a,bounded::Bool}|Default_selector {maybe_value::Maybe a,value::a,bounded::Bool}|Hosted_selector {maybe_value::Maybe a,selector::Selector a,bounded::Bool,strict::Bool}|Any_selector {maybe_value::Maybe a,selector::Selector a,strict::Bool}|Group_selector {maybe_value::Maybe a,group_selector::DIM.IntMap (Selector a),bounded::Bool,strict::Bool}|Vector_selector {maybe_value::Maybe a,vector_selector::DIM.IntMap (Selector a),bounded::Bool,strict::Bool}|Widget_trigger_selector {maybe_value::Maybe a,selector::Selector a,strict::Bool}|Widget_io_trigger_selector {maybe_value::Maybe a,selector::Selector a,strict::Bool}|Widget_mix_trigger_selector {maybe_value::Maybe a,selector::Selector a,strict::Bool}|Coroutine_selector {maybe_value::Maybe a,coroutine_selector::DIM.IntMap (Selector a),bounded::Bool,strict::Bool}
 
@@ -245,11 +252,9 @@ data Sentence=Sentence {sentence_core::DS.Seq Phrase,path::String}
 
 data Phrase=Phrase {phrase_core::DT.Text,font_size::FCT.CFloat,color::Color}
 
-data Visual=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::String,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,album_id::Int,index::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,padding::FCT.CFloat,exponent_width::Int,exponent_height::Int,width_number::Int,height_number::Int,album_number::Int,album_id::Int,count::Int,index::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,article::DS.Seq (DS.Seq Row),charset::DHMS.HashMap String (DHS.HashSet Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),cursor::Cursor,line::DS.Seq Line,appended_typesetting::DS.Seq Typesetting,typesetting::DVS.Vector Typesetting,max_typesetting_size::Int}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}
-
-data Visual_request=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::String}|Large_picture_request {arrange::Arrange,path::String}|Atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Large_atlas_request {arrange::Arrange,clip_request::DS.Seq Clip_request,path::String}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,padding::Int,exponent_width::Int,exponent_height::Int,path::String}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,article::DS.Seq (DS.Seq Sentence),calculate_width::DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,font_size::FCT.CFloat,atlas_font_id::Int,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),max_typesetting_size::Int}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}
-
 data Clip_request=Clip_request {x::FCT.CFloat,y::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
+
+data Anchor=Anchor {ratio::FCT.CFloat,offset::FCT.CFloat}
 
 data Color=Color {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat}
 
@@ -537,18 +542,16 @@ instance Convert FCT.CFloat Data where
 c_float_data_convert::ET.Has_call_stack=>FCT.CFloat->Data
 c_float_data_convert c_float=Data_c_float {c_float=c_float}
 
-class Custom_request a where
-    custom_request::ET.Has_call_stack=>a->Engine b c a d e->IO (Engine b c a d e)
-
-class Custom_widget a where
-    custom_widget_run::ET.Has_call_stack=>Event b->Engine c b d a e->a->(a,Engine c b d a e->Engine c b d a e,Event b->Engine c b d a e->Maybe Int)
-    custom_widget_collect::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->a->DS.Seq Submit
-    custom_widget_remove::ET.Has_call_stack=>a->Engine b c d a e->IO (Engine b c d a e)
-    custom_widget_lock::ET.Has_call_stack=>a->a
-    custom_widget_unlock::ET.Has_call_stack=>a->Engine b c d a e->IO (Engine b c d a e,a)
-
-class Custom_widget_request a where
-    custom_widget_request::ET.Has_call_stack=>a->Engine b c d e a->IO (Engine b c d e a,e)
+class Custom a where
+    type Custom_state a=b|b->a
+    type Custom_event a=b|b->a
+    type Custom_visual a=b|b->a
+    type Custom_visual_request a=b|b->a
+    custom_visual_collect::ET.Has_call_stack=>(Arrange->Arrange)->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Custom_visual a->Submit
+    custom_visual_remove::ET.Has_call_stack=>Custom_visual a->Engine a->IO (Engine a)
+    custom_visual_unlock::ET.Has_call_stack=>Custom_visual a->Engine a->IO (Engine a,Custom_visual a)
+    custom_visual_lock::ET.Has_call_stack=>Custom_visual a->Custom_visual a
+    custom_visual_request::ET.Has_call_stack=>Custom_visual_request a->Engine a->IO (Engine a,Custom_visual a)
 
 {-# INLINE dynamic_bool_equal #-}
 {-# INLINE dynamic_bool_and #-}
@@ -583,9 +586,9 @@ class Custom_widget_request a where
 {-# INLINE raw_coroutine_apply_a #-}
 {-# INLINE raw_coroutine_bind #-}
 {-# INLINE raw_coroutine_bind_a #-}
-{-# INLINE event_result_fmap #-}
-{-# INLINE event_result_pure #-}
-{-# INLINE event_result_apply #-}
+{-# INLINE trigger_result_fmap #-}
+{-# INLINE trigger_result_pure #-}
+{-# INLINE trigger_result_apply #-}
 {-# INLINE key_hashWithSalt #-}
 {-# INLINE system_cursor_hashWithSalt #-}
 {-# INLINE window_flag_hashWithSalt #-}

@@ -66,8 +66,8 @@ triple_reverse (a,b,c)=(c,b,a)
 
 vector_io_map::ET.Has_call_stack=>Int->(Int->a->b->IO (b,c))->DV.Vector a->DVM.IOVector c->b->IO b
 vector_io_map index action first_vector second_vector value=if index<0 then return value else do
-    (new_value,new_new_value)<-action index (first_vector DV.! index) value
-    DVM.unsafeWrite second_vector index new_new_value
+    (new_value,another_value)<-action index (first_vector DV.! index) value
+    DVM.unsafeWrite second_vector index another_value
     vector_io_map (index-1) action first_vector second_vector new_value
 
 move_clip::ET.Has_call_stack=>Point->Clip->Clip
@@ -120,15 +120,6 @@ nanosecond=1000000000
 millisecond::ET.Has_call_stack=>Num a=>a
 millisecond=1000000
 
-{-# INLINE sdl_error #-}
-{-# INLINE sdl_catch_false #-}
-{-# INLINE sdl_catch_zero #-}
-{-# INLINE sdl_catch_null #-}
-{-# INLINE sdl_return_catch_null #-}
-{-# INLINE catch_null #-}
-{-# INLINE with_string #-}
-{-# INLINE seq_poke_array #-}
-{-# INLINE seq_poke_array_a #-}
 {-# INLINE triple_reverse #-}
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}

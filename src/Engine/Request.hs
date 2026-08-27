@@ -37,10 +37,10 @@ import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 
-create_request::ET.Has_call_stack=>Request a b c d e->Engine a b c d e->Engine a b c d e
+create_request::ET.Has_call_stack=>Request a->Engine a->Engine a
 create_request request engine=engine {request=engine.request DS.|> request}
 
-do_request::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Request a b c d e->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_request::ET.Has_call_stack=>Custom a=>Request a->Engine a->IO (Engine a,Bool)
 do_request request engine=case request of
     Reset_timer {interval}->if 0<interval
         then case engine.timer of
@@ -209,16 +209,13 @@ do_request request engine=case request of
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
-    Custom_request {custom}->do
-        new_engine<-custom_request custom engine
-        return (new_engine,False)
 
 from_system_cursor::ET.Has_call_stack=>System_cursor->DW.Word32
 from_system_cursor system_cursor=case system_cursor of
     System_cursor_default->SDLI.sdl_system_cursor_default
     System_cursor_pointer->SDLI.sdl_system_cursor_pointer
 
-for_unlock::ET.Has_call_stack=>Custom_widget d=>Widget a b c d e->CMTS.StateT (Engine a b c d e) IO (Widget a b c d e)
+for_unlock::ET.Has_call_stack=>Custom a=>Widget a->CMTS.StateT (Engine a) IO (Widget a)
 for_unlock widget=case widget of
     Visual {visual}->do
         engine<-CMTS.get
@@ -237,22 +234,20 @@ for_unlock widget=case widget of
         new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
         CMTS.put new_engine
         return (Vector_visual {arrange=arrange,collect_order=collect_order,vector_visual=new_new_vector_visual,size=size})
-    Custom_widget {custom}->do
-        engine<-CMTS.get
-        (new_engine,new_custom)<-CMIOC.liftIO (custom_widget_unlock custom engine)
-        CMTS.put new_engine
-        return (Custom_widget {custom=new_custom})
     _->return widget
 
-for_unlock_visual::ET.Has_call_stack=>Visual->Engine a b c d e->IO (Engine a b c d e,Visual)
+for_unlock_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a,Visual a)
 for_unlock_visual visual engine=case visual of
     Picture {arrange,path,locked}->if locked then create_picture arrange path engine else return (engine,visual)
     Atlas {arrange,clip_request,path,index,locked}->if locked then create_atlas arrange clip_request path index engine else return (engine,visual)
-    Text {arrange,half_width,half_height,current_y,min_y,max_y,article,charset,locked}->if locked
+    Text {arrange,half_width,half_height,current_y,min_y,max_y,anchor,article,charset,locked}->if locked
         then do
             new_engine<-from_charset charset engine
-            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
+            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
         else return (engine,visual)
+    Custom_visual {custom}->do
+        (new_engine,new_custom)<-custom_visual_unlock custom engine
+        return (new_engine,Custom_visual {custom=new_custom})
     _->return (engine,visual)
 
 update_article::ET.Has_call_stack=>DIM.IntMap Font->Row->Row
@@ -264,7 +259,7 @@ update_article_a font character=case character of
     Character {unicode,font_id,font_size,left,down,right,up,color}->case int_map_lookup unicode (int_map_lookup font_id font).glyph of
         Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}
 
-do_shader_canvas::ET.Has_call_stack=>Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a b c d e->IO (Engine a b c d e,Bool)
+do_shader_canvas::ET.Has_call_stack=>Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a->IO (Engine a,Bool)
 do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine=do
     command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
     sdl_catch_null command_buffer

@@ -25,27 +25,27 @@ import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 import qualified Foreign.StablePtr as FSP
 
-loop_engine_off::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_off::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_off event engine=do
     (new_engine,switch)<-run_request False engine
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
     loop_event switch event_type event new_engine
 
-loop_engine_off_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_off_a::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_off_a event engine=do
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
     loop_event False event_type event engine
 
-loop_engine_on::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_on::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_on event engine=do
     (new_engine,switch)<-run_request False engine
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
     if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
 
-loop_engine_on_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>FP.Ptr ()->Engine a b c d e->IO ()
+loop_engine_on_a::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_on_a event engine=do
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
@@ -56,7 +56,14 @@ get_interval timer=case timer of
     On {interval}->interval
     _->EF.empty_error
 
-loop_event::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->DW.Word32->FP.Ptr ()->Engine a b c d e->IO ()
+to_mouse_button::ET.Has_call_stack=>DW.Word8->Mouse_button
+to_mouse_button button=case button of
+    SDLI.SDL_BUTTON_LEFT->Mouse_button_left
+    SDLI.SDL_BUTTON_MIDDLE->Mouse_button_middle
+    SDLI.SDL_BUTTON_RIGHT->Mouse_button_right
+    _->Mouse_button_unknown
+
+loop_event::ET.Has_call_stack=>Custom a=>Bool->DW.Word32->FP.Ptr ()->Engine a->IO ()
 loop_event on event_type event engine=case event_type of
     SDLI.SDL_EVENT_QUIT->return ()
     SDLI.SDL_EVENT_WINDOW_CLOSE_REQUESTED->do
@@ -134,51 +141,30 @@ loop_event on event_type event engine=case event_type of
             loop_event_b on (Custom_event {custom=custom}) event engine
         else loop_event_a on event engine
 
-to_mouse_button::ET.Has_call_stack=>DW.Word8->Mouse_button
-to_mouse_button button=case button of
-    SDLI.SDL_BUTTON_LEFT->Mouse_button_left
-    SDLI.SDL_BUTTON_MIDDLE->Mouse_button_middle
-    SDLI.SDL_BUTTON_RIGHT->Mouse_button_right
-    _->Mouse_button_unknown
+loop_event_a::ET.Has_call_stack=>Custom a=>Bool->FP.Ptr ()->Engine a->IO ()
+loop_event_a on ptr engine=if on then loop_engine_on_a ptr engine else loop_engine_off_a ptr engine
 
-loop_event_a::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->FP.Ptr ()->Engine a b c d e->IO ()
-loop_event_a on sdl_event engine=if on then loop_engine_on_a sdl_event engine else loop_engine_off_a sdl_event engine
+loop_event_b::ET.Has_call_stack=>Custom a=>Bool->Event a->FP.Ptr ()->Engine a->IO ()
+loop_event_b on event ptr engine=let new_engine=maybe engine (\leaf_id->run_event leaf_id event engine) (engine.main_id event engine) in if on then loop_engine_on ptr new_engine else loop_engine_off ptr new_engine
 
-loop_event_b::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->Event a->FP.Ptr ()->Engine b a c d e->IO ()
-loop_event_b on event sdl_event engine=let new_engine=run_event event engine in if on then loop_engine_on sdl_event new_engine else loop_engine_off sdl_event new_engine
+run_event::ET.Has_call_stack=>Int->Event a->Engine a->Engine a
+run_event leaf_id event engine=let (next,update,leaf)=int_map_functor_update leaf_id (\projection->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event (lookup_projection_ancestry_id projection) in run_event_a new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))) engine.leaf in let new_engine=update (engine {leaf=leaf}) in maybe new_engine (\this_leaf_id->run_event this_leaf_id event new_engine) (next new_engine)
 
-run_event::ET.Has_call_stack=>Custom_widget d=>Event a->Engine b a c d e->Engine b a c d e
-run_event event engine=case engine.main_id event engine of
-    Nothing->engine
-    Just leaf_id->run_event_a leaf_id event engine
+run_event_a::ET.Has_call_stack=>Event a->(Widget a->Projection a)->Trigger_result a (Widget a)->(Engine a->Maybe Int,Engine a->Engine a,Projection a)
+run_event_a event transform trigger_result=case trigger_result of
+    Trigger_result {next,update,value}->(next event,update,transform value)
 
-run_event_a::ET.Has_call_stack=>Custom_widget d=>Int->Event a->Engine b a c d e->Engine b a c d e
-run_event_a leaf_id event engine=case int_map_functor_update leaf_id (run_event_b event engine) engine.leaf of
-    Event_result {first_value,update,second_value}->let new_engine=update (engine {leaf=second_value}) in case first_value new_engine of
-        Nothing->new_engine
-        Just new_leaf_id->run_event_a new_leaf_id event new_engine
-
-run_event_b::ET.Has_call_stack=>Custom_widget d=>Event a->Engine b a c d e->Projection b a c d e->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
-run_event_b event engine projection=case projection of
-    Without {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in run_event_c new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))
-    With {ancestry_id}->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event ancestry_id in run_event_c new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))
-
-run_event_c::ET.Has_call_stack=>Event a->(Widget b a c d e->Projection b a c d e)->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)->Event_result b a c d e (Engine b a c d e->Maybe Int) (Projection b a c d e)
-run_event_c event transform event_result=case event_result of
-    Event_result {first_value,update,second_value}->Event_result {first_value=first_value event,update=update,second_value=transform second_value}
-
-run_widget::ET.Has_call_stack=>Custom_widget d=>Event a->Engine b a c d e->Widget b a c d e->Event_result b a c d e (Event a->Engine b a c d e->Maybe Int) (Widget b a c d e)
+run_widget::ET.Has_call_stack=>Event a->Engine a->Widget a->Trigger_result a (Widget a)
 run_widget event engine this_widget=case this_widget of
-    Trigger {next,trigger}->Event_result {first_value=next,update=trigger event,second_value=this_widget}
-    Io_trigger {next,io_trigger}->Event_result {first_value=next,update=create_request (Io {io=io_trigger event}),second_value=this_widget}
-    Mix_trigger {next,mix_trigger,order}->Event_result {first_value=next,update=let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),second_value=this_widget}
-    Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in Event_result {first_value=next,update=update,second_value=Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget}}
-    Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Event_result {first_value=next,update=create_request (Io {io=update}),second_value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Event_result {first_value=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),second_value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
-    Custom_widget {custom}->let (new_custom,update,next)=custom_widget_run event engine custom in Event_result {first_value=next,update=update,second_value=Custom_widget {custom=new_custom}}
+    Trigger {next,trigger}->Trigger_result {next=next,update=trigger event,value=this_widget}
+    Io_trigger {next,io_trigger}->Trigger_result {next=next,update=create_request (Io {io=io_trigger event}),value=this_widget}
+    Mix_trigger {next,mix_trigger,order}->Trigger_result {next=next,update=let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=this_widget}
+    Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in Trigger_result {next=next,update=update,value=Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget}}
+    Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Trigger_result {next=next,update=create_request (Io {io=update}),value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
+    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
     _->EF.empty_error
 
-run_request::ET.Has_call_stack=>Custom_request c=>Custom_widget d=>Custom_widget_request e=>Bool->Engine a b c d e->IO (Engine a b c d e,Bool)
+run_request::ET.Has_call_stack=>Custom a=>Bool->Engine a->IO (Engine a,Bool)
 run_request switch engine=case engine.request of
     DS.Empty->return (engine,switch)
     request DS.:<| other_request->do
@@ -221,29 +207,25 @@ to_key key=case key of
     SDLI.SDLK_PAGEUP->Key_page_up
     _->Key_unknown
 
-push_event::ET.Has_call_stack=>Engine a b c d e->b->IO ()
+push_event::ET.Has_call_stack=>Engine a->Custom_event a->IO ()
 push_event engine custom=do
-    ptr<-FSP.newStablePtr custom
-    FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \sdl_event->do
-        FMU.fillBytes sdl_event 0 SDLI.sdl_event_size
-        FS.poke (FP.castPtr sdl_event) (engine.event_number+1)
-        let new_sdl_event=FP.castPtr sdl_event
-        SDLI.sdl_user_event_data1_poke new_sdl_event (FSP.castStablePtrToPtr ptr)
-        sdl_catch_false (SDLF.sdl_push_event new_sdl_event)
+    ptr_custom<-FSP.newStablePtr custom
+    FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \ptr->do
+        FMU.fillBytes ptr 0 SDLI.sdl_event_size
+        FS.poke (FP.castPtr ptr) (engine.event_number+1)
+        let new_ptr=FP.castPtr ptr
+        SDLI.sdl_user_event_data1_poke new_ptr (FSP.castStablePtrToPtr ptr_custom)
+        sdl_catch_false (SDLF.sdl_push_event new_ptr)
 
 pop_event::ET.Has_call_stack=>FP.Ptr ()->IO a
-pop_event sdl_event=do
-    ptr<-SDLI.sdl_user_event_data1_peek sdl_event
-    let new_ptr=FSP.castPtrToStablePtr ptr
-    custom<-FSP.deRefStablePtr new_ptr
-    FSP.freeStablePtr new_ptr
+pop_event ptr=do
+    new_ptr<-SDLI.sdl_user_event_data1_peek ptr
+    let ptr_custom=FSP.castPtrToStablePtr new_ptr
+    custom<-FSP.deRefStablePtr ptr_custom
+    FSP.freeStablePtr ptr_custom
     return custom
 
 {-# INLINE get_interval #-}
 {-# INLINE to_mouse_button #-}
-{-# INLINE run_event #-}
-{-# INLINE run_event_b #-}
-{-# INLINE run_event_c #-}
-{-# INLINE run_widget #-}
-{-# INLINE push_event #-}
-{-# INLINE pop_event #-}
+{-# INLINE to_key #-}
+{-# INLINE run_event_a #-}
