@@ -19,6 +19,8 @@ library
     if flag(has-call-stack)
         cpp-options: -DHAS_CALL_STACK
     exposed-modules:
+        Engine.Editor.Collector
+        Engine.Editor.Underlying
         Engine.Animation
         Engine.Atlas
         Engine.Collector
