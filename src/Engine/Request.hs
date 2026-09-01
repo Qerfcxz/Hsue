@@ -7,7 +7,6 @@ module Engine.Request where
 import Engine.Atlas
 import Engine.Collector
 import Engine.Container
-import Engine.Operation
 import Engine.Projection
 import Engine.Render
 import Engine.Selector
@@ -30,8 +29,6 @@ import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
-import qualified Data.Vector as DV
-import qualified Data.Vector.Mutable as DVM
 import qualified Data.Word as DW
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
@@ -176,7 +173,7 @@ do_request request engine=case request of
         return (engine,False)
     Clean_atlas->let initial_album=int_map_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas (DB.shiftL 1 engine.exponent_width) (DB.shiftL 1 engine.exponent_height)) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update lock_widget)) engine.leaf,font=DIM.empty,u=scaleFloat (-engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-engine.exponent_height) (fromIntegral (down+up)/2)},False)
+        return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,u=scaleFloat (-engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-engine.exponent_height) (fromIntegral (down+up)/2)},False)
     Unlock {leaf_id}->do
         (leaf,new_engine)<-CMTS.runStateT (int_map_functor_update leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
@@ -216,30 +213,19 @@ from_system_cursor system_cursor=case system_cursor of
     System_cursor_pointer->SDLI.sdl_system_cursor_pointer
 
 for_unlock::ET.Has_call_stack=>Custom a=>Widget a->CMTS.StateT (Engine a) IO (Widget a)
-for_unlock widget=case widget of
-    Visual {visual}->do
-        engine<-CMTS.get
-        (new_engine,new_visual)<-CMIOC.liftIO (for_unlock_visual visual engine)
-        CMTS.put new_engine
-        return (Visual {visual=new_visual})
-    Group_visual {arrange,collect_order,group_visual}->do
-        engine<-CMTS.get
-        (new_engine,new_group_visual)<-CMIOC.liftIO (int_map_monad_action (\_ visual this_engine->for_unlock_visual visual this_engine) group_visual engine)
-        CMTS.put new_engine
-        return (Group_visual {arrange=arrange,collect_order=collect_order,group_visual=new_group_visual})
-    Vector_visual {arrange,collect_order,vector_visual,size}->do
-        engine<-CMTS.get
-        new_vector_visual<-DVM.new size
-        new_engine<-CMIOC.liftIO (vector_io_map (size-1) (\_ visual this_engine->for_unlock_visual visual this_engine) vector_visual new_vector_visual engine)
-        new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
-        CMTS.put new_engine
-        return (Vector_visual {arrange=arrange,collect_order=collect_order,vector_visual=new_new_vector_visual,size=size})
-    _->return widget
+for_unlock=any_visual_selector_applicative_update False (const for_unlock_a)
+
+for_unlock_a::ET.Has_call_stack=>Custom a=>Visual a->CMTS.StateT (Engine a) IO (Visual a)
+for_unlock_a visual=do
+    engine<-CMTS.get
+    (new_engine,new_visual)<-CMIOC.liftIO (for_unlock_visual visual engine)
+    CMTS.put new_engine
+    return new_visual
 
 for_unlock_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a,Visual a)
 for_unlock_visual visual engine=case visual of
     Picture {arrange,path,locked}->if locked then create_picture arrange path engine else return (engine,visual)
-    Atlas {arrange,clip_request,path,index,locked}->if locked then create_atlas arrange clip_request path index engine else return (engine,visual)
+    Atlas {arrange,path,clip_request,index,locked}->if locked then create_atlas arrange path clip_request index engine else return (engine,visual)
     Text {arrange,half_width,half_height,current_y,min_y,max_y,anchor,article,charset,locked}->if locked
         then do
             new_engine<-from_charset charset engine
@@ -280,5 +266,6 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
 {-# INLINE create_request #-}
 {-# INLINE from_system_cursor #-}
 {-# INLINE for_unlock #-}
+{-# INLINE for_unlock_a #-}
 {-# INLINE update_article #-}
 {-# INLINE update_article_a #-}

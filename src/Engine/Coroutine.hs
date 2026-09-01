@@ -27,7 +27,7 @@ run_coroutine leaf_id selector index event engine=let (update,leaf)=int_map_func
 
 run_coroutine_a::ET.Has_call_stack=>DS.Seq Int->Event a->Engine a->Widget a->(Widget a,DS.Seq (Engine a->Engine a))
 run_coroutine_a this_index event engine widget=case widget of
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (update,new_coroutine_state)=DF.foldl' (\(this_update,this_coroutine_state) single_index->int_map_functor_update single_index (\single_coroutine_state->run_coroutine_b event engine iterative linear_coroutine layout single_coroutine_state this_update) this_coroutine_state) (DS.empty,coroutine_state) this_index in (Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update)
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (update,new_coroutine_state)=DF.foldl' (\(this_update,this_coroutine_state) single_index->int_map_functor_update single_index (\single_coroutine_state->run_coroutine_b event engine iterative linear_coroutine layout single_coroutine_state this_update) this_coroutine_state) (DS.empty,coroutine_state) this_index in (Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update)
     _->EF.empty_error
 
 run_coroutine_b::ET.Has_call_stack=>Event a->Engine a->Bool->DV.Vector (Linear_coroutine a)->DVS.Vector Layout->Coroutine_state a->DS.Seq (Engine a->Engine a)->(DS.Seq (Engine a->Engine a),Coroutine_state a)
@@ -336,8 +336,12 @@ run_create_group group_code_index int index clone_index program_counter_index in
 run_create_active_group::ET.Has_call_stack=>DIM.IntMap Int->Int->Int->Int->Int->Int->DS.Seq Int->DIM.IntMap (DS.Seq Int)->DIM.IntMap Program_counter->(DIM.IntMap Program_counter,DIM.IntMap (DS.Seq Int),Int,DS.Seq Int)
 run_create_active_group group_code_index int index clone_index program_counter_index index_group_index newborn_main_index_group index_group program_counter=if int<=index then (program_counter,index_group,program_counter_index,newborn_main_index_group) else run_create_active_group group_code_index int (index+1) clone_index (program_counter_index+1) index_group_index (newborn_main_index_group DS.|> program_counter_index) (int_map_insert (index_group_index+index) (DS.singleton program_counter_index) index_group) (int_map_insert program_counter_index (Program_counter {code_index=int_map_lookup index group_code_index,clone_index=clone_index}) program_counter)
 
+{-# INLINE run_coroutine #-}
+{-# INLINE run_coroutine_a #-}
+{-# INLINE run_coroutine_b #-}
 {-# INLINE for_iterative #-}
 {-# INLINE init_coroutine_state #-}
+{-# INLINE to_coroutine #-}
 {-# INLINE lift_coroutine #-}
 {-# INLINE lift_coroutine_a #-}
 {-# INLINE do_empty #-}
@@ -363,5 +367,11 @@ run_create_active_group group_code_index int index clone_index program_counter_i
 {-# INLINE raw_coroutine_unary_operator #-}
 {-# INLINE raw_coroutine_binary_operator #-}
 {-# INLINE clone_coroutine #-}
+{-# INLINE clone_coroutine_a #-}
+{-# INLINE case_coroutine_a #-}
 {-# INLINE user_variable_getter #-}
 {-# INLINE run_kill_group #-}
+{-# INLINE run_kill_group_a #-}
+{-# INLINE run_clone #-}
+{-# INLINE run_create_group #-}
+{-# INLINE run_create_active_group #-}

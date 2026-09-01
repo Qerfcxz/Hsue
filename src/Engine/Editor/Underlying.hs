@@ -27,3 +27,5 @@ get_editor_index_upper this_y appended_typesetting typesetting max_typesetting_s
     else max_index
 
 {-# INLINE get_editor_typesetting #-}
+{-# INLINE get_editor_index_lower #-}
+{-# INLINE get_editor_index_upper #-}

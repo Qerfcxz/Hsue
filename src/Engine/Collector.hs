@@ -16,7 +16,6 @@ import qualified Data.Functor.Compose as DFC
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Tuple as DT
-import qualified Data.Vector as DV
 import qualified Data.Vector.Storable as DVS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
@@ -36,18 +35,18 @@ collect_canvas arrange maybe_border canvas_id leaf_id selector collect_strategy 
             Point {x,y}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (Submit {submit_mode=Submit_canvas {canvas_id=canvas_id},vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) 0 0 1 1,index=quick_create_rectangle_index,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6})) collect_strategy)) selector)) engine.leaf}
     _->EF.empty_error
 
-maybe_update_collect::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Insert_strategy->Engine a->Engine a
-maybe_update_collect update view maybe_border projection_path leaf_id selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
+maybe_update_collect::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
+maybe_update_collect update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect visual_selector engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
     Nothing->engine
     Just (submit,new_engine)->new_engine {leaf=int_map_update leaf_id (update_projection_object (collect_a submit collect_strategy)) new_engine.leaf}
 
-maybe_collect_update::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Insert_strategy->Engine a->Engine a
-maybe_collect_update update view maybe_border projection_path leaf_id selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update leaf_id (update_projection_object (collect_a (to_collect engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
+maybe_collect_update::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
+maybe_collect_update update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update leaf_id (update_projection_object (collect_a (to_collect visual_selector engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
-collect::ET.Has_call_stack=>Custom a=>(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Insert_strategy->Engine a->Engine a
-collect view maybe_border projection_path leaf_id selector collect_strategy engine=engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (to_collect engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
+collect::ET.Has_call_stack=>Custom a=>(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
+collect view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (to_collect visual_selector engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
 
 collect_a::ET.Has_call_stack=>DS.Seq Submit->Insert_strategy->Widget a->Widget a
 collect_a this_submit collect_strategy widget=case widget of
@@ -57,53 +56,49 @@ collect_a this_submit collect_strategy widget=case widget of
         Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=int_map_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit}
     _->EF.empty_error
 
-to_collect::ET.Has_call_stack=>Custom a=>FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget a->DS.Seq Submit
-to_collect u v maybe_border widget=case widget of
-    Visual {visual}->DS.singleton (to_collect_visual id u v maybe_border visual)
-    Group_visual {arrange,collect_order,group_visual}->fmap (\index->to_collect_visual (combine_arrange arrange) u v maybe_border (int_map_lookup index group_visual)) collect_order
-    Vector_visual {arrange,collect_order,vector_visual}->fmap (\index->to_collect_visual (combine_arrange arrange) u v maybe_border (vector_visual DV.! index)) collect_order
-    _->EF.empty_error
+to_collect::ET.Has_call_stack=>Custom b=>Visual_selector a->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget b->DS.Seq Submit
+to_collect visual_selector u v maybe_border widget=visual_selector_action (const (\arrange visual submit->submit DS.|> to_collect_visual arrange u v maybe_border visual)) visual_selector widget DS.empty
 
-to_collect_visual::ET.Has_call_stack=>Custom a=>(Arrange->Arrange)->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Visual a->Submit
-to_collect_visual arrange_transform u v maybe_border visual=case visual of
-    Rectangle {arrange,half_width,half_height}->case arrange_transform arrange of
+to_collect_visual::ET.Has_call_stack=>Custom a=>Arrange->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Visual a->Submit
+to_collect_visual this_arrange u v maybe_border visual=case visual of
+    Rectangle {arrange,half_width,half_height}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->Submit {submit_mode=Submit_default,vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) u v u v,index=quick_create_rectangle_index,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
-    Triangle {arrange,first_point,second_point,third_point}->case arrange_transform arrange of
+    Triangle {arrange,first_point,second_point,third_point}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->Submit {submit_mode=Submit_default,vertex=DS.singleton (quick_create_vertex color (x+first_point.x) (y+first_point.y) u v) DS.|> quick_create_vertex color (x+second_point.x) (y+second_point.y) u v DS.|> quick_create_vertex color (x+third_point.x) (y+third_point.y) u v,index=DS.singleton 0 DS.|> 1 DS.|> 2,parameter=to_Parameter x y matrix maybe_border,vertex_size=3,index_size=3}
-    Convex_polygon {arrange,point_set}->case arrange_transform arrange of
+    Convex_polygon {arrange,point_set}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->let number=DS.length point_set in if number<3 then EF.empty_error else let new_number=3*(number-2) in Submit {submit_mode=Submit_default,vertex=fmap (\this_point->quick_create_vertex color (x+this_point.x) (y+this_point.y) u v) point_set,index=DS.fromFunction new_number collect_convex_polygon,parameter=to_Parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=fromIntegral new_number}
-    Regular_polygon {arrange,number,radius,angle}->case arrange_transform arrange of
+    Regular_polygon {arrange,number,radius,angle}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->if number<3 then EF.empty_error else let new_number=3*(number-2) in let new_angle=2*pi/fromIntegral number in Submit {submit_mode=Submit_default,vertex=DS.fromFunction number (\index->let direction=angle+fromIntegral index*new_angle in quick_create_vertex color (x+radius*cos direction) (y+radius*sin direction) u v),index=DS.fromFunction new_number collect_convex_polygon,parameter=to_Parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=fromIntegral new_number}
-    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,locked}->if locked then EF.empty_error else case arrange_transform arrange of
+    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,locked}->if locked then EF.empty_error else case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->Submit {submit_mode=Submit_default,vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) min_u min_v max_u max_v,index=quick_create_rectangle_index,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
-    Large_picture {arrange,half_width,half_height,album_id}->case arrange_transform arrange of
+    Large_picture {arrange,half_width,half_height,album_id}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->Submit {submit_mode=Submit_album {album_id=album_id},vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) 0 0 1 1,index=quick_create_rectangle_index,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
-    Atlas {arrange,clip,index,locked}->if locked then EF.empty_error else case arrange_transform arrange of
+    Atlas {arrange,clip,index,locked}->if locked then EF.empty_error else case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case move_clip point (clip DVS.! index) of
             Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->Submit {submit_mode=Submit_default,vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) min_u min_v max_u max_v,index=quick_create_rectangle_index,parameter=to_Parameter point.x point.y matrix maybe_border,vertex_size=4,index_size=6}
-    Large_atlas {arrange,clip,album_id,index}->case arrange_transform arrange of
+    Large_atlas {arrange,clip,index,album_id}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case move_clip point (clip DVS.! index) of
             Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->Submit {submit_mode=Submit_album {album_id=album_id},vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) min_u min_v max_u max_v,index=quick_create_rectangle_index,parameter=to_Parameter point.x point.y matrix maybe_border,vertex_size=4,index_size=6}
-    Animation {arrange,half_width,half_height,padding,exponent_width,exponent_height,width_number,height_number,album_number,album_id,index}->case arrange_transform arrange of
+    Animation {arrange,half_width,half_height,padding,exponent_width,exponent_height,width_number,height_number,album_number,index,album_id}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->let (quotient,remainder)=divMod index (width_number*height_number) in let new_album_id=album_id+quotient in if album_number<=quotient then EF.empty_error else let (new_quotient,new_remainder)=divMod remainder width_number in let frame_x=2*fromIntegral new_remainder*(half_width+padding)+padding in let frame_y=2*fromIntegral new_quotient*(half_height+padding)+padding in Submit {submit_mode=Submit_album {album_id=new_album_id},vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) (scaleFloat (-exponent_width) frame_x) (scaleFloat (-exponent_height) frame_y) (scaleFloat (-exponent_width) (frame_x+2*half_width)) (scaleFloat (-exponent_height) (frame_y+2*half_height)),index=quick_create_rectangle_index,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
-    Text {arrange,half_width,half_height,current_y,anchor,article,locked}->if locked then EF.empty_error else case arrange_transform arrange of
+    Text {arrange,half_width,half_height,current_y,anchor,article,locked}->if locked then EF.empty_error else case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->case anchor of
                 Anchor {ratio,offset}->let new_x=x+offset in case maybe_border of
                     Nothing->let (vertex,index,_)=DF.foldl' (DF.foldl' (flip (collect_text color ratio new_x y current_y))) (DS.empty,DS.empty,0) (fmap (DS.takeWhileL (end_text current_y half_height) . DS.dropWhileL (begin_text current_y half_height)) article) in Submit {submit_mode=Submit_default,vertex=vertex,index=index,parameter=Parameter {x=x+matrix.x,y=y+matrix.y,x_x=matrix.x_x,x_y=matrix.x_y,y_x=matrix.y_x,y_y=matrix.y_y,border_flag=1,border_left=x-half_width,border_down=y-half_height,border_right=x+half_width,border_up=y+half_height},vertex_size=fromIntegral (DS.length vertex),index_size=fromIntegral (DS.length index)}
                     Just border->case border of
                         Border {left,down,right,up}->let border_down=max (-half_height) down in let border_up=min half_height up in let (vertex,index,_)=DF.foldl' (DF.foldl' (flip (collect_text color ratio new_x y current_y))) (DS.empty,DS.empty,0) (fmap (DS.takeWhileL (end_text current_y (-border_down)) . DS.dropWhileL (begin_text current_y border_up)) article) in Submit {submit_mode=Submit_default,vertex=vertex,index=index,parameter=Parameter {x=x+matrix.x,y=y+matrix.y,x_x=matrix.x_x,x_y=matrix.x_y,y_x=matrix.y_x,y_y=matrix.y_y,border_flag=1,border_left=x+max (-half_width) left,border_down=y+border_down,border_right=x+min half_width right,border_up=y+border_up},vertex_size=fromIntegral (DS.length vertex),index_size=fromIntegral (DS.length index)}
-    Canvas {arrange,half_width,half_height,canvas_id}->case arrange_transform arrange of
+    Canvas {arrange,half_width,half_height,canvas_id}->case combine_arrange this_arrange arrange of
         Arrange {point,matrix,color}->case point of
             Point {x,y}->Submit {submit_mode=Submit_canvas {canvas_id=canvas_id},vertex=quick_create_rectangle_vertex color (x-half_width) (y-half_height) (x+half_width) (y+half_height) 0 0 1 1,index=quick_create_rectangle_index,parameter=to_Parameter x y matrix maybe_border,vertex_size=4,index_size=6}
-    Custom_visual {custom}->custom_visual_collect arrange_transform u v maybe_border custom
+    Custom_visual {custom}->custom_visual_collect this_arrange u v maybe_border custom
 
 to_Parameter::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Maybe (Border FCT.CFloat)->Parameter
 to_Parameter x y matrix maybe_border=case maybe_border of
@@ -167,8 +162,8 @@ for_submit_b submit_mode index_size index_offset draw_call=case draw_call of
     DS.Empty->DS.singleton (submit_mode,index_size,index_offset)
     other_draw_call DS.:|> (new_submit_mode,new_index_size,new_index_offset)->if submit_mode==new_submit_mode then other_draw_call DS.|> (submit_mode,index_size+new_index_size,new_index_offset) else draw_call DS.|> (submit_mode,index_size,index_offset)
 
-get_submit::ET.Has_call_stack=>Selector ()->Widget a->DIM.IntMap (DS.Seq Submit)
-get_submit selector widget=selector_action (\_ this_widget submit->get_submit_a this_widget submit) selector widget DIM.empty
+get_submit::ET.Has_call_stack=>Selector a->Widget b->DIM.IntMap (DS.Seq Submit)
+get_submit selector widget=selector_action (const (\this_widget submit->get_submit_a this_widget submit)) selector widget DIM.empty
 
 get_submit_a::ET.Has_call_stack=>Widget a->DIM.IntMap (DS.Seq Submit)->DIM.IntMap (DS.Seq Submit)
 get_submit_a widget this_submit=case widget of
@@ -177,10 +172,13 @@ get_submit_a widget this_submit=case widget of
 
 {-# INLINE clean_collect #-}
 {-# INLINE clean_collect_a #-}
+{-# INLINE collect_canvas #-}
 {-# INLINE maybe_update_collect #-}
 {-# INLINE maybe_collect_update #-}
 {-# INLINE collect #-}
 {-# INLINE collect_a #-}
+{-# INLINE to_collect #-}
+{-# INLINE to_collect_visual #-}
 {-# INLINE to_Parameter #-}
 {-# INLINE begin_text #-}
 {-# INLINE end_text #-}
@@ -193,5 +191,6 @@ get_submit_a widget this_submit=case widget of
 {-# INLINE consume_widget #-}
 {-# INLINE for_submit #-}
 {-# INLINE for_submit_a #-}
+{-# INLINE for_submit_b #-}
 {-# INLINE get_submit #-}
 {-# INLINE get_submit_a #-}

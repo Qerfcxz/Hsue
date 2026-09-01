@@ -17,6 +17,7 @@ import qualified Data.HashMap.Strict as DHMS
 import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
+import qualified Data.Vector as DV
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
@@ -26,13 +27,16 @@ self_selector::ET.Has_call_stack=>Selector ()
 self_selector=Self_selector {value=()}
 
 all_selector::ET.Has_call_stack=>Bool->Selector ()
-all_selector this_maybe=All_selector {maybe_value=if this_maybe then Just () else Nothing,value=()}
+all_selector maybe_value=All_selector {maybe_value=if maybe_value then Just () else Nothing,value=()}
 
 trigger_selector::ET.Has_call_stack=>Bool->Bool->Selector ()
-trigger_selector this_maybe bounded=Trigger_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
+trigger_selector maybe_value bounded=Trigger_selector {maybe_value=if maybe_value then Just () else Nothing,value=(),bounded=bounded}
 
 default_selector::ET.Has_call_stack=>Bool->Bool->Selector ()
-default_selector this_maybe bounded=Default_selector {maybe_value=if this_maybe then Just () else Nothing,value=(),bounded=bounded}
+default_selector maybe_value bounded=Default_selector {maybe_value=if maybe_value then Just () else Nothing,value=(),bounded=bounded}
+
+any_visual_selector::ET.Has_call_stack=>Bool->Visual_selector ()
+any_visual_selector strict=Any_visual_selector {value=(),strict=strict}
 
 simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
 simple_calculate_typesetting height line_spacing _ number index=if number==0||number<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (number-1)*line_spacing)/2 in (if index==number-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
@@ -56,6 +60,9 @@ white_color=Color {red=1,green=1,blue=1,alpha=1}
 
 default_arrange::ET.Has_call_stack=>Arrange
 default_arrange=Arrange {point=origin_point,matrix=identity_matrix,color=white_color}
+
+single_visual_request::ET.Has_call_stack=>Visual_request a->Widget_request a
+single_visual_request visual_request=Vector_visual_request {arrange=default_arrange,vector_visual_request=DV.singleton visual_request}
 
 fit_matrix::ET.Has_call_stack=>Engine a->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Matrix
 fit_matrix engine window_id widget_width widget_height width height=let window=int_map_lookup window_id engine.window in let scale=min (width/widget_width*window.adaptive_width/window.width) (height/widget_height*window.adaptive_height/window.height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
@@ -94,6 +101,7 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE all_selector #-}
 {-# INLINE trigger_selector #-}
 {-# INLINE default_selector #-}
+{-# INLINE any_visual_selector #-}
 {-# INLINE simple_calculate_typesetting #-}
 {-# INLINE origin_point #-}
 {-# INLINE identity_matrix #-}
@@ -101,6 +109,7 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE y_scalable_matrix #-}
 {-# INLINE white_color #-}
 {-# INLINE default_arrange #-}
+{-# INLINE single_visual_request #-}
 {-# INLINE fit_matrix #-}
 {-# INLINE fit_window_matrix #-}
 {-# INLINE from_foldable_enumeration #-}

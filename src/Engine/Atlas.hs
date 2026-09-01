@@ -92,3 +92,4 @@ create_white_texture device picture_transfer_buffer picture_size width height=le
 
 {-# INLINE init_atlas #-}
 {-# INLINE atlas_insert #-}
+{-# INLINE atlas_insert_a #-}

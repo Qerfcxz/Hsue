@@ -38,7 +38,7 @@ from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {lea
 from_same_insert_widget_a::ET.Has_call_stack=>DS.Seq Insert_strategy->Widget a->Widget a->Widget a
 from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_size user_variable_size widget) coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_size user_variable_size widget) coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->EF.empty_error
 
 from_same_insert_widget_b::ET.Has_call_stack=>Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
@@ -55,7 +55,7 @@ from_insert_widget leaf_id insert_widget engine=engine {leaf=int_map_update leaf
 from_insert_widget_a::ET.Has_call_stack=>DS.Seq (Insert (Widget a))->Widget a->Widget a
 from_insert_widget_a insert_widget widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_insert_widget_b min_index max_index id insert_widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
-    Coroutine {index,initial_min_index,min_index,initial_max_index,max_index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_size user_variable_size) insert_widget coroutine_state in Coroutine {index=index,initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_size user_variable_size) insert_widget coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
     _->EF.empty_error
 
 from_insert_widget_b::ET.Has_call_stack=>Int->Int->(Widget a->b)->DS.Seq (Insert (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
@@ -96,22 +96,17 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {index,initial_min_index,initial_max_index,insert_widget_request,raw_coroutine,iterative}->let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in let (linear_coroutine,layout,variable_size,user_variable_size)=from_coroutine (to_coroutine coroutine_sequence) int in do
+    Coroutine_request {initial_min_index,initial_max_index,index,insert_widget_request,raw_coroutine,iterative}->let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in let (linear_coroutine,layout,variable_size,user_variable_size)=from_coroutine (to_coroutine coroutine_sequence) int in do
         (new_engine,coroutine_state,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index (init_coroutine_state variable_size user_variable_size) insert_widget_request DIM.empty engine
-        return (new_engine,Coroutine {index=index,initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
+        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
     Store_request {store}->return (engine,Store {store=store})
     Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
-    Visual_request {visual_request}->do
-        (new_engine,visual)<-create_visual visual_request engine
-        return (new_engine,Visual {visual=visual})
-    Group_visual_request {arrange,collect_order,group_visual_request}->do
-        (new_engine,group_visual)<-int_map_monad_action (\_ visual_request this_engine->create_visual visual_request this_engine) group_visual_request engine
-        return (new_engine,Group_visual {arrange=arrange,collect_order=collect_order,group_visual=group_visual})
-    Vector_visual_request {arrange,collect_order,vector_visual_request}->let size=DV.length vector_visual_request in do
-        new_vector_visual<-DVM.new size
-        new_engine<-vector_io_map (size-1) (\_ visual_request this_engine->create_visual visual_request this_engine) vector_visual_request new_vector_visual engine
-        new_new_vector_visual<-DV.unsafeFreeze new_vector_visual
-        return (new_engine,Vector_visual {arrange=arrange,collect_order=collect_order,vector_visual=new_new_vector_visual,size=size})
+    Group_visual_request {arrange,group_visual_request}->do
+        (new_engine,group_visual)<-int_map_monad_action (const (\visual_request this_engine->create_visual visual_request this_engine)) group_visual_request engine
+        return (new_engine,Group_visual {arrange=arrange,group_visual=group_visual})
+    Vector_visual_request {arrange,vector_visual_request}->do
+        (new_engine,vector_visual)<-vector_io_map (\visual_request this_engine->create_visual visual_request this_engine) vector_visual_request engine
+        return (new_engine,Vector_visual {arrange=arrange,vector_visual=vector_visual})
 
 create_vector_widget::ET.Has_call_stack=>Custom a=>Int->Int->DVM.IOVector (Widget a)->DS.Seq (Widget_request a)->Engine a->IO (Engine a)
 create_vector_widget leaf_id index vector_widget vector_widget_request engine=case vector_widget_request of
@@ -142,10 +137,10 @@ create_visual visual_request engine=case visual_request of
     Large_picture_request {arrange,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
-    Atlas_request {arrange,clip_request,path}->create_atlas arrange clip_request path 0 engine
-    Large_atlas_request {arrange,clip_request,path}->do
+    Atlas_request {arrange,path,clip_request}->create_atlas arrange path clip_request 0 engine
+    Large_atlas_request {arrange,path,clip_request}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
-        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),album_id=engine.album_id,index=0})
+        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),index=0,album_id=engine.album_id})
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
     Text_request {arrange,text_width,text_height,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
@@ -173,8 +168,8 @@ do_image action path engine=do
 create_picture::ET.Has_call_stack=>Arrange->String->Engine a->IO (Engine a,Visual a)
 create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=scaleFloat (-engine.exponent_width) (fromIntegral left),min_v=scaleFloat (-engine.exponent_height) (fromIntegral down),max_u=scaleFloat (-engine.exponent_width) (fromIntegral right),max_v=scaleFloat (-engine.exponent_height) (fromIntegral up),path=path,locked=False}) path engine
 
-create_atlas::ET.Has_call_stack=>Arrange->DS.Seq Clip_request->String->Int->Engine a->IO (Engine a,Visual a)
-create_atlas arrange clip_request path index engine=do_image (\width height left down right up->let size=DS.length clip_request in Atlas {arrange=arrange,clip_request=clip_request,path=path,clip=DVS.fromListN size (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.exponent_width engine.exponent_height) (DF.toList clip_request)),index=index,locked=False}) path engine
+create_atlas::ET.Has_call_stack=>Arrange->String->DS.Seq Clip_request->Int->Engine a->IO (Engine a,Visual a)
+create_atlas arrange path clip_request index engine=do_image (\width height left down right up->let size=DS.length clip_request in Atlas {arrange=arrange,path=path,clip_request=clip_request,clip=DVS.fromListN size (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.exponent_width engine.exponent_height) (DF.toList clip_request)),index=index,locked=False}) path engine
 
 create_atlas_a::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Int->Int->Clip_request->Clip
 create_atlas_a width height this_x this_y exponent_width exponent_height clip_request=case clip_request of
@@ -204,7 +199,7 @@ create_animation arrange min_delay padding exponent_width exponent_height path e
             delay<-DVS.generateM count (fmap (\this_delay->max min_delay (fromIntegral this_delay*millisecond)) . FS.peekElemOff img_delays)
             new_engine<-create_animation_a (create_animation_b img_frames padding width size frame_width frame_height pack_width pack_height width_number) (fromIntegral width) (fromIntegral height) number count 0 engine.album_id engine
             SDLF.img_free_animation ptr_animation
-            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,padding=fromIntegral padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,album_id=engine.album_id,count=count,index=0})
+            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,padding=fromIntegral padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,count=count,index=0,album_id=engine.album_id})
 
 create_animation_a::ET.Has_call_stack=>(Int->Int->Int->FP.Ptr ()->IO ())->DW.Word32->DW.Word32->Int->Int->Int->Int->Engine a->IO (Engine a)
 create_animation_a action width height number count index album_id engine=if count<=index then return engine else do
@@ -234,11 +229,7 @@ remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
     _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=int_map_update father_id (\node->node {leaf_child=int_set_delete leaf_id node.leaf_child}) engine.node})
 
 remove_widget::ET.Has_call_stack=>Custom a=>Widget a->Engine a->IO (Engine a)
-remove_widget widget engine=case widget of
-    Visual {visual}->remove_visual visual engine
-    Group_visual {group_visual}->DF.foldlM (flip remove_visual) engine group_visual
-    Vector_visual {vector_visual}->DF.foldlM (flip remove_visual) engine vector_visual
-    _->return engine
+remove_widget widget engine=any_visual_selector_monad_action False (const remove_visual) widget engine
 
 remove_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a)
 remove_visual visual engine=case visual of
@@ -294,7 +285,10 @@ remove_node_node node_id engine=let (node,single_node)=int_map_delete_lookup nod
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}
+{-# INLINE from_same_insert_widget_b #-}
 {-# INLINE from_insert_widget #-}
 {-# INLINE from_insert_widget_a #-}
+{-# INLINE from_insert_widget_b #-}
 {-# INLINE create_atlas_a #-}
 {-# INLINE create_large_atlas #-}
+{-# INLINE create_node #-}

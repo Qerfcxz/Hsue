@@ -1,14 +1,19 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
 module Engine.Underlying where
 
+import Engine.Container
 import Engine.Type
 import qualified SDL.Function as SDLF
+import qualified SDL.Type as SDLT
 import qualified Error.Function as EF
 import qualified Error.Type as ET
 import qualified Control.Monad as CM
+import qualified Control.Monad.ST as CMST
+import qualified Control.Monad.Trans.State as CMTS
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
@@ -22,6 +27,87 @@ import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
+
+get_store_widget::ET.Has_call_stack=>Convert Data b=>Widget a->b
+get_store_widget widget=case widget of
+    Store {store}->convert store
+    _->EF.empty_error
+
+update_store_widget::ET.Has_call_stack=>Convert Data a=>Convert a Data=>(a->a)->Widget b->Widget b
+update_store_widget update widget=case widget of
+    Store {store}->Store {store=convert (update (convert store))}
+    _->EF.empty_error
+
+update_group_visual::ET.Has_call_stack=>Int->(Visual a->Visual a)->Widget a->Widget a
+update_group_visual index update widget=case widget of
+    Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=int_map_update index update group_visual}
+    _->EF.empty_error
+
+update_vector_visual::ET.Has_call_stack=>Int->(Visual a->Visual a)->Widget a->Widget a
+update_vector_visual index update widget=case widget of
+    Vector_visual {arrange,vector_visual}->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->DVM.write this_vector_visual index (update (vector_visual DV.! index))) vector_visual)}
+    _->EF.empty_error
+
+update_vector_widget::ET.Has_call_stack=>Int->(Widget a->Widget a)->Widget a->Widget a
+update_vector_widget this_index update widget=case widget of
+    Vector {index,vector_widget}->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->DVM.write this_vector_widget this_index (update (vector_widget DV.! this_index))) vector_widget)}
+    _->EF.empty_error
+
+hosted_update_vector_widget::ET.Has_call_stack=>(Widget a->Widget a)->Widget a->Widget a
+hosted_update_vector_widget update widget=case widget of
+    Vector {index,vector_widget}->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->DVM.write this_vector_widget index (update (vector_widget DV.! index))) vector_widget)}
+    _->EF.empty_error
+
+action_vector::ET.Has_call_stack=>DVM.PrimMonad a=>(DVM.MVector (DVM.PrimState a) b->a ())->DV.Vector b->a (DV.Vector b)
+action_vector action vector_widget=do
+    new_vector_widget<-DV.thaw vector_widget
+    action new_vector_widget
+    DV.unsafeFreeze new_vector_widget
+
+update_group_widget::ET.Has_call_stack=>Int->(Widget a->Widget a)->Widget a->Widget a
+update_group_widget this_index update widget=case widget of
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update this_index update group_widget}
+    _->EF.empty_error
+
+hosted_update_group_widget::ET.Has_call_stack=>(Widget a->Widget a)->Widget a->Widget a
+hosted_update_group_widget update widget=case widget of
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update index update group_widget}
+    _->EF.empty_error
+
+update_coroutine_state::ET.Has_call_stack=>(Widget a->Widget a)->Coroutine_state a->Coroutine_state a
+update_coroutine_state update coroutine_state=case coroutine_state of
+    Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->Coroutine_state {widget=update widget,variable=variable,user_variable=user_variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index}
+
+functor_update_coroutine_state::ET.Has_call_stack=>Functor b=>(Widget a->b (Widget a))->Coroutine_state a->b (Coroutine_state a)
+functor_update_coroutine_state update coroutine_state=case coroutine_state of
+    Coroutine_state {widget,variable,user_variable,program_counter,index_group,main_index_group,index_group_index,program_counter_index}->fmap (\this_widget->Coroutine_state {widget=this_widget,variable=variable,user_variable=user_variable,program_counter=program_counter,index_group=index_group,main_index_group=main_index_group,index_group_index=index_group_index,program_counter_index=program_counter_index}) (update widget)
+
+get_sdl_pipeline::ET.Has_call_stack=>Pipeline->FP.Ptr SDLT.SDL_GPUGraphicsPipeline
+get_sdl_pipeline pipeline=case pipeline of
+    Pipeline {sdl_pipeline}->sdl_pipeline
+    Default_pipeline {sdl_pipeline}->sdl_pipeline
+
+update_shader_reference::ET.Has_call_stack=>(Int->Int)->Shader->Shader
+update_shader_reference update shader=case shader of
+    Shader {sdl_shader,reference}->Shader {sdl_shader=sdl_shader,reference=update reference}
+
+widget_lookup::ET.Has_call_stack=>Widget a->Widget a
+widget_lookup this_widget=case this_widget of
+    Group {index,group_widget}->widget_lookup (int_map_lookup index group_widget)
+    Vector {index,vector_widget}->widget_lookup (vector_widget DV.! index)
+    Widget_trigger {widget}->widget_lookup widget
+    Widget_io_trigger {widget}->widget_lookup widget
+    Widget_mix_trigger {widget}->widget_lookup widget
+    Coroutine {index,coroutine_state}->widget_lookup (int_map_lookup index coroutine_state).widget
+    _->this_widget
+
+lock_visual::ET.Has_call_stack=>Custom a=>Visual a->Visual a
+lock_visual visual=case visual of
+    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,path}->Picture {arrange=arrange,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}
+    Atlas {arrange,path,clip_request,clip,index}->Atlas {arrange=arrange,path=path,clip_request=clip_request,clip=clip,index=index,locked=True}
+    Text {arrange,half_width,half_height,current_y,min_y,max_y,anchor,article,charset}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=article,charset=charset,locked=True}
+    Custom_visual {custom}->Custom_visual {custom=custom_visual_lock custom}
+    _->visual
 
 sdl_error::ET.Has_call_stack=>IO a
 sdl_error=do
@@ -64,11 +150,15 @@ seq_poke_array_a size value ptr=do
 triple_reverse::ET.Has_call_stack=>(a,b,c)->(c,b,a)
 triple_reverse (a,b,c)=(c,b,a)
 
-vector_io_map::ET.Has_call_stack=>Int->(Int->a->b->IO (b,c))->DV.Vector a->DVM.IOVector c->b->IO b
-vector_io_map index action first_vector second_vector value=if index<0 then return value else do
-    (new_value,another_value)<-action index (first_vector DV.! index) value
-    DVM.unsafeWrite second_vector index another_value
-    vector_io_map (index-1) action first_vector second_vector new_value
+monad_action_swap::ET.Has_call_stack=>Monad c=>(a->b->c (d,e))->a->b->c (e,d)
+monad_action_swap action first_value second_value=do
+    (new_first_value,new_second_value)<-action first_value second_value
+    return (new_second_value,new_first_value)
+
+vector_io_map::ET.Has_call_stack=>(a->b->IO (b,c))->DV.Vector a->b->IO (b,DV.Vector c)
+vector_io_map action vector value=do
+    (new_vector,new_value)<-CMTS.runStateT (DV.mapM (\this_value->CMTS.StateT {runStateT=monad_action_swap action this_value}) vector) value
+    return (new_value,new_vector)
 
 move_clip::ET.Has_call_stack=>Point->Clip->Clip
 move_clip point clip=case clip of
@@ -120,7 +210,24 @@ nanosecond=1000000000
 millisecond::ET.Has_call_stack=>Num a=>a
 millisecond=1000000
 
+{-# INLINE get_store_widget #-}
+{-# INLINE update_store_widget #-}
+{-# INLINE update_group_visual #-}
+{-# INLINE update_vector_visual #-}
+{-# INLINE update_vector_widget #-}
+{-# INLINE hosted_update_vector_widget #-}
+{-# INLINE action_vector #-}
+{-# INLINE update_group_widget #-}
+{-# INLINE hosted_update_group_widget #-}
+{-# INLINE update_coroutine_state #-}
+{-# INLINE functor_update_coroutine_state #-}
+{-# INLINE get_sdl_pipeline #-}
+{-# INLINE update_shader_reference #-}
+{-# INLINE widget_lookup #-}
+{-# INLINE lock_visual #-}
 {-# INLINE triple_reverse #-}
+{-# INLINE monad_action_swap #-}
+{-# INLINE vector_io_map #-}
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}
 {-# INLINE combine_arrange #-}

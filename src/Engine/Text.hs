@@ -174,7 +174,15 @@ scroll_bottom_text visual=case visual of
     _->EF.empty_error
 
 {-# INLINE do_typesetting #-}
+{-# INLINE do_typesetting_a #-}
+{-# INLINE do_typesetting_b #-}
+{-# INLINE do_typesetting_c #-}
 {-# INLINE for_text #-}
+{-# INLINE for_text_a #-}
+{-# INLINE for_text_b #-}
+{-# INLINE for_text_c #-}
+{-# INLINE for_text_d #-}
+{-# INLINE for_text_e #-}
 {-# INLINE to_charset #-}
 {-# INLINE to_charset_a #-}
 {-# INLINE scroll_text #-}

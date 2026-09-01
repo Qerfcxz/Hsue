@@ -6,7 +6,6 @@ module Engine.Engine where
 
 import Engine.Atlas
 import Engine.Event
-import Engine.Operation
 import Engine.Shader
 import Engine.Type
 import Engine.Underlying
@@ -72,7 +71,7 @@ create_engine custom main_id projection_strategy max_picture_size max_vertex_siz
     picture_transfer_buffer<-FMU.with (SDLI.SDL_GPUTransferBufferCreateInfo {sdl_usage=SDLI.sdl_gpu_transferbufferusage_upload,sdl_size=fromIntegral max_picture_size}) (sdl_return_catch_null . SDLF.sdl_create_gpu_transfer_buffer device)
     event_number<-SDLF.sdl_register_events 2
     sdl_catch_zero event_number
-    callback<-SDLF.wrapper $ \_ _ interval->do
+    callback<-SDLF.wrapper $ const $ const $ \interval->do
         FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \ptr->do
             FMU.fillBytes ptr 0 SDLI.sdl_event_size
             FS.poke (FP.castPtr ptr) event_number

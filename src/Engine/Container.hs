@@ -17,28 +17,28 @@ int_map_lookup key int_map=case DIM.lookup key int_map of
     _->EF.empty_error
 
 int_map_insert::ET.Has_call_stack=>Int->a->DIM.IntMap a->DIM.IntMap a
-int_map_insert key value int_map=let (maybe_value,new_int_map)=DIM.insertLookupWithKey (\_ _ this_value->this_value) key value int_map in case maybe_value of
+int_map_insert key value int_map=let (maybe_value,new_int_map)=DIM.insertLookupWithKey (const (const (\this_value->this_value))) key value int_map in case maybe_value of
     Nothing->new_int_map
     _->EF.empty_error
 
 int_map_insert_maybe_lookup::ET.Has_call_stack=>Int->a->DIM.IntMap a->(DIM.IntMap a,Maybe a)
-int_map_insert_maybe_lookup key value int_map=DT.swap (DIM.insertLookupWithKey (\_ _ this_value->this_value) key value int_map)
+int_map_insert_maybe_lookup key value int_map=DT.swap (DIM.insertLookupWithKey (const (const (\this_value->this_value))) key value int_map)
 
 int_map_delete::ET.Has_call_stack=>Int->DIM.IntMap a->DIM.IntMap a
-int_map_delete key int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ _->Nothing) key int_map in case maybe_value of
+int_map_delete key int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (const (const Nothing)) key int_map in case maybe_value of
     Nothing->EF.empty_error
     _->new_int_map
 
 int_map_delete_lookup::ET.Has_call_stack=>Int->DIM.IntMap a->(DIM.IntMap a,a)
-int_map_delete_lookup key int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ _->Nothing) key int_map in case maybe_value of
+int_map_delete_lookup key int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (const (const Nothing)) key int_map in case maybe_value of
     Just value->(new_int_map,value)
     _->EF.empty_error
 
 int_map_delete_maybe_lookup::ET.Has_call_stack=>Int->DIM.IntMap a->(DIM.IntMap a,Maybe a)
-int_map_delete_maybe_lookup key int_map=DT.swap (DIM.updateLookupWithKey (\_ _->Nothing) key int_map)
+int_map_delete_maybe_lookup key int_map=DT.swap (DIM.updateLookupWithKey (const (const Nothing)) key int_map)
 
 int_map_update::ET.Has_call_stack=>Int->(a->a)->DIM.IntMap a->DIM.IntMap a
-int_map_update key update int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ value->Just (update value)) key int_map in case maybe_value of
+int_map_update key update int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (const (\value->Just (update value))) key int_map in case maybe_value of
     Nothing->EF.empty_error
     _->new_int_map
 
@@ -46,7 +46,7 @@ int_map_update_safe::ET.Has_call_stack=>Int->(a->a)->DIM.IntMap a->DIM.IntMap a
 int_map_update_safe key update=DIM.update (Just . update) key
 
 int_map_update_lookup::ET.Has_call_stack=>Int->(a->a)->DIM.IntMap a->(DIM.IntMap a,a)
-int_map_update_lookup key update int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (\_ value->Just (update value)) key int_map in case maybe_value of
+int_map_update_lookup key update int_map=let (maybe_value,new_int_map)=DIM.updateLookupWithKey (const (\value->Just (update value))) key int_map in case maybe_value of
     Just value->(new_int_map,value)
     _->EF.empty_error
 

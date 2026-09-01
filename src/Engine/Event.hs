@@ -227,5 +227,7 @@ pop_event ptr=do
 
 {-# INLINE get_interval #-}
 {-# INLINE to_mouse_button #-}
-{-# INLINE to_key #-}
+{-# INLINE run_event #-}
 {-# INLINE run_event_a #-}
+{-# INLINE run_widget #-}
+{-# INLINE to_key #-}

@@ -18,7 +18,6 @@ import qualified Error.Type as ET
 import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
-import qualified Data.Vector as DV
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
@@ -114,7 +113,7 @@ do_render_canvas_a engine width height command_buffer render_pass maybe_sampler_
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
     DF.mapM_ (do_render_b engine width height command_buffer render_pass (maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id)) draw_call
 
-for_canvas_widget_render::ET.Has_call_stack=>Maybe Int->Projection_path->Selector ()->Widget a->Engine a->IO (Engine a)
+for_canvas_widget_render::ET.Has_call_stack=>Maybe Int->Projection_path->Selector a->Widget b->Engine b->IO (Engine b)
 for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_selector widget engine=case widget of
     Collector {submit}->let (vertex,index,parameter,draw_call)=for_submit submit in for_canvas_widget_render_a projection_path canvas_widget_render_selector engine $ \half_width half_height canvas_id this_engine->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
@@ -127,18 +126,11 @@ for_canvas_widget_render maybe_sampler_id projection_path canvas_widget_render_s
             _->EF.empty_error
     _->EF.empty_error
 
-for_canvas_widget_render_a::ET.Has_call_stack=>Projection_path->Selector ()->Engine a->(FCT.CFloat->FCT.CFloat->Int->Engine a->IO (Engine a))->IO (Engine a)
-for_canvas_widget_render_a projection_path selector engine action=selector_monad_action (\_ widget this_engine->for_canvas_widget_render_b widget action this_engine) selector (lookup_projection_widget projection_path engine) engine
+for_canvas_widget_render_a::ET.Has_call_stack=>Projection_path->Selector a->Engine b->(FCT.CFloat->FCT.CFloat->Int->Engine b->IO (Engine b))->IO (Engine b)
+for_canvas_widget_render_a projection_path selector engine action=selector_monad_action (const (\widget this_engine->any_visual_selector_monad_action True (const (\visual->for_canvas_widget_render_b visual action)) widget this_engine)) selector (lookup_projection_widget projection_path engine) engine
 
-for_canvas_widget_render_b::ET.Has_call_stack=>Widget a->(FCT.CFloat->FCT.CFloat->Int->Engine a->IO (Engine a))->Engine a->IO (Engine a)
-for_canvas_widget_render_b widget action engine=case widget of
-    Visual {visual}->for_canvas_widget_render_c visual action engine
-    Group_visual {collect_order,group_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (int_map_lookup index group_visual) action this_engine) engine collect_order
-    Vector_visual {collect_order,vector_visual}->DF.foldlM (\this_engine index->for_canvas_widget_render_c (vector_visual DV.! index) action this_engine) engine collect_order
-    _->EF.empty_error
-
-for_canvas_widget_render_c::ET.Has_call_stack=>Visual a->(FCT.CFloat->FCT.CFloat->Int->Engine a->IO (Engine a))->Engine a->IO (Engine a)
-for_canvas_widget_render_c visual action engine=case visual of
+for_canvas_widget_render_b::ET.Has_call_stack=>Visual a->(FCT.CFloat->FCT.CFloat->Int->Engine a->IO (Engine a))->Engine a->IO (Engine a)
+for_canvas_widget_render_b visual action engine=case visual of
     Canvas {half_width,half_height,canvas_id}->action half_width half_height canvas_id engine
     _->return engine
 
