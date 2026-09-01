@@ -6,6 +6,7 @@ module Engine.Helper where
 
 import Engine.Container
 import Engine.Engine
+import Engine.Request
 import Engine.Type
 import Engine.Underlying
 import qualified SDL.Function as SDLF
@@ -38,25 +39,86 @@ default_selector maybe_value bounded=Default_selector {maybe_value=if maybe_valu
 any_visual_selector::ET.Has_call_stack=>Bool->Visual_selector ()
 any_visual_selector strict=Any_visual_selector {value=(),strict=strict}
 
+const_dynamic_bool::ET.Has_call_stack=>Bool->Dynamic_bool a
+const_dynamic_bool bool=Dynamic_bool {dynamic_bool=const (const (const (const bool)))}
+
+const_dynamic_int::ET.Has_call_stack=>Int->Dynamic_int a
+const_dynamic_int int=Dynamic_int {dynamic_int=const (const (const (const int)))}
+
+create_foldable_request::ET.Has_call_stack=>Foldable a=>a (Request b)->Engine b->Engine b
+create_foldable_request foldable_request engine=DF.foldl' (flip create_request) engine foldable_request
+
+consume_object_move::ET.Has_call_stack=>Int->Projection_move
+consume_object_move leaf_id=Object_move {consume=True,leaf_id=leaf_id}
+
+retain_object_move::ET.Has_call_stack=>Int->Projection_move
+retain_object_move leaf_id=Object_move {consume=False,leaf_id=leaf_id}
+
+simple_window_render_request::ET.Has_call_stack=>Int->Projection_move->Maybe Int->Request a
+simple_window_render_request window_id projection_move maybe_sampler_id=Render {window_id=window_id,render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id}
+
+simple_canvas_render_request::ET.Has_call_stack=>Int->Projection_move->Maybe Int->Request a
+simple_canvas_render_request canvas_id projection_move maybe_sampler_id=Canvas_render {canvas_id=canvas_id,canvas_render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id}
+
 simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
 simple_calculate_typesetting height line_spacing _ number index=if number==0||number<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (number-1)*line_spacing)/2 in (if index==number-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
+
+simple_article::ET.Has_call_stack=>DT.Text->FCT.CFloat->Color->String->DS.Seq (DS.Seq Sentence)
+simple_article text font_size color path=DS.singleton (DS.singleton (Sentence {sentence_core=DS.singleton (Phrase {phrase_core=text,font_size=font_size,color=color}),path=path}))
 
 origin_point::ET.Has_call_stack=>Point
 origin_point=Point {x=0,y=0}
 
+plus_point::ET.Has_call_stack=>Point->Point->Point
+plus_point first_point second_point=case first_point of
+    Point {x=first_x,y=frist_y}->case second_point of
+        Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=frist_y+second_y}
+
+subtract_point::ET.Has_call_stack=>Point->Point->Point
+subtract_point first_point second_point=case first_point of
+    Point {x=first_x,y=frist_y}->case second_point of
+        Point {x=second_x,y=second_y}->Point {x=first_x-second_x,y=frist_y-second_y}
+
 identity_matrix::ET.Has_call_stack=>Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
 
-x_scalable_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Matrix
-x_scalable_matrix x x_x matrix=case matrix of
+scale_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix
+scale_matrix x_scale y_scale=Matrix {x=0,y=0,x_x=x_scale,x_y=0,y_x=0,y_y=y_scale}
+
+translate_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix
+translate_matrix x_offset y_offset=Matrix {x=x_offset,y=y_offset,x_x=1,x_y=0,y_x=0,y_y=1}
+
+rotate_matrix::ET.Has_call_stack=>FCT.CFloat->Matrix
+rotate_matrix angle=let cos_angle=cos angle in let sin_angle=sin angle in Matrix {x=0,y=0,x_x=cos_angle,x_y=negate sin_angle,y_x=sin_angle,y_y=cos_angle}
+
+update_x_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Matrix
+update_x_matrix x x_x matrix=case matrix of
     Matrix {y,x_y,y_x,y_y}->Matrix {x=x,y=y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
 
-y_scalable_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Matrix
-y_scalable_matrix y y_y matrix=case matrix of
+update_y_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix->Matrix
+update_y_matrix y y_y matrix=case matrix of
     Matrix {x,x_x,x_y,y_x}->Matrix {x=x,y=y,x_x=x_x,x_y=x_y,y_x=y_x,y_y=y_y}
+
+multiply_matrix::ET.Has_call_stack=>Matrix->Matrix->Matrix
+multiply_matrix first_matrix second_matrix=case first_matrix of
+    Matrix {x=first_x,y=first_y,x_x=first_x_x,x_y=first_x_y,y_x=first_y_x,y_y=first_y_y}->case second_matrix of
+        Matrix {x=second_x,y=second_y,x_x=second_x_x,x_y=second_x_y,y_x=second_y_x,y_y=second_y_y}->Matrix {x=first_x_x*second_x+first_x_y*second_y+first_x,y=first_y_x*second_x+first_y_y*second_y+first_y,x_x=first_x_x*second_x_x+first_x_y*second_y_x,x_y=first_x_x*second_x_y+first_x_y*second_y_y,y_x=first_y_x*second_x_x+first_y_y*second_y_x,y_y=first_y_x*second_x_y+first_y_y*second_y_y}
+
+opaque_color::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->Color
+opaque_color red green blue=Color {red=red,green=green,blue=blue,alpha=1}
+
+transparent_color::ET.Has_call_stack=>Color
+transparent_color=Color {red=0,green=0,blue=0,alpha=0}
 
 white_color::ET.Has_call_stack=>Color
 white_color=Color {red=1,green=1,blue=1,alpha=1}
+
+black_color::ET.Has_call_stack=>Color
+black_color=Color {red=0,green=0,blue=0,alpha=1}
+
+update_color_alpha::ET.Has_call_stack=>FCT.CFloat->Color->Color
+update_color_alpha alpha color=case color of
+    Color {red,green,blue}->Color {red=red,green=green,blue=blue,alpha=alpha}
 
 default_arrange::ET.Has_call_stack=>Arrange
 default_arrange=Arrange {point=origin_point,matrix=identity_matrix,color=white_color}
@@ -71,10 +133,10 @@ fit_window_matrix::ET.Has_call_stack=>Engine a->Int->FCT.CFloat->FCT.CFloat->FCT
 fit_window_matrix engine window_id widget_width widget_height window_width_scale window_height_scale=let window=int_map_lookup window_id engine.window in let scale=min (window_width_scale*window.adaptive_width/widget_width) (window_height_scale*window.adaptive_height/widget_height) in Matrix {x=0,y=0,x_x=scale,x_y=0,y_x=0,y_y=scale}
 
 from_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->Integer
-from_foldable_enumeration=DF.foldl' (\int value->int DB..|. DB.bit (fromEnum value)) 0
+from_foldable_enumeration=DF.foldl' (\int enumeration->int DB..|. DB.bit (fromEnum enumeration)) 0
 
 insert_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->c->DHMS.HashMap Integer c->DHMS.HashMap Integer c
-insert_foldable_enumeration foldable=hash_map_insert (from_foldable_enumeration foldable)
+insert_foldable_enumeration foldable_enumeration=hash_map_insert (from_foldable_enumeration foldable_enumeration)
 
 get_clipboard_text::ET.Has_call_stack=>IO String
 get_clipboard_text=do
@@ -102,12 +164,30 @@ quick_create_engine state main_id projection_strategy max_picture_size max_verte
 {-# INLINE trigger_selector #-}
 {-# INLINE default_selector #-}
 {-# INLINE any_visual_selector #-}
+{-# INLINE const_dynamic_bool #-}
+{-# INLINE const_dynamic_int #-}
+{-# INLINE create_foldable_request #-}
+{-# INLINE consume_object_move #-}
+{-# INLINE retain_object_move #-}
+{-# INLINE simple_window_render_request #-}
+{-# INLINE simple_canvas_render_request #-}
 {-# INLINE simple_calculate_typesetting #-}
+{-# INLINE simple_article #-}
 {-# INLINE origin_point #-}
+{-# INLINE plus_point #-}
+{-# INLINE subtract_point #-}
 {-# INLINE identity_matrix #-}
-{-# INLINE x_scalable_matrix #-}
-{-# INLINE y_scalable_matrix #-}
+{-# INLINE scale_matrix #-}
+{-# INLINE translate_matrix #-}
+{-# INLINE rotate_matrix #-}
+{-# INLINE update_x_matrix #-}
+{-# INLINE update_y_matrix #-}
+{-# INLINE multiply_matrix #-}
+{-# INLINE opaque_color #-}
+{-# INLINE transparent_color #-}
 {-# INLINE white_color #-}
+{-# INLINE black_color #-}
+{-# INLINE update_color_alpha #-}
 {-# INLINE default_arrange #-}
 {-# INLINE single_visual_request #-}
 {-# INLINE fit_matrix #-}
