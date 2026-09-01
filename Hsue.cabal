@@ -29,7 +29,6 @@ library
         Engine.Engine
         Engine.Event
         Engine.Helper
-        Engine.Operation
         Engine.Projection
         Engine.Render
         Engine.Request
