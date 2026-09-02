@@ -31,7 +31,7 @@ struct Parameter {
 StructuredBuffer<Parameter> parameter_buffer:register(t0,space0);
 float2 apply_matrix(float2 matrix_xy,float2 matrix_x,float2 matrix_y,float2 xy) {
     float2 new_xy=xy-matrix_xy;
-    return matrix_xy+float2(matrix_x.x*new_xy.x+matrix_x.y*new_xy.y,matrix_y.x*new_xy.x+matrix_y.y*new_xy.y);
+    return matrix_xy+float2(dot(matrix_x,new_xy),dot(matrix_y,new_xy));
 }
 VSOutput main(VSInput input) {
     VSOutput output;
