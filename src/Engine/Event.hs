@@ -43,13 +43,13 @@ loop_engine_on event engine=do
     (new_engine,switch)<-run_request False engine
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
-    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {count=count,time=time}) else loop_event (not switch) event_type event new_engine
+    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {time=time,count=count}) else loop_event (not switch) event_type event new_engine
 
 loop_engine_on_a::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_on_a event engine=do
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
-    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {count=count,time=time}) else loop_event True event_type event engine
+    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b True (Time {tick=count,time=time,interval=interval}) event (engine {time=time,count=count}) else loop_event True event_type event engine
 
 get_interval::ET.Has_call_stack=>Timer->DW.Word64
 get_interval timer=case timer of
@@ -121,9 +121,9 @@ loop_event on event_type event engine=case event_type of
                 Window {adaptive_width,adaptive_height,width,height}->do
                     x<-SDLI.sdl_mousemotionevent_x_peek event
                     y<-SDLI.sdl_mousemotionevent_y_peek event
-                    xrel<-SDLI.sdl_mousemotionevent_xrel_peek event
-                    yrel<-SDLI.sdl_mousemotionevent_yrel_peek event
-                    loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Move {x=(x-width/2)*scale_x,y=(height/2-y)*scale_y,delta_x=xrel*scale_x,delta_y=(-yrel)*scale_y}}) event engine
+                    delta_x<-SDLI.sdl_mousemotionevent_xrel_peek event
+                    delta_y<-SDLI.sdl_mousemotionevent_yrel_peek event
+                    loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Move {x=(x-width/2)*scale_x,y=(height/2-y)*scale_y,delta_x=delta_x*scale_x,delta_y=(negate delta_y)*scale_y}}) event engine
     SDLI.SDL_EVENT_MOUSE_WHEEL->do
         sdl_window_id<-SDLI.sdl_mousewheelevent_windowid_peek event
         case DHMS.lookup sdl_window_id engine.window_map of
@@ -227,7 +227,6 @@ pop_event ptr=do
 
 {-# INLINE get_interval #-}
 {-# INLINE to_mouse_button #-}
-{-# INLINE run_event #-}
 {-# INLINE run_event_a #-}
 {-# INLINE run_widget #-}
 {-# INLINE to_key #-}

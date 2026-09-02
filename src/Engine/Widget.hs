@@ -19,7 +19,6 @@ import qualified Error.Function as EF
 import qualified Error.Type as ET
 import qualified Control.Monad as CM
 import qualified Data.Bits as DB
-import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
@@ -140,13 +139,14 @@ create_visual visual_request engine=case visual_request of
     Atlas_request {arrange,path,clip_request}->create_atlas arrange path clip_request 0 engine
     Large_atlas_request {arrange,path,clip_request}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
-        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},let size=DS.length clip_request in Large_atlas {arrange=arrange,clip=DVS.fromListN size (map (create_large_atlas (fromIntegral width) (fromIntegral height)) (DF.toList clip_request)),index=0,album_id=engine.album_id})
+        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=to_storable_vector (create_large_atlas (fromIntegral width) (fromIntegral height)) clip_request (DS.length clip_request),index=0,album_id=engine.album_id})
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
     Text_request {arrange,text_width,text_height,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
             new_engine<-from_charset charset engine
             return (new_engine,let (new_article,number)=for_text new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
         else return (engine,let (new_article,number)=for_text engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
+    Editor_request {}->error "未完待续"
     Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
@@ -166,14 +166,14 @@ do_image action path engine=do
     return (engine {atlas=atlas},action width height left down right up)
 
 create_picture::ET.Has_call_stack=>Arrange->String->Engine a->IO (Engine a,Visual a)
-create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=scaleFloat (-engine.exponent_width) (fromIntegral left),min_v=scaleFloat (-engine.exponent_height) (fromIntegral down),max_u=scaleFloat (-engine.exponent_width) (fromIntegral right),max_v=scaleFloat (-engine.exponent_height) (fromIntegral up),path=path,locked=False}) path engine
+create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=scaleFloat (negate engine.exponent_width) (fromIntegral left),min_v=scaleFloat (negate engine.exponent_height) (fromIntegral down),max_u=scaleFloat (negate engine.exponent_width) (fromIntegral right),max_v=scaleFloat (negate engine.exponent_height) (fromIntegral up),path=path,locked=False}) path engine
 
 create_atlas::ET.Has_call_stack=>Arrange->String->DS.Seq Clip_request->Int->Engine a->IO (Engine a,Visual a)
-create_atlas arrange path clip_request index engine=do_image (\width height left down right up->let size=DS.length clip_request in Atlas {arrange=arrange,path=path,clip_request=clip_request,clip=DVS.fromListN size (map (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.exponent_width engine.exponent_height) (DF.toList clip_request)),index=index,locked=False}) path engine
+create_atlas arrange path clip_request index engine=do_image (\width height left down right up->Atlas {arrange=arrange,path=path,clip_request=clip_request,clip=to_storable_vector (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.exponent_width engine.exponent_height) clip_request (DS.length clip_request),index=index,locked=False}) path engine
 
 create_atlas_a::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Int->Int->Clip_request->Clip
 create_atlas_a width height this_x this_y exponent_width exponent_height clip_request=case clip_request of
-    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=scaleFloat (-exponent_width) (this_x+min_u*width/2),min_v=scaleFloat (-exponent_height) (this_y-max_v*height/2),max_u=scaleFloat (-exponent_width) (this_x+max_u*width/2),max_v=scaleFloat (-exponent_height) (this_y-min_v*height/2)}
+    Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=scaleFloat (negate exponent_width) (this_x+min_u*width/2),min_v=scaleFloat (negate exponent_height) (this_y-max_v*height/2),max_u=scaleFloat (negate exponent_width) (this_x+max_u*width/2),max_v=scaleFloat (negate exponent_height) (this_y-min_v*height/2)}
 
 create_large_atlas::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Clip_request->Clip
 create_large_atlas width height clip_request=case clip_request of
@@ -209,13 +209,13 @@ create_animation_a action width height number count index album_id engine=if cou
 create_animation_b::ET.Has_call_stack=>FP.Ptr (FP.Ptr SDLT.SDL_Surface)->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->FP.Ptr ()->IO ()
 create_animation_b frame padding width size frame_width frame_height pack_width pack_height width_number number count index map_transfer_buffer=do
     FMU.fillBytes (FP.castPtr map_transfer_buffer) 0 size
-    CM.forM_ [0..min number (count-index)-1] $ \this_index->do
+    monad_for 0 (min number (count-index)-1) $ \this_index->do
         surface_ptr<-FS.peekElemOff frame (index+this_index)
         surface<-SDLF.sdl_convert_surface surface_ptr SDLI.sdl_pixelformat_rgba32
         sdl_catch_null surface
         pitch<-SDLI.sdl_surface_pitch_peek surface
         pixel<-SDLI.sdl_surface_pixels_peek surface
-        CM.forM_ [0..frame_height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*fromIntegral pitch)) (frame_width*4)
+        let new_pitch=fromIntegral pitch in monad_for 0 (fromIntegral frame_height-1) (\y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*new_pitch)) (frame_width*4))
         SDLF.sdl_destroy_surface surface
 
 remove_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
@@ -240,7 +240,7 @@ remove_visual visual engine=case visual of
         SDLF.sdl_release_gpu_texture engine.device single_album.texture
         return (engine {album=album})
     Animation {album_number,album_id}->do
-        new_album<-CM.foldM (\album index->remove_animation engine.device index album_id album) engine.album [0..album_number-1]
+        new_album<-monad_fold 0 (album_number-1) engine.album (\index album->remove_animation engine.device index album_id album)
         return (engine {album=new_album})
     Canvas {canvas_id}->let (canvas,single_canvas)=int_map_delete_lookup canvas_id engine.canvas in do
         clean_canvas engine.device single_canvas
@@ -278,17 +278,15 @@ remove_node_a leaf_child node_child engine=do
     int_set_monad_fold remove_node_node node_child new_engine
 
 remove_node_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node_leaf leaf_id engine=let (leaf,projection)=int_map_delete_lookup leaf_id engine.leaf in remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
+remove_node_leaf leaf_id engine=let (leaf,projection)=int_map_delete_lookup leaf_id engine.leaf in all_selector_monad_action remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
 
 remove_node_node::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
 remove_node_node node_id engine=let (node,single_node)=int_map_delete_lookup node_id engine.node in remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}
-{-# INLINE from_same_insert_widget_b #-}
 {-# INLINE from_insert_widget #-}
 {-# INLINE from_insert_widget_a #-}
-{-# INLINE from_insert_widget_b #-}
 {-# INLINE create_atlas_a #-}
 {-# INLINE create_large_atlas #-}
 {-# INLINE create_node #-}

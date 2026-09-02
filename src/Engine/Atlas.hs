@@ -47,10 +47,10 @@ from_image device picture_transfer_buffer picture_size path=with_string path $ \
     pixel<-SDLI.sdl_surface_pixels_peek new_surface
     let new_width=fromIntegral width
     let new_height=fromIntegral height
-    let new_pitch=4*width
-    let size=new_pitch*height
+    let quadruple_width=4*width
+    let size=quadruple_width*height
     CM.when (picture_size<size) EF.empty_error
-    texture<-upload_texture device picture_transfer_buffer new_width new_height (\map_transfer_buffer->if pitch==new_pitch then FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size) else CM.forM_ [0..height-1] $ \y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (fromIntegral (y*new_pitch))) (FP.plusPtr pixel (fromIntegral (y*pitch))) (fromIntegral new_pitch))
+    texture<-upload_texture device picture_transfer_buffer new_width new_height (\map_transfer_buffer->if pitch==quadruple_width then FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size) else let new_pitch=fromIntegral pitch in let new_quadruple_width=fromIntegral quadruple_width in monad_for 0 (fromIntegral height-1) (\y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (y*new_quadruple_width)) (FP.plusPtr pixel (y*new_pitch)) new_quadruple_width))
     SDLF.sdl_destroy_surface new_surface
     return (texture,new_width,new_height)
 
@@ -70,7 +70,7 @@ upload_texture device picture_transfer_buffer width height action=do
     sdl_catch_null command_buffer
     copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
     sdl_catch_null copy_pass
-    FMU.with (SDLI.SDL_GPUTextureTransferInfo {sdl_transfer_buffer=picture_transfer_buffer,sdl_offset=0,sdl_pixels_per_row=width,sdl_rows_per_layer=height}) $ \texture_transfer_info->FMU.with (SDLI.SDL_GPUTextureRegion {sdl_texture=texture,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0,sdl_w=width,sdl_h=height,sdl_d=1}) $ \texture_region->SDLF.sdl_upload_to_gpu_texture copy_pass texture_transfer_info texture_region (FMU.fromBool False)
+    FMU.with (SDLI.SDL_GPUTextureTransferInfo {sdl_transfer_buffer=picture_transfer_buffer,sdl_offset=0,sdl_pixels_per_row=width,sdl_rows_per_layer=height}) (\texture_transfer_info->FMU.with (SDLI.SDL_GPUTextureRegion {sdl_texture=texture,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0,sdl_w=width,sdl_h=height,sdl_d=1}) (\texture_region->SDLF.sdl_upload_to_gpu_texture copy_pass texture_transfer_info texture_region (FMU.fromBool False)))
     SDLF.sdl_end_gpu_copy_pass copy_pass
     sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
     return texture
@@ -81,7 +81,7 @@ copy_texture device texture_from texture_to x y width height=do
     sdl_catch_null command_buffer
     copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
     sdl_catch_null copy_pass
-    FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) $ \texture_location_from->FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->SDLF.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False)
+    FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) (\texture_location_from->FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->SDLF.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False))
     SDLF.sdl_end_gpu_copy_pass copy_pass
     sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
 
@@ -92,4 +92,3 @@ create_white_texture device picture_transfer_buffer picture_size width height=le
 
 {-# INLINE init_atlas #-}
 {-# INLINE atlas_insert #-}
-{-# INLINE atlas_insert_a #-}

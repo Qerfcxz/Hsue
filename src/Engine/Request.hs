@@ -104,12 +104,12 @@ do_request request engine=case request of
                 SDLF.sdl_release_gpu_shader engine.device sdl_shader
                 return (engine {shader=shader},False)
             else EF.empty_error
-    Create_pipeline {pipeline_id,maybe_vertex_shader_id,fragment_shader_id,blend_state}->case maybe_vertex_shader_id of
+    Create_pipeline {maybe_vertex_shader_id,fragment_shader_id,pipeline_id,blend_state}->case maybe_vertex_shader_id of
         Nothing->let (shader,fragment_shader)=int_map_update_lookup fragment_shader_id (update_shader_reference (+1)) engine.shader in do
-            pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
+            pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
             return (engine {pipeline=int_map_insert pipeline_id (Default_pipeline {sdl_pipeline=pipeline,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=shader},False)
         Just vertex_shader_id->let (shader,vertex_shader)=int_map_update_lookup vertex_shader_id (update_shader_reference (+1)) engine.shader in let (new_shader,fragment_shader)=int_map_update_lookup fragment_shader_id (update_shader_reference (+1)) shader in do
-            pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} $ \color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device)
+            pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
             return (engine {pipeline=int_map_insert pipeline_id (Pipeline {sdl_pipeline=pipeline,vertex_shader_id=vertex_shader_id,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
     Remove_pipeline {pipeline_id}->let (pipeline,single_pipeline)=int_map_delete_lookup pipeline_id engine.pipeline in case single_pipeline of
         Pipeline {sdl_pipeline,vertex_shader_id,fragment_shader_id}->do
@@ -137,7 +137,7 @@ do_request request engine=case request of
         let (atlas,left,down,right,up)=atlas_insert width height padding (init_atlas new_width new_height)
         copy_texture engine.device white_texture texture left down width height
         SDLF.sdl_release_gpu_texture engine.device white_texture
-        new_engine<-update_atlas_font atlas_font_id path maybe_charset (engine {atlas_font=int_map_insert atlas_font_id (Atlas_font {font_atlas=atlas,texture=texture,exponent_width=exponent_width,exponent_height=exponent_height,padding=padding,u=scaleFloat (-exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range,descent=0,ascent=0,glyph=DIM.empty,path=path,reference=0}) engine.atlas_font})
+        new_engine<-update_atlas_font atlas_font_id path maybe_charset (engine {atlas_font=int_map_insert atlas_font_id (Atlas_font {path=path,texture=texture,font_atlas=atlas,glyph=DIM.empty,descent=0,ascent=0,u=scaleFloat (negate exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range,padding=padding,exponent_width=exponent_width,exponent_height=exponent_height,reference=0}) engine.atlas_font})
         return (new_engine,False)
     Remove_atlas_font {atlas_font_id}->let (atlas_font,single_atlas_font)=int_map_delete_lookup atlas_font_id engine.atlas_font in case single_atlas_font of
         Atlas_font {texture,reference}->if reference==0
@@ -173,7 +173,7 @@ do_request request engine=case request of
         return (engine,False)
     Clean_atlas->let initial_album=int_map_lookup engine.initial_album_id engine.album in let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas (DB.shiftL 1 engine.exponent_width) (DB.shiftL 1 engine.exponent_height)) in do
         copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-        return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,u=scaleFloat (-engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (-engine.exponent_height) (fromIntegral (down+up)/2)},False)
+        return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,u=scaleFloat (negate engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate engine.exponent_height) (fromIntegral (down+up)/2)},False)
     Unlock {leaf_id}->do
         (leaf,new_engine)<-CMTS.runStateT (int_map_functor_update leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
@@ -186,19 +186,19 @@ do_request request engine=case request of
     Render {window_id,render_selector,projection_move,maybe_sampler_id}->let (new_engine,widget)=move_lookup projection_move engine in do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
         sdl_catch_null command_buffer
-        let window=int_map_lookup window_id new_engine.window in let (vertex,index,parameter,draw_call)=for_submit (get_submit render_selector widget) in for_render window command_buffer (\texture->do_render new_engine window command_buffer texture maybe_sampler_id draw_call vertex index parameter)
+        do_render new_engine (int_map_lookup window_id new_engine.window) command_buffer maybe_sampler_id (get_submit render_selector widget)
         return (new_engine,False)
     Canvas_render {canvas_id,canvas_render_selector,projection_move,maybe_sampler_id}->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
         sdl_catch_null command_buffer
         case int_map_lookup canvas_id engine.canvas of
             Free_canvas {half_width,half_height,texture}->let (new_engine,widget)=move_lookup projection_move engine in do
-                let (vertex,index,parameter,draw_call)=for_submit (get_submit canvas_render_selector widget) in do_render_canvas new_engine (half_width*2) (half_height*2) command_buffer texture maybe_sampler_id draw_call vertex index parameter
+                do_render_canvas new_engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id (get_submit canvas_render_selector widget)
                 sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return (new_engine,False)
             _->EF.empty_error
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->do
-        new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (for_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
+        new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (do_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
         return (new_new_engine,False)
     Shader_canvas {uniform,canvas_id,pipeline_id,maybe_sampler_id}->case int_map_lookup canvas_id engine.canvas of
         Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
@@ -253,7 +253,7 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
         render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
         sdl_catch_null render_pass
         SDLF.sdl_bind_gpu_graphics_pipeline render_pass (get_sdl_pipeline (int_map_lookup pipeline_id engine.pipeline))
-        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id}) $ \texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
+        FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
         case uniform of
             Uniform {size,alignment,write}->FMA.allocaBytesAligned size alignment $ \ptr->do
                 write ptr
@@ -263,9 +263,19 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
         sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
         return (engine {canvas=DIM.insert canvas_id canvas engine.canvas},False)
 
+get_submit::ET.Has_call_stack=>Selector a->Widget b->DIM.IntMap (DS.Seq (Submit b))
+get_submit selector widget=selector_action (const get_submit_a) selector widget DIM.empty
+
+get_submit_a::ET.Has_call_stack=>Widget a->DIM.IntMap (DS.Seq (Submit a))->DIM.IntMap (DS.Seq (Submit a))
+get_submit_a widget this_submit=case widget of
+    Collector {submit}->DIM.unionWith (DS.><) this_submit submit
+    _->EF.empty_error
+
 {-# INLINE create_request #-}
 {-# INLINE from_system_cursor #-}
 {-# INLINE for_unlock #-}
 {-# INLINE for_unlock_a #-}
 {-# INLINE update_article #-}
 {-# INLINE update_article_a #-}
+{-# INLINE get_submit #-}
+{-# INLINE get_submit_a #-}

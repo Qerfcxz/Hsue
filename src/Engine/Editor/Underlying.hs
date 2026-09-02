@@ -23,9 +23,7 @@ get_editor_index_lower this_y appended_typesetting typesetting max_typesetting_s
 get_editor_index_upper::ET.Has_call_stack=>FCT.CFloat->DIM.IntMap Typesetting->DVS.Vector Typesetting->Int->Int->Int->Int
 get_editor_index_upper this_y appended_typesetting typesetting max_typesetting_size min_index max_index=if min_index<=max_index
     then let middle_index=div (min_index+max_index) 2 in case get_editor_typesetting middle_index max_typesetting_size typesetting appended_typesetting of
-        Typesetting {y,upper}->if y-upper<=this_y then get_editor_index_lower this_y appended_typesetting typesetting max_typesetting_size (middle_index+1) max_index else get_editor_index_lower this_y appended_typesetting typesetting max_typesetting_size min_index (middle_index-1)
+        Typesetting {y,upper}->if y-upper<=this_y then get_editor_index_upper this_y appended_typesetting typesetting max_typesetting_size (middle_index+1) max_index else get_editor_index_upper this_y appended_typesetting typesetting max_typesetting_size min_index (middle_index-1)
     else max_index
 
 {-# INLINE get_editor_typesetting #-}
-{-# INLINE get_editor_index_lower #-}
-{-# INLINE get_editor_index_upper #-}

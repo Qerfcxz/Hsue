@@ -49,10 +49,10 @@ create_foldable_request::ET.Has_call_stack=>Foldable a=>a (Request b)->Engine b-
 create_foldable_request foldable_request engine=DF.foldl' (flip create_request) engine foldable_request
 
 consume_object_move::ET.Has_call_stack=>Int->Projection_move
-consume_object_move leaf_id=Object_move {consume=True,leaf_id=leaf_id}
+consume_object_move leaf_id=Object_move {leaf_id=leaf_id,consume=True}
 
 retain_object_move::ET.Has_call_stack=>Int->Projection_move
-retain_object_move leaf_id=Object_move {consume=False,leaf_id=leaf_id}
+retain_object_move leaf_id=Object_move {leaf_id=leaf_id,consume=False}
 
 simple_window_render_request::ET.Has_call_stack=>Int->Projection_move->Maybe Int->Request a
 simple_window_render_request window_id projection_move maybe_sampler_id=Render {window_id=window_id,render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id}
@@ -71,13 +71,13 @@ origin_point=Point {x=0,y=0}
 
 plus_point::ET.Has_call_stack=>Point->Point->Point
 plus_point first_point second_point=case first_point of
-    Point {x=first_x,y=frist_y}->case second_point of
-        Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=frist_y+second_y}
+    Point {x=first_x,y=first_y}->case second_point of
+        Point {x=second_x,y=second_y}->Point {x=first_x+second_x,y=first_y+second_y}
 
 subtract_point::ET.Has_call_stack=>Point->Point->Point
 subtract_point first_point second_point=case first_point of
-    Point {x=first_x,y=frist_y}->case second_point of
-        Point {x=second_x,y=second_y}->Point {x=first_x-second_x,y=frist_y-second_y}
+    Point {x=first_x,y=first_y}->case second_point of
+        Point {x=second_x,y=second_y}->Point {x=first_x-second_x,y=first_y-second_y}
 
 identity_matrix::ET.Has_call_stack=>Matrix
 identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
@@ -154,10 +154,10 @@ set_clipboard_text string=with_string string $ \ptr->do
     value<-SDLF.sdl_set_clipboard_text ptr
     return (FMU.toBool value)
 
-quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CInt->Int->Int->Int->Int->Int->Maybe DW.Word64->DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->Sampler_create_info->Blend_state->IO (Engine a)
-quick_create_engine state main_id projection_strategy max_picture_size max_vertex_size max_index_size max_parameter_size exponent_width exponent_height maybe_interval padding width height font_size pixel_range sampler_create_info blend_state=case maybe_interval of
-    Nothing->create_engine state main_id projection_strategy (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) exponent_width exponent_height 0 0 0 0 Nothing 0 padding width height font_size pixel_range sampler_create_info blend_state
-    Just interval->create_engine state main_id projection_strategy (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) exponent_width exponent_height 0 0 0 0 (Just (div nanosecond interval)) 0 padding width height font_size pixel_range sampler_create_info blend_state
+quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CFloat->FCT.CFloat->FCT.CInt->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Maybe DW.Word64->Int->Int->Sampler_create_info->Blend_state->IO (Engine a)
+quick_create_engine state main_id projection_strategy font_size pixel_range max_picture_size max_vertex_size max_index_size max_parameter_size padding width height maybe_interval exponent_width exponent_height sampler_create_info blend_state=case maybe_interval of
+    Nothing->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 Nothing 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state
+    Just interval->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 (Just (div nanosecond interval)) 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state
 
 {-# INLINE self_selector #-}
 {-# INLINE all_selector #-}

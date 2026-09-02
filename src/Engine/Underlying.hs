@@ -16,12 +16,12 @@ import qualified Control.Monad.ST as CMST
 import qualified Control.Monad.Trans.State as CMTS
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
-import qualified Data.Sequence as DS
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
-import qualified Data.Word as DW
+import qualified Data.Vector.Storable as DVS
+import qualified Data.Vector.Storable.Mutable as DVSM
 import qualified Foreign.C.String as FCS
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Utils as FMU
@@ -139,17 +139,6 @@ catch_null ptr=CM.when (ptr==FP.nullPtr) EF.empty_error
 with_string::ET.Has_call_stack=>String->(FP.Ptr FCT.CChar->IO a)->IO a
 with_string string=DBS.useAsCString (DTE.encodeUtf8 (DT.pack string))
 
-seq_poke_array::ET.Has_call_stack=>FS.Storable a=>Int->DS.Seq a->FP.Ptr a->IO ()
-seq_poke_array size value ptr=CM.void (DF.foldlM (flip (seq_poke_array_a size)) ptr value)
-
-seq_poke_array_a::ET.Has_call_stack=>FS.Storable a=>Int->a->FP.Ptr a->IO (FP.Ptr a)
-seq_poke_array_a size value ptr=do
-    FS.poke ptr value
-    return (FP.plusPtr ptr size)
-
-triple_reverse::ET.Has_call_stack=>(a,b,c)->(c,b,a)
-triple_reverse (a,b,c)=(c,b,a)
-
 monad_action_swap::ET.Has_call_stack=>Monad c=>(a->b->c (d,e))->a->b->c (e,d)
 monad_action_swap action first_value second_value=do
     (new_first_value,new_second_value)<-action first_value second_value
@@ -159,6 +148,27 @@ vector_io_map::ET.Has_call_stack=>(a->b->IO (b,c))->DV.Vector a->b->IO (b,DV.Vec
 vector_io_map action vector value=do
     (new_vector,new_value)<-CMTS.runStateT (DV.mapM (\this_value->CMTS.StateT {runStateT=monad_action_swap action this_value}) vector) value
     return (new_value,new_vector)
+
+to_storable_vector::ET.Has_call_stack=>FS.Storable b=>DF.Foldable c=>(a->b)->c a->Int->DVS.Vector b
+to_storable_vector transform foldable size=CMST.runST $ do
+    vector<-DVSM.new size
+    CM.void (DF.foldlM (\index value->integral_action (\this_index->DVSM.unsafeWrite vector this_index (transform value)) index) 0 foldable)
+    DVS.unsafeFreeze vector
+
+monad_for::ET.Has_call_stack=>Integral a=>Monad b=>a->a->(a->b ())->b ()
+monad_for start end action=if end<start then return () else do
+    action start
+    monad_for (start+1) end action
+
+monad_fold::ET.Has_call_stack=>Integral a=>Monad c=>a->a->b->(a->b->c b)->c b
+monad_fold start end value action=if end<start then return value else do
+    new_value<-action start value
+    monad_fold (start+1) end new_value action
+
+integral_action::ET.Has_call_stack=>Integral a=>Monad b=>(a->b ())->a->b a
+integral_action action integral=do
+    action integral
+    return (integral+1)
 
 move_clip::ET.Has_call_stack=>Point->Clip->Clip
 move_clip point clip=case clip of
@@ -178,28 +188,14 @@ combine_arrange first_arrange second_arrange=case first_arrange of
                     Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
                         Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_point_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_point_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},color=multiply_color first_color second_color}
 
-quick_create_vertex::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Vertex
-quick_create_vertex color x y u v=case color of
-    Color {red,green,blue,alpha}->Vertex {parameter_id=0,font_size=0,x=x,y=y,u=u,v=v,red=red,green=green,blue=blue,alpha=alpha}
+size_of_vertex::ET.Has_call_stack=>Num a=>a
+size_of_vertex=40
 
-quick_create_rectangle_vertex::ET.Has_call_stack=>Color->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Vertex
-quick_create_rectangle_vertex color left down right up min_u min_v max_u max_v=case color of
-    Color {red,green,blue,alpha}->DS.singleton (Vertex {parameter_id=0,font_size=0,x=left,y=down,u=min_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha}) DS.|> Vertex {parameter_id=0,font_size=0,x=right,y=down,u=max_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=0,x=right,y=up,u=max_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=0,x=left,y=up,u=min_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha}
+size_of_index::ET.Has_call_stack=>Num a=>a
+size_of_index=4
 
-quick_create_rectangle_text_vertex::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Vertex->DS.Seq Vertex
-quick_create_rectangle_text_vertex red green blue alpha left down right up min_u min_v max_u max_v font_size vertex=vertex DS.|> Vertex {parameter_id=0,font_size=font_size,x=left,y=down,u=min_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=font_size,x=right,y=down,u=max_u,v=min_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=font_size,x=right,y=up,u=max_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha} DS.|> Vertex {parameter_id=0,font_size=font_size,x=left,y=up,u=min_u,v=max_v,red=red,green=green,blue=blue,alpha=alpha}
-
-quick_create_rectangle_index::ET.Has_call_stack=>DS.Seq DW.Word32
-quick_create_rectangle_index=DS.singleton 0 DS.|> 1 DS.|> 2 DS.|> 0 DS.|> 2 DS.|> 3
-
-to_extended::ET.Has_call_stack=>FCT.CFloat->Extended
-to_extended number=Finite {number=number}
-
-from_extended::ET.Has_call_stack=>Extended->FCT.CFloat
-from_extended extended=case extended of
-    Negative_infinity->0
-    Finite {number}->number
-    Positive_infinity->0
+size_of_parameter::ET.Has_call_stack=>Num a=>a
+size_of_parameter=48
 
 mebibyte::ET.Has_call_stack=>Num a=>a
 mebibyte=1048576
@@ -223,20 +219,16 @@ millisecond=1000000
 {-# INLINE functor_update_coroutine_state #-}
 {-# INLINE get_sdl_pipeline #-}
 {-# INLINE update_shader_reference #-}
-{-# INLINE widget_lookup #-}
 {-# INLINE lock_visual #-}
-{-# INLINE triple_reverse #-}
 {-# INLINE monad_action_swap #-}
 {-# INLINE vector_io_map #-}
+{-# INLINE integral_action #-}
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}
 {-# INLINE combine_arrange #-}
-{-# INLINE quick_create_vertex #-}
-{-# INLINE quick_create_rectangle_vertex #-}
-{-# INLINE quick_create_rectangle_text_vertex #-}
-{-# INLINE quick_create_rectangle_index #-}
-{-# INLINE to_extended #-}
-{-# INLINE from_extended #-}
+{-# INLINE size_of_vertex #-}
+{-# INLINE size_of_index #-}
+{-# INLINE size_of_parameter #-}
 {-# INLINE mebibyte #-}
 {-# INLINE nanosecond #-}
 {-# INLINE millisecond #-}
