@@ -40,7 +40,7 @@ library
         Engine.Widget
         Engine.Window
         MSDF.Function
-        MSDF.Type
+        MSDF.Include
         SDL.Function
         SDL.Include
         SDL.Type
