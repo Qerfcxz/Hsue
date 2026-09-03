@@ -8,10 +8,10 @@ struct VSOutput {
     float font_size:TEXCOORD3;
     float2 screen:TEXCOORD4;
     float scale:TEXCOORD5;
-    float border_flag:TEXCOORD6;
+    float enable:TEXCOORD6;
 };
 float4 main(VSOutput input):SV_Target {
-    if (input.border_flag>0) {
+    if (input.enable>0) {
         if (input.screen.x<input.border.x||input.screen.y<input.border.y||input.screen.x>input.border.z||input.screen.y>input.border.w) {
             discard;
         }

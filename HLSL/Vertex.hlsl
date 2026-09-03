@@ -18,14 +18,14 @@ struct VSOutput {
     float font_size:TEXCOORD3;
     float2 screen:TEXCOORD4;
     float scale:TEXCOORD5;
-    float border_flag:TEXCOORD6;
+    float enable:TEXCOORD6;
 };
 struct Parameter {
     float2 xy;
     float2 matrix_x;
     float2 matrix_y;
     float parameter_padding;
-    float border_flag;
+    float enable;
     float4 border;
 };
 StructuredBuffer<Parameter> parameter_buffer:register(t0,space0);
@@ -45,6 +45,6 @@ VSOutput main(VSInput input) {
     output.screen=input.xy;
     float matrix_scale=length(parameter.matrix_x);
     output.scale=(pixel_range*input.font_size*matrix_scale)/font_size;
-    output.border_flag=parameter.border_flag;
+    output.enable=parameter.enable;
     return output;
 }
