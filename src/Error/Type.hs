@@ -1,7 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE StrictData #-}
 
 module Error.Type where
 

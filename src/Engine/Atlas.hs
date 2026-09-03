@@ -56,8 +56,8 @@ from_image device picture_transfer_buffer picture_size path=with_string path $ \
 
 from_pixel::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->FP.Ptr DW.Word8->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
 from_pixel device picture_transfer_buffer picture_size pixel width height=let size=fromIntegral (4*width*height) in do
-    CM.when (picture_size<size) EF.empty_error
-    upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size))
+    CM.when (picture_size<fromIntegral size) EF.empty_error
+    upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) size)
 
 upload_texture::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->DW.Word32->DW.Word32->(FP.Ptr ()->IO ())->IO (FP.Ptr SDLT.SDL_GPUTexture)
 upload_texture device picture_transfer_buffer width height action=do
@@ -81,7 +81,7 @@ copy_texture device texture_from texture_to x y width height=do
     sdl_catch_null command_buffer
     copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
     sdl_catch_null copy_pass
-    FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) (\texture_location_from->FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) $ \texture_location_to->SDLF.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False))
+    FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_from,sdl_mip_level=0,sdl_layer=0,sdl_x=0,sdl_y=0,sdl_z=0}) (\texture_location_from->FMU.with (SDLI.SDL_GPUTextureLocation {sdl_texture=texture_to,sdl_mip_level=0,sdl_layer=0,sdl_x=x,sdl_y=y,sdl_z=0}) (\texture_location_to->SDLF.sdl_copy_gpu_texture_to_texture copy_pass texture_location_from texture_location_to width height 1 (FMU.fromBool False)))
     SDLF.sdl_end_gpu_copy_pass copy_pass
     sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
 

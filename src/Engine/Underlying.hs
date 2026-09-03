@@ -220,6 +220,12 @@ millisecond=1000000
 {-# INLINE get_sdl_pipeline #-}
 {-# INLINE update_shader_reference #-}
 {-# INLINE lock_visual #-}
+{-# INLINE sdl_catch_false #-}
+{-# INLINE sdl_catch_zero #-}
+{-# INLINE sdl_catch_null #-}
+{-# INLINE sdl_return_catch_null #-}
+{-# INLINE catch_null #-}
+{-# INLINE with_string #-}
 {-# INLINE monad_action_swap #-}
 {-# INLINE vector_io_map #-}
 {-# INLINE integral_action #-}

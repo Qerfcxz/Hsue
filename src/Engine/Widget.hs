@@ -78,8 +78,8 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Group_request {initial_min_index,initial_max_index,index,insert_widget_request}->do
         (new_engine,group_widget,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index id insert_widget_request DIM.empty engine
         return (new_engine,Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=group_widget})
-    Vector_request {index,vector_widget_request}->let size=DS.length vector_widget_request in do
-        vector_widget<-DVM.new size
+    Vector_request {index,vector_widget_request}->do
+        vector_widget<-DVM.new (DS.length vector_widget_request)
         new_engine<-create_vector_widget leaf_id 0 vector_widget vector_widget_request engine
         new_vector_widget<-DV.unsafeFreeze vector_widget
         return (new_engine,Vector {index=index,vector_widget=new_vector_widget})
@@ -95,17 +95,26 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
         return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Coroutine_request {initial_min_index,initial_max_index,index,insert_widget_request,raw_coroutine,iterative}->let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in let (linear_coroutine,layout,variable_size,user_variable_size)=from_coroutine (to_coroutine coroutine_sequence) int in do
-        (new_engine,coroutine_state,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index (init_coroutine_state variable_size user_variable_size) insert_widget_request DIM.empty engine
-        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
-    Store_request {store}->return (engine,Store {store=store})
-    Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
+    Visual_trigger_request {next,visual_trigger,visual_request}->do
+        (new_engine,visual)<-create_visual visual_request engine
+        return (new_engine,Visual_trigger {next=next,visual_trigger=visual_trigger,visual=visual})
+    Visual_io_trigger_request {next,visual_io_trigger,visual_request}->do
+        (new_engine,visual)<-create_visual visual_request engine
+        return (new_engine,Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=visual})
+    Visual_mix_trigger_request {next,visual_mix_trigger,order,visual_request}->do
+        (new_engine,visual)<-create_visual visual_request engine
+        return (new_engine,Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=visual})
     Group_visual_request {arrange,group_visual_request}->do
         (new_engine,group_visual)<-int_map_monad_action (const (\visual_request this_engine->create_visual visual_request this_engine)) group_visual_request engine
         return (new_engine,Group_visual {arrange=arrange,group_visual=group_visual})
     Vector_visual_request {arrange,vector_visual_request}->do
         (new_engine,vector_visual)<-vector_io_map (\visual_request this_engine->create_visual visual_request this_engine) vector_visual_request engine
         return (new_engine,Vector_visual {arrange=arrange,vector_visual=vector_visual})
+    Coroutine_request {initial_min_index,initial_max_index,index,insert_widget_request,raw_coroutine,iterative}->let (int,coroutine_sequence,_)=raw_coroutine.iterator 0 in let (linear_coroutine,layout,variable_size,user_variable_size)=from_coroutine (to_coroutine coroutine_sequence) int in do
+        (new_engine,coroutine_state,max_index,min_index)<-from_insert_widget_request leaf_id initial_min_index initial_max_index (init_coroutine_state variable_size user_variable_size) insert_widget_request DIM.empty engine
+        return (new_engine,Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
+    Collector_request {initial_min_index,initial_max_index}->return (engine,Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty})
+    Store_request {store}->return (engine,Store {store=store})
 
 create_vector_widget::ET.Has_call_stack=>Custom a=>Int->Int->DVM.IOVector (Widget a)->DS.Seq (Widget_request a)->Engine a->IO (Engine a)
 create_vector_widget leaf_id index vector_widget vector_widget_request engine=case vector_widget_request of
@@ -215,7 +224,7 @@ create_animation_b frame padding width size frame_width frame_height pack_width 
         sdl_catch_null surface
         pitch<-SDLI.sdl_surface_pitch_peek surface
         pixel<-SDLI.sdl_surface_pixels_peek surface
-        let new_pitch=fromIntegral pitch in monad_for 0 (fromIntegral frame_height-1) (\y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*new_pitch)) (frame_width*4))
+        let new_pitch=fromIntegral pitch in monad_for 0 (frame_height-1) (\y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*new_pitch)) (frame_width*4))
         SDLF.sdl_destroy_surface surface
 
 remove_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)

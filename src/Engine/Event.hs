@@ -22,8 +22,8 @@ import qualified Data.Word as DW
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
-import qualified Foreign.Storable as FS
 import qualified Foreign.StablePtr as FSP
+import qualified Foreign.Storable as FS
 
 loop_engine_off::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_off event engine=do
@@ -162,6 +162,9 @@ run_widget event engine this_widget=case this_widget of
     Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in Trigger_result {next=next,update=update,value=Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget}}
     Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Trigger_result {next=next,update=create_request (Io {io=update}),value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
     Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
+    Visual_trigger {next,visual_trigger,visual}->let (new_visual,update)=visual_trigger event engine visual in Trigger_result {next=next,update=update,value=Visual_trigger {next=next,visual_trigger=visual_trigger,visual=new_visual}}
+    Visual_io_trigger {next,visual_io_trigger,visual}->let (new_visual,update)=visual_io_trigger event engine visual in Trigger_result {next=next,update=create_request (Io {io=update}),value=Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=new_visual}}
+    Visual_mix_trigger {next,visual_mix_trigger,order,visual}->let (new_visual,update,io_update)=visual_mix_trigger event engine visual in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=new_visual}}
     _->EF.empty_error
 
 run_request::ET.Has_call_stack=>Custom a=>Bool->Engine a->IO (Engine a,Bool)
@@ -227,6 +230,11 @@ pop_event ptr=do
 
 {-# INLINE get_interval #-}
 {-# INLINE to_mouse_button #-}
+{-# INLINE loop_event_a #-}
+{-# INLINE loop_event_b #-}
+{-# INLINE run_event #-}
 {-# INLINE run_event_a #-}
 {-# INLINE run_widget #-}
 {-# INLINE to_key #-}
+{-# INLINE push_event #-}
+{-# INLINE pop_event #-}

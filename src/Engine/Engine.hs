@@ -124,3 +124,5 @@ run_engine::ET.Has_call_stack=>Custom a=>Engine a->IO ()
 run_engine engine=FMA.allocaBytesAligned SDLI.sdl_event_size SDLI.sdl_event_alignment $ \ptr->case engine.timer of
     Off->loop_engine_off ptr engine
     On {}->loop_engine_on ptr engine
+
+{-# INLINE quit_engine #-}

@@ -120,7 +120,7 @@ get_submit_size_a submit (vertex_number,index_number,parameter_number)=case subm
     Submit {vertex_size,index_size}->(vertex_number+vertex_size,index_number+index_size,parameter_number+1)
 
 write_submit::ET.Has_call_stack=>Custom a=>Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->DIM.IntMap (DS.Seq (Submit a))->IO (DS.Seq (Submit_mode,DW.Word32,DW.Word32))
-write_submit engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=fromIntegral vertex_number*size_of_vertex in let index_size=fromIntegral index_number*size_of_index in let parameter_size=fromIntegral parameter_number*size_of_parameter in do
+write_submit engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=vertex_number*size_of_vertex in let index_size=index_number*size_of_index in let parameter_size=parameter_number*size_of_parameter in do
     CM.when (engine.max_vertex_size<vertex_size||engine.max_index_size<index_size||engine.max_parameter_size<parameter_size) EF.empty_error
     map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer engine.device engine.transfer_buffer (FMU.fromBool True)
     sdl_catch_null map_transfer_buffer
@@ -178,9 +178,9 @@ write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red gree
     FS.pokeByteOff index_ptr (2*size_of_index) (vertex_index+2)
 
 write_submit_convex_polygon::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Point->IO ()
-write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y u v point_set=let number=DS.length point_set in do
+write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y u v point_set=do
     CM.void (DF.foldlM (\index point->integral_action (\this_index->poke_vertex vertex_ptr (this_index*size_of_vertex) parameter_index 0 (x+point.x) (y+point.y) u v red green blue alpha) index) 0 point_set)
-    monad_for 0 (number-3) $ \index->let offset=3*index*size_of_index in let new_vertex_index=vertex_index+fromIntegral index in do
+    monad_for 0 (DS.length point_set-3) $ \index->let offset=3*index*size_of_index in let new_vertex_index=vertex_index+fromIntegral index in do
         FS.pokeByteOff index_ptr offset vertex_index
         FS.pokeByteOff index_ptr (offset+size_of_index) (new_vertex_index+1)
         FS.pokeByteOff index_ptr (offset+2*size_of_index) (new_vertex_index+2)
@@ -233,4 +233,7 @@ poke_vertex ptr offset parameter_id font_size x y u v red green blue alpha=do
 {-# INLINE get_submit_size #-}
 {-# INLINE get_submit_size_a #-}
 {-# INLINE write_submit_b #-}
+{-# INLINE write_submit_data #-}
+{-# INLINE write_submit_rectangle #-}
+{-# INLINE write_submit_triangle #-}
 {-# INLINE poke_vertex #-}

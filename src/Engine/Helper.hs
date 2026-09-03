@@ -39,6 +39,15 @@ default_selector maybe_value bounded=Default_selector {maybe_value=if maybe_valu
 any_visual_selector::ET.Has_call_stack=>Bool->Visual_selector ()
 any_visual_selector strict=Any_visual_selector {value=(),strict=strict}
 
+visual_trigger_selector::ET.Has_call_stack=>Bool->Visual_selector ()
+visual_trigger_selector strict=Visual_trigger_selector {value=(),strict=strict}
+
+visual_io_trigger_selector::ET.Has_call_stack=>Bool->Visual_selector ()
+visual_io_trigger_selector strict=Visual_io_trigger_selector {value=(),strict=strict}
+
+visual_mix_trigger_selector::ET.Has_call_stack=>Bool->Visual_selector ()
+visual_mix_trigger_selector strict=Visual_mix_trigger_selector {value=(),strict=strict}
+
 const_dynamic_bool::ET.Has_call_stack=>Bool->Dynamic_bool a
 const_dynamic_bool bool=Dynamic_bool {dynamic_bool=const (const (const (const bool)))}
 
@@ -164,6 +173,9 @@ quick_create_engine state main_id projection_strategy font_size pixel_range max_
 {-# INLINE trigger_selector #-}
 {-# INLINE default_selector #-}
 {-# INLINE any_visual_selector #-}
+{-# INLINE visual_trigger_selector #-}
+{-# INLINE visual_io_trigger_selector #-}
+{-# INLINE visual_mix_trigger_selector #-}
 {-# INLINE const_dynamic_bool #-}
 {-# INLINE const_dynamic_int #-}
 {-# INLINE create_foldable_request #-}

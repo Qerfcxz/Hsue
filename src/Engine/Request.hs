@@ -198,8 +198,8 @@ do_request request engine=case request of
                 return (new_engine,False)
             _->EF.empty_error
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->do
-        new_new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (do_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
-        return (new_new_engine,False)
+        new_engine<-let (new_engine,widget)=move_lookup projection_move engine in selector_monad_action (do_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
+        return (new_engine,False)
     Shader_canvas {uniform,canvas_id,pipeline_id,maybe_sampler_id}->case int_map_lookup canvas_id engine.canvas of
         Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
         Bound_canvas {texture,temporary_texture}->do_shader_canvas (Bound_canvas {texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine

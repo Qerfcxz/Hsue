@@ -1,5 +1,4 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE StrictData #-}
 

@@ -408,76 +408,124 @@ any_vector_visual_selector_action function value vector_visual environment=funct
 any_vector_visual_selector_update::ET.Has_call_stack=>((DV.Vector (Visual a)->Widget a)->b->c)->((Visual a->d)->DV.Vector (Visual a)->b)->(Visual a->d)->Arrange->DV.Vector (Visual a)->c
 any_vector_visual_selector_update wrapper function value arrange vector_visual=wrapper (\this_vector_visual->Vector_visual {arrange=arrange,vector_visual=this_vector_visual}) (function value vector_visual)
 
-visual_selector_action::ET.Has_call_stack=>(a->Arrange->Visual b->c->c)->Visual_selector a->Widget b->c->c
+visual_selector_action::ET.Has_call_stack=>(a->(Arrange->Arrange)->Visual b->c->c)->Visual_selector a->Widget b->c->c
 visual_selector_action action visual_selector widget environment=case visual_selector of
     None_visual_selector->environment
     Combine_visual_selector {combine_visual_selector}->DF.foldl' (\this_environment single_selector->visual_selector_action action single_selector widget this_environment) environment combine_visual_selector
     Any_visual_selector {value,strict}->any_visual_selector_action strict (action value) widget environment
+    Visual_trigger_selector {value,strict}->case widget of
+        Visual_trigger {visual}->action value id visual environment
+        _->if strict then EF.empty_error else environment
+    Visual_io_trigger_selector {value,strict}->case widget of
+        Visual_io_trigger {visual}->action value id visual environment
+        _->if strict then EF.empty_error else environment
+    Visual_mix_trigger_selector {value,strict}->case widget of
+        Visual_mix_trigger {visual}->action value id visual environment
+        _->if strict then EF.empty_error else environment
     Group_visual_selector {group_value,bounded,strict}->case widget of
-        Group_visual {arrange,group_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then action value arrange (int_map_lookup index group_visual) this_environment else maybe this_environment (\visual->action value arrange visual this_environment) (DIM.lookup index group_visual)) environment group_value
+        Group_visual {arrange,group_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then action value (combine_arrange arrange) (int_map_lookup index group_visual) this_environment else maybe this_environment (\visual->action value (combine_arrange arrange) visual this_environment) (DIM.lookup index group_visual)) environment group_value
         _->if strict then EF.empty_error else environment
     Vector_visual_selector {vector_value,bounded,strict}->case widget of
-        Vector_visual {arrange,vector_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then action value arrange (vector_visual DV.! index) this_environment else maybe this_environment (\visual->action value arrange visual this_environment) (vector_visual DV.!? index)) environment vector_value
+        Vector_visual {arrange,vector_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then action value (combine_arrange arrange) (vector_visual DV.! index) this_environment else maybe this_environment (\visual->action value (combine_arrange arrange) visual this_environment) (vector_visual DV.!? index)) environment vector_value
         _->if strict then EF.empty_error else environment
 
-any_visual_selector_action::ET.Has_call_stack=>Bool->(Arrange->Visual a->b->b)->Widget a->b->b
+any_visual_selector_action::ET.Has_call_stack=>Bool->((Arrange->Arrange)->Visual a->b->b)->Widget a->b->b
 any_visual_selector_action strict action widget environment=case widget of
-    Group_visual {arrange,group_visual}->any_group_visual_selector_action DIM.foldl' (action arrange) group_visual environment
-    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldl' (action arrange) vector_visual environment
+    Group_visual {arrange,group_visual}->any_group_visual_selector_action DIM.foldl' (action (combine_arrange arrange)) group_visual environment
+    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldl' (action (combine_arrange arrange)) vector_visual environment
+    Visual_trigger {visual}->action id visual environment
+    Visual_io_trigger {visual}->action id visual environment
+    Visual_mix_trigger {visual}->action id visual environment
     _->if strict then EF.empty_error else environment
 
-visual_selector_monad_action::ET.Has_call_stack=>Monad d=>(a->Arrange->Visual b->c->d c)->Visual_selector a->Widget b->c->d c
+visual_selector_monad_action::ET.Has_call_stack=>Monad d=>(a->(Arrange->Arrange)->Visual b->c->d c)->Visual_selector a->Widget b->c->d c
 visual_selector_monad_action action visual_selector widget environment=case visual_selector of
     None_visual_selector->return environment
     Combine_visual_selector {combine_visual_selector}->DF.foldlM (\this_environment single_selector->visual_selector_monad_action action single_selector widget this_environment) environment combine_visual_selector
     Any_visual_selector {value,strict}->any_visual_selector_monad_action strict (action value) widget environment
+    Visual_trigger_selector {value,strict}->case widget of
+        Visual_trigger {visual}->action value id visual environment
+        _->if strict then EF.empty_error else return environment
+    Visual_io_trigger_selector {value,strict}->case widget of
+        Visual_io_trigger {visual}->action value id visual environment
+        _->if strict then EF.empty_error else return environment
+    Visual_mix_trigger_selector {value,strict}->case widget of
+        Visual_mix_trigger {visual}->action value id visual environment
+        _->if strict then EF.empty_error else return environment
     Group_visual_selector {group_value,bounded,strict}->case widget of
-        Group_visual {arrange,group_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then this_environment>>=action value arrange (int_map_lookup index group_visual) else maybe this_environment (\visual->this_environment>>=action value arrange visual) (DIM.lookup index group_visual)) (return environment) group_value
+        Group_visual {arrange,group_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then this_environment>>=action value (combine_arrange arrange) (int_map_lookup index group_visual) else maybe this_environment (\visual->this_environment>>=action value (combine_arrange arrange) visual) (DIM.lookup index group_visual)) (return environment) group_value
         _->if strict then EF.empty_error else return environment
     Vector_visual_selector {vector_value,bounded,strict}->case widget of
-        Vector_visual {arrange,vector_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then this_environment>>=action value arrange (vector_visual DV.! index) else maybe this_environment (\visual->this_environment>>=action value arrange visual) (vector_visual DV.!? index)) (return environment) vector_value
+        Vector_visual {arrange,vector_visual}->DIM.foldlWithKey' (\this_environment index value->if bounded then this_environment>>=action value (combine_arrange arrange) (vector_visual DV.! index) else maybe this_environment (\visual->this_environment>>=action value (combine_arrange arrange) visual) (vector_visual DV.!? index)) (return environment) vector_value
         _->if strict then EF.empty_error else return environment
 
-any_visual_selector_monad_action::ET.Has_call_stack=>Monad c=>Bool->(Arrange->Visual a->b->c b)->Widget a->b->c b
+any_visual_selector_monad_action::ET.Has_call_stack=>Monad c=>Bool->((Arrange->Arrange)->Visual a->b->c b)->Widget a->b->c b
 any_visual_selector_monad_action strict action widget environment=case widget of
-    Group_visual {arrange,group_visual}->any_group_visual_selector_action DF.foldlM (action arrange) group_visual environment
-    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldlM (action arrange) vector_visual environment
+    Group_visual {arrange,group_visual}->any_group_visual_selector_action DF.foldlM (action (combine_arrange arrange)) group_visual environment
+    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldlM (action (combine_arrange arrange)) vector_visual environment
+    Visual_trigger {visual}->action id visual environment
+    Visual_io_trigger {visual}->action id visual environment
+    Visual_mix_trigger {visual}->action id visual environment
     _->if strict then EF.empty_error else return environment
 
-visual_selector_update::ET.Has_call_stack=>(a->Arrange->Visual b->Visual b)->Visual_selector a->Widget b->Widget b
+visual_selector_update::ET.Has_call_stack=>(a->(Arrange->Arrange)->Visual b->Visual b)->Visual_selector a->Widget b->Widget b
 visual_selector_update update visual_selector widget=case visual_selector of
     None_visual_selector->widget
     Combine_visual_selector {combine_visual_selector}->DF.foldl' (flip (visual_selector_update update)) widget combine_visual_selector
     Any_visual_selector {value,strict}->any_visual_selector_update strict (update value) widget
+    Visual_trigger_selector {value,strict}->case widget of
+        Visual_trigger {next,visual_trigger,visual}->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=update value id visual}
+        _->if strict then EF.empty_error else widget
+    Visual_io_trigger_selector {value,strict}->case widget of
+        Visual_io_trigger {next,visual_io_trigger,visual}->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=update value id visual}
+        _->if strict then EF.empty_error else widget
+    Visual_mix_trigger_selector {value,strict}->case widget of
+        Visual_mix_trigger {next,visual_mix_trigger,order,visual}->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=update value id visual}
+        _->if strict then EF.empty_error else widget
     Group_visual_selector {group_value,bounded,strict}->case widget of
-        Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=DIM.foldlWithKey' (\this_group_visual this_index single_value->(if bounded then int_map_update else int_map_update_safe) this_index (update single_value arrange) this_group_visual) group_visual group_value}
+        Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=DIM.foldlWithKey' (\this_group_visual index single_value->(if bounded then int_map_update else int_map_update_safe) index (update single_value (combine_arrange arrange)) this_group_visual) group_visual group_value}
         _->if strict then EF.empty_error else widget
     Vector_visual_selector {vector_value,bounded,strict}->case widget of
-        Vector_visual {arrange,vector_visual}->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->CM.void (DIM.traverseWithKey (\this_index single_value->if bounded then DVM.write this_vector_visual this_index (update single_value arrange (vector_visual DV.! this_index)) else maybe (return ()) (DVM.write this_vector_visual this_index . update single_value arrange) (vector_visual DV.!? this_index)) vector_value)) vector_visual)}
+        Vector_visual {arrange,vector_visual}->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->CM.void (DIM.traverseWithKey (\index single_value->if bounded then DVM.write this_vector_visual index (update single_value (combine_arrange arrange) (vector_visual DV.! index)) else maybe (return ()) (DVM.write this_vector_visual index . update single_value (combine_arrange arrange)) (vector_visual DV.!? index)) vector_value)) vector_visual)}
         _->if strict then EF.empty_error else widget
 
-any_visual_selector_update::ET.Has_call_stack=>Bool->(Arrange->Visual a->Visual a)->Widget a->Widget a
+any_visual_selector_update::ET.Has_call_stack=>Bool->((Arrange->Arrange)->Visual a->Visual a)->Widget a->Widget a
 any_visual_selector_update strict update widget=case widget of
-    Group_visual {arrange,group_visual}->any_group_visual_selector_update id fmap (update arrange) arrange group_visual
-    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_update id fmap (update arrange) arrange vector_visual
+    Group_visual {arrange,group_visual}->any_group_visual_selector_update id fmap (update (combine_arrange arrange)) arrange group_visual
+    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_update id fmap (update (combine_arrange arrange)) arrange vector_visual
+    Visual_trigger {next,visual_trigger,visual}->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=update id visual}
+    Visual_io_trigger {next,visual_io_trigger,visual}->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=update id visual}
+    Visual_mix_trigger {next,visual_mix_trigger,order,visual}->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=update id visual}
     _->if strict then EF.empty_error else widget
 
-visual_selector_monad_update::ET.Has_call_stack=>Monad c=>(a->Arrange->Visual b->c (Visual b))->Visual_selector a->Widget b->c (Widget b)
+visual_selector_monad_update::ET.Has_call_stack=>Monad c=>(a->(Arrange->Arrange)->Visual b->c (Visual b))->Visual_selector a->Widget b->c (Widget b)
 visual_selector_monad_update update visual_selector widget=case visual_selector of
     None_visual_selector->return widget
     Combine_visual_selector {combine_visual_selector}->DF.foldlM (flip (visual_selector_monad_update update)) widget combine_visual_selector
     Any_visual_selector {value,strict}->any_visual_selector_applicative_update strict (update value) widget
+    Visual_trigger_selector {value,strict}->case widget of
+        Visual_trigger {next,visual_trigger,visual}->fmap (\this_visual->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=this_visual}) (update value id visual)
+        _->if strict then EF.empty_error else pure widget
+    Visual_io_trigger_selector {value,strict}->case widget of
+        Visual_io_trigger {next,visual_io_trigger,visual}->fmap (\this_visual->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=this_visual}) (update value id visual)
+        _->if strict then EF.empty_error else pure widget
+    Visual_mix_trigger_selector {value,strict}->case widget of
+        Visual_mix_trigger {next,visual_mix_trigger,order,visual}->fmap (\this_visual->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=this_visual}) (update value id visual)
+        _->if strict then EF.empty_error else pure widget
     Group_visual_selector {group_value,bounded,strict}->case widget of
-        Group_visual {arrange,group_visual}->fmap (\this_group_visual->Group_visual {arrange=arrange,group_visual=this_group_visual}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (\single_value->update single_value arrange) group_value group_visual)
+        Group_visual {arrange,group_visual}->fmap (\this_group_visual->Group_visual {arrange=arrange,group_visual=this_group_visual}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (\single_value->update single_value (combine_arrange arrange)) group_value group_visual)
         _->if strict then EF.empty_error else pure widget
     Vector_visual_selector {vector_value,bounded,strict}->case widget of
-        Vector_visual {arrange,vector_visual}->fmap (\this_vector_visual->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_this_vector_visual->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_visual) this_vector_visual)) vector_visual)}) (DIM.traverseWithKey (\this_index single_value->if bounded then fmap Just (update single_value arrange (vector_visual DV.! this_index)) else maybe (return Nothing) (fmap Just . update single_value arrange) (vector_visual DV.!? this_index)) vector_value)
+        Vector_visual {arrange,vector_visual}->fmap (\this_vector_visual->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_this_vector_visual->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_visual) this_vector_visual)) vector_visual)}) (DIM.traverseWithKey (\index single_value->if bounded then fmap Just (update single_value (combine_arrange arrange) (vector_visual DV.! index)) else maybe (return Nothing) (fmap Just . update single_value (combine_arrange arrange)) (vector_visual DV.!? index)) vector_value)
         _->if strict then EF.empty_error else pure widget
 
-any_visual_selector_applicative_update::ET.Has_call_stack=>Applicative b=>Bool->(Arrange->Visual a->b (Visual a))->Widget a->b (Widget a)
+any_visual_selector_applicative_update::ET.Has_call_stack=>Applicative b=>Bool->((Arrange->Arrange)->Visual a->b (Visual a))->Widget a->b (Widget a)
 any_visual_selector_applicative_update strict update widget=case widget of
-    Group_visual {arrange,group_visual}->any_group_visual_selector_update fmap traverse (update arrange) arrange group_visual
-    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_update fmap traverse (update arrange) arrange vector_visual
+    Group_visual {arrange,group_visual}->any_group_visual_selector_update fmap traverse (update (combine_arrange arrange)) arrange group_visual
+    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_update fmap traverse (update (combine_arrange arrange)) arrange vector_visual
+    Visual_trigger {next,visual_trigger,visual}->fmap (\this_visual->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=this_visual}) (update id visual)
+    Visual_io_trigger {next,visual_io_trigger,visual}->fmap (\this_visual->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=this_visual}) (update id visual)
+    Visual_mix_trigger {next,visual_mix_trigger,order,visual}->fmap (\this_visual->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=this_visual}) (update id visual)
     _->if strict then EF.empty_error else pure widget
 
 {-# INLINE any_group_selector_action #-}
@@ -496,16 +544,40 @@ any_visual_selector_applicative_update strict update widget=case widget of
 {-# INLINE any_coroutine_selector_update #-}
 {-# INLINE hosted_coroutine_selector_action #-}
 {-# INLINE hosted_coroutine_selector_update #-}
+{-# INLINE selector_action #-}
 {-# INLINE selector_action_a #-}
 {-# INLINE selector_action_b #-}
+{-# INLINE all_selector_action #-}
+{-# INLINE trigger_selector_action #-}
+{-# INLINE default_selector_action #-}
+{-# INLINE selector_monad_action #-}
 {-# INLINE selector_monad_action_a #-}
 {-# INLINE selector_monad_action_b #-}
+{-# INLINE all_selector_monad_action #-}
+{-# INLINE trigger_selector_monad_action #-}
+{-# INLINE default_selector_monad_action #-}
+{-# INLINE selector_update #-}
 {-# INLINE selector_update_a #-}
 {-# INLINE selector_update_b #-}
+{-# INLINE all_selector_update #-}
+{-# INLINE trigger_selector_update #-}
+{-# INLINE default_selector_update #-}
+{-# INLINE selector_monad_update #-}
 {-# INLINE selector_monad_update_a #-}
 {-# INLINE selector_monad_update_b #-}
 {-# INLINE selector_monad_update_c #-}
+{-# INLINE all_selector_applicative_update #-}
+{-# INLINE trigger_selector_applicative_update #-}
+{-# INLINE default_selector_applicative_update #-}
 {-# INLINE any_group_visual_selector_action #-}
 {-# INLINE any_group_visual_selector_update #-}
 {-# INLINE any_vector_visual_selector_action #-}
 {-# INLINE any_vector_visual_selector_update #-}
+{-# INLINE visual_selector_action #-}
+{-# INLINE any_visual_selector_action #-}
+{-# INLINE visual_selector_monad_action #-}
+{-# INLINE any_visual_selector_monad_action #-}
+{-# INLINE visual_selector_update #-}
+{-# INLINE any_visual_selector_update #-}
+{-# INLINE visual_selector_monad_update #-}
+{-# INLINE any_visual_selector_applicative_update #-}
