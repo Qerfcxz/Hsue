@@ -72,7 +72,7 @@ simple_canvas_render_request canvas_id projection_move maybe_sampler_id=Canvas_r
 simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
 simple_calculate_typesetting height line_spacing _ number index=if number==0||number<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (number-1)*line_spacing)/2 in (if index==number-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
 
-simple_article::ET.Has_call_stack=>DT.Text->FCT.CFloat->Color->String->DS.Seq (DS.Seq Sentence)
+simple_article::ET.Has_call_stack=>DT.Text->FCT.CFloat->Color->DT.Text->DS.Seq (DS.Seq Sentence)
 simple_article text font_size color path=DS.singleton (DS.singleton (Sentence {sentence_core=DS.singleton (Phrase {phrase_core=text,font_size=font_size,color=color}),path=path}))
 
 origin_point::ET.Has_call_stack=>Point
@@ -147,20 +147,20 @@ from_foldable_enumeration=DF.foldl' (\int enumeration->int DB..|. DB.bit (fromEn
 insert_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->c->DHMS.HashMap Integer c->DHMS.HashMap Integer c
 insert_foldable_enumeration foldable_enumeration=hash_map_insert (from_foldable_enumeration foldable_enumeration)
 
-get_clipboard_text::ET.Has_call_stack=>IO String
+get_clipboard_text::ET.Has_call_stack=>IO DT.Text
 get_clipboard_text=do
     ptr<-SDLF.sdl_get_clipboard_text
     sdl_catch_null ptr
     string<-DBS.packCString ptr
     SDLF.sdl_free (FP.castPtr ptr)
-    return (DT.unpack (DTE.decodeUtf8 string))
+    return (DTE.decodeUtf8 string)
 
 has_clipboard_text::ET.Has_call_stack=>IO Bool
 has_clipboard_text=fmap FMU.toBool SDLF.sdl_has_clipboard_text
 
-set_clipboard_text::ET.Has_call_stack=>String->IO Bool
-set_clipboard_text string=with_string string $ \ptr->do
-    value<-SDLF.sdl_set_clipboard_text ptr
+set_clipboard_text::ET.Has_call_stack=>DT.Text->IO Bool
+set_clipboard_text string=with_text string $ \this_string->do
+    value<-SDLF.sdl_set_clipboard_text this_string
     return (FMU.toBool value)
 
 quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CFloat->FCT.CFloat->FCT.CInt->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Maybe DW.Word64->Int->Int->Sampler_create_info->Blend_state->IO (Engine a)

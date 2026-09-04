@@ -139,7 +139,7 @@ move projection_move leaf_id selector engine=let (new_engine,widget)=move_lookup
 
 move_a::ET.Has_call_stack=>Int->Selector Insert_strategy->Widget a->Engine a->Engine a
 move_a leaf_id selector widget engine=case widget of
-    Collector {submit}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (collect_a (DF.foldl' (DS.><) DS.empty submit)) selector)) engine.leaf}
+    Collector {submit}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (collect_a (DF.fold submit)) selector)) engine.leaf}
     _->EF.empty_error
 
 move_lookup::ET.Has_call_stack=>Projection_move->Engine a->(Engine a,Widget a)

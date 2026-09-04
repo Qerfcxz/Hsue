@@ -12,6 +12,7 @@ import qualified Error.Type as ET
 import qualified Data.Bits as DB
 import qualified Data.ByteString as DBS
 import qualified Data.Foldable as DF
+import qualified Data.Text as DT
 import qualified Data.Word as DW
 import qualified Foreign.C.String as FCS
 import qualified Foreign.Marshal.Array as FMA
@@ -40,9 +41,9 @@ create_canvas_graphics_pipeline device vertex_shader fragment_shader blend_state
     poke_vertex_attribute vertex_attribute
     FMU.with SDLI.SDL_GPUVertexBufferDescription {sdl_slot=0,sdl_pitch=40,sdl_input_rate=SDLI.sdl_gpu_vertexinputrate_vertex,sdl_instance_step_rate=0} $ \vertex_buffer_description->FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader,sdl_fragment_shader=fragment_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=vertex_buffer_description,sdl_num_vertex_buffers=1,sdl_vertex_attributes=vertex_attribute,sdl_num_vertex_attributes=5},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline device))
 
-load_shader::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->String->IO (FP.Ptr SDLT.SDL_GPUShader)
+load_shader::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DT.Text->IO (FP.Ptr SDLT.SDL_GPUShader)
 load_shader device format stage num_sampler num_storage_buffer num_uniform_buffer path=do
-    shader_code<-DBS.readFile path
+    shader_code<-DBS.readFile (DT.unpack path)
     DBS.useAsCStringLen shader_code (\(code,code_size)->FCS.withCString "main" (\entrypoint->FMU.with (SDLI.SDL_GPUShaderCreateInfo {sdl_code_size=fromIntegral code_size,sdl_code=FP.castPtr code,sdl_entrypoint=entrypoint,sdl_format=format,sdl_stage=stage,sdl_num_samplers=num_sampler,sdl_num_storage_textures=0,sdl_num_storage_buffers=num_storage_buffer,sdl_num_uniform_buffers=num_uniform_buffer}) (sdl_return_catch_null . SDLF.sdl_create_gpu_shader device)))
 
 from_blend_factor::ET.Has_call_stack=>Blend_factor->DW.Word32
@@ -80,7 +81,7 @@ from_color_component_flag color_component_flag=case color_component_flag of
 
 from_blend_state::ET.Has_call_stack=>Blend_state->SDLI.SDL_GPUColorTargetBlendState
 from_blend_state blend_state=case blend_state of
-    Blend_state {src_color_blend_factor,dst_color_blend_factor,color_blend_op,src_alpha_blend_factor,dst_alpha_blend_factor,alpha_blend_op,color_write_mask,enable_blend,enable_color_write_mask}->SDLI.SDL_GPUColorTargetBlendState {sdl_src_color_blendfactor=from_blend_factor src_color_blend_factor,sdl_dst_color_blendfactor=from_blend_factor dst_color_blend_factor,sdl_color_blend_op=from_blend_op color_blend_op,sdl_src_alpha_blendfactor=from_blend_factor src_alpha_blend_factor,sdl_dst_alpha_blendfactor=from_blend_factor dst_alpha_blend_factor,sdl_alpha_blend_op=from_blend_op alpha_blend_op,sdl_color_write_mask=DF.foldl' (\this_color_write_mask color_component_flag->this_color_write_mask DB..|. from_color_component_flag color_component_flag) 0 color_write_mask,sdl_enable_blend=FMU.fromBool enable_blend,sdl_enable_color_write_mask=FMU.fromBool enable_color_write_mask}
+    Blend_state {src_color_blend_factor,dst_color_blend_factor,src_alpha_blend_factor,dst_alpha_blend_factor,color_blend_op,alpha_blend_op,color_write_mask,enable_blend,enable_color_write_mask}->SDLI.SDL_GPUColorTargetBlendState {sdl_src_color_blendfactor=from_blend_factor src_color_blend_factor,sdl_dst_color_blendfactor=from_blend_factor dst_color_blend_factor,sdl_color_blend_op=from_blend_op color_blend_op,sdl_src_alpha_blendfactor=from_blend_factor src_alpha_blend_factor,sdl_dst_alpha_blendfactor=from_blend_factor dst_alpha_blend_factor,sdl_alpha_blend_op=from_blend_op alpha_blend_op,sdl_color_write_mask=DF.foldl' (\this_color_write_mask color_component_flag->this_color_write_mask DB..|. from_color_component_flag color_component_flag) 0 color_write_mask,sdl_enable_blend=FMU.fromBool enable_blend,sdl_enable_color_write_mask=FMU.fromBool enable_color_write_mask}
 
 from_filter::ET.Has_call_stack=>Filter->DW.Word32
 from_filter this_filter=case this_filter of

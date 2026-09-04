@@ -146,7 +146,7 @@ do_request request engine=case request of
                 return (engine {atlas_font=atlas_font},False)
             else EF.empty_error
     Set_window_icon {window_id,path}->case int_map_lookup window_id engine.window of
-        Window {sdl_window}->with_string path $ \this_path->do
+        Window {sdl_window}->with_text path $ \this_path->do
             surface<-SDLF.img_load this_path
             sdl_catch_null surface
             sdl_catch_false (SDLF.sdl_set_window_icon sdl_window surface)
@@ -255,9 +255,9 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
         SDLF.sdl_bind_gpu_graphics_pipeline render_pass (get_sdl_pipeline (int_map_lookup pipeline_id engine.pipeline))
         FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
         case uniform of
-            Uniform {size,alignment,write}->FMA.allocaBytesAligned size alignment $ \ptr->do
+            Uniform {size,alignment,write}->FMA.allocaBytesAligned (fromIntegral size) alignment $ \ptr->do
                 write ptr
-                SDLF.sdl_push_gpu_fragment_uniform_data command_buffer 0 ptr (fromIntegral size)
+                SDLF.sdl_push_gpu_fragment_uniform_data command_buffer 0 ptr size
         SDLF.sdl_draw_gpu_primitives render_pass 3 1 0 0
         SDLF.sdl_end_gpu_render_pass render_pass
         sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)

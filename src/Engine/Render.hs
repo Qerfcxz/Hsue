@@ -148,15 +148,15 @@ write_submit_b submit_mode index_size index_index draw_call=case draw_call of
 
 write_submit_data::ET.Has_call_stack=>Custom a=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->Submit_data a->IO ()
 write_submit_data vertex_ptr index_ptr vertex_index parameter_index submit_data=case submit_data of
-    Submit_rectangle {red,green,blue,alpha,left,down,right,up,min_u,min_v,max_u,max_v}->write_submit_rectangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha left down right up min_u min_v max_u max_v
-    Submit_triangle {red,green,blue,alpha,first_x,first_y,second_x,second_y,third_x,third_y,u,v}->write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha first_x first_y second_x second_y third_x third_y u v
-    Submit_convex_polygon {red,green,blue,alpha,x,y,u,v,point_set}->write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y u v point_set
-    Submit_regular_polygon {red,green,blue,alpha,x,y,u,v,angle,radius,number}->write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y u v angle radius number
+    Submit_rectangle {red,green,blue,alpha,min_u,min_v,max_u,max_v,left,down,right,up}->write_submit_rectangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha min_u min_v max_u max_v left down right up
+    Submit_triangle {red,green,blue,alpha,u,v,first_x,first_y,second_x,second_y,third_x,third_y}->write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v first_x first_y second_x second_y third_x third_y
+    Submit_convex_polygon {red,green,blue,alpha,u,v,x,y,point_set}->write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y point_set
+    Submit_regular_polygon {red,green,blue,alpha,u,v,x,y,angle,radius,number}->write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y angle radius number
     Submit_text {red,green,blue,alpha,x,y,current_y,ratio,article}->write_submit_text vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y current_y ratio article
     Custom_submit_data {custom}->custom_submit_data vertex_ptr index_ptr vertex_index parameter_index custom
 
 write_submit_rectangle::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->IO ()
-write_submit_rectangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha left down right up min_u min_v max_u max_v=do
+write_submit_rectangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha min_u min_v max_u max_v left down right up=do
     poke_vertex vertex_ptr 0 parameter_index 0 left down min_u max_v red green blue alpha
     poke_vertex vertex_ptr size_of_vertex parameter_index 0 right down max_u max_v red green blue alpha
     poke_vertex vertex_ptr (2*size_of_vertex) parameter_index 0 right up max_u min_v red green blue alpha
@@ -169,7 +169,7 @@ write_submit_rectangle vertex_ptr index_ptr vertex_index parameter_index red gre
     FS.pokeByteOff index_ptr (5*size_of_index) (vertex_index+3)
 
 write_submit_triangle::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->IO ()
-write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha first_x first_y second_x second_y third_x third_y u v=do
+write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v first_x first_y second_x second_y third_x third_y=do
     poke_vertex vertex_ptr 0 parameter_index 0 first_x first_y u v red green blue alpha
     poke_vertex vertex_ptr size_of_vertex parameter_index 0 second_x second_y u v red green blue alpha
     poke_vertex vertex_ptr (2*size_of_vertex) parameter_index 0 third_x third_y u v red green blue alpha
@@ -178,7 +178,7 @@ write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red gree
     FS.pokeByteOff index_ptr (2*size_of_index) (vertex_index+2)
 
 write_submit_convex_polygon::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq Point->IO ()
-write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y u v point_set=do
+write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y point_set=do
     CM.void (DF.foldlM (\index point->integral_action (\this_index->poke_vertex vertex_ptr (this_index*size_of_vertex) parameter_index 0 (x+point.x) (y+point.y) u v red green blue alpha) index) 0 point_set)
     monad_for 0 (DS.length point_set-3) $ \index->let offset=3*index*size_of_index in let new_vertex_index=vertex_index+fromIntegral index in do
         FS.pokeByteOff index_ptr offset vertex_index
@@ -186,7 +186,7 @@ write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index re
         FS.pokeByteOff index_ptr (offset+2*size_of_index) (new_vertex_index+2)
 
 write_submit_regular_polygon::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Int->IO ()
-write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y u v angle radius number=let new_angle=2*pi/fromIntegral number in do
+write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y angle radius number=let new_angle=2*pi/fromIntegral number in do
     monad_for 0 (number-1) (\index->let direction=angle+fromIntegral index*new_angle in poke_vertex vertex_ptr (index*size_of_vertex) parameter_index 0 (x+radius*cos direction) (y+radius*sin direction) u v red green blue alpha)
     monad_for 0 (number-3) $ \index->let offset=3*index*size_of_index in let new_vertex_index=vertex_index+fromIntegral index in do
         FS.pokeByteOff index_ptr offset vertex_index
@@ -203,11 +203,11 @@ write_submit_row vertex_ptr index_ptr vertex_index parameter_index red green blu
 write_submit_character::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(Int,Int)->Character->IO (Int,Int)
 write_submit_character vertex_ptr index_ptr vertex_index parameter_index this_red this_green this_blue this_alpha x y (character_vertex_index,character_index_index) character=case character of
     Character {font_size,left,down,right,up,min_u,min_v,max_u,max_v,color}->case color of
-        Color {red,green,blue,alpha}->let new_red=this_red*red in let new_green=this_green*green in let new_blue=this_blue*blue in let new_alpha=this_alpha*alpha in let vertex_offset=character_vertex_index*size_of_vertex in let index_offset=character_index_index*size_of_index in let new_vertex_index=vertex_index+fromIntegral character_vertex_index in do
-            poke_vertex vertex_ptr vertex_offset parameter_index font_size (x+left) (y+down) min_u min_v new_red new_green new_blue new_alpha
-            poke_vertex vertex_ptr (vertex_offset+size_of_vertex) parameter_index font_size (x+right) (y+down) max_u min_v new_red new_green new_blue new_alpha
-            poke_vertex vertex_ptr (vertex_offset+2*size_of_vertex) parameter_index font_size (x+right) (y+up) max_u max_v new_red new_green new_blue new_alpha
-            poke_vertex vertex_ptr (vertex_offset+3*size_of_vertex) parameter_index font_size (x+left) (y+up) min_u max_v new_red new_green new_blue new_alpha
+        Color {red,green,blue,alpha}->let new_red=this_red*red in let new_green=this_green*green in let new_blue=this_blue*blue in let new_alpha=this_alpha*alpha in let new_left=x+left in let new_down=y+down in let new_right=x+right in let new_up=y+up in let vertex_offset=character_vertex_index*size_of_vertex in let index_offset=character_index_index*size_of_index in let new_vertex_index=vertex_index+fromIntegral character_vertex_index in do
+            poke_vertex vertex_ptr vertex_offset parameter_index font_size new_left new_down min_u min_v new_red new_green new_blue new_alpha
+            poke_vertex vertex_ptr (vertex_offset+size_of_vertex) parameter_index font_size new_right new_down max_u min_v new_red new_green new_blue new_alpha
+            poke_vertex vertex_ptr (vertex_offset+2*size_of_vertex) parameter_index font_size new_right new_up max_u max_v new_red new_green new_blue new_alpha
+            poke_vertex vertex_ptr (vertex_offset+3*size_of_vertex) parameter_index font_size new_left new_up min_u max_v new_red new_green new_blue new_alpha
             FS.pokeByteOff index_ptr index_offset new_vertex_index
             FS.pokeByteOff index_ptr (index_offset+size_of_index) (new_vertex_index+1)
             FS.pokeByteOff index_ptr (index_offset+2*size_of_index) (new_vertex_index+2)

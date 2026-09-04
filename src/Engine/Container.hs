@@ -62,7 +62,7 @@ int_map_applicative_update_safe::ET.Has_call_stack=>Applicative c=>(a->b->c b)->
 int_map_applicative_update_safe update int_map=DIM.traverseWithKey (\key value->int_map_applicative_update_a key update int_map value)
 
 int_map_applicative_update::ET.Has_call_stack=>Applicative c=>(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
-int_map_applicative_update update first_int_map second_int_map=if DIS.isSubsetOf (DIM.keysSet first_int_map) (DIM.keysSet second_int_map) then DIM.traverseWithKey (\key value->int_map_applicative_update_a key update first_int_map value) second_int_map else EF.empty_error
+int_map_applicative_update update first_int_map second_int_map=if DIM.null (DIM.difference first_int_map second_int_map) then DIM.traverseWithKey (\key value->int_map_applicative_update_a key update first_int_map value) second_int_map else EF.empty_error
 
 int_map_applicative_update_a::ET.Has_call_stack=>Applicative c=>Int->(a->b->c b)->DIM.IntMap a->b->c b
 int_map_applicative_update_a key update int_map value=case DIM.lookup key int_map of

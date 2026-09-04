@@ -136,8 +136,8 @@ sdl_return_catch_null io=do
 catch_null::ET.Has_call_stack=>FP.Ptr a->IO ()
 catch_null ptr=CM.when (ptr==FP.nullPtr) EF.empty_error
 
-with_string::ET.Has_call_stack=>String->(FP.Ptr FCT.CChar->IO a)->IO a
-with_string string=DBS.useAsCString (DTE.encodeUtf8 (DT.pack string))
+with_text::ET.Has_call_stack=>DT.Text->(FP.Ptr FCT.CChar->IO a)->IO a
+with_text text=DBS.useAsCString (DTE.encodeUtf8 text)
 
 monad_action_swap::ET.Has_call_stack=>Monad c=>(a->b->c (d,e))->a->b->c (e,d)
 monad_action_swap action first_value second_value=do
@@ -225,7 +225,7 @@ millisecond=1000000
 {-# INLINE sdl_catch_null #-}
 {-# INLINE sdl_return_catch_null #-}
 {-# INLINE catch_null #-}
-{-# INLINE with_string #-}
+{-# INLINE with_text #-}
 {-# INLINE monad_action_swap #-}
 {-# INLINE vector_io_map #-}
 {-# INLINE integral_action #-}

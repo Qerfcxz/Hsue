@@ -123,7 +123,7 @@ loop_event on event_type event engine=case event_type of
                     y<-SDLI.sdl_mousemotionevent_y_peek event
                     delta_x<-SDLI.sdl_mousemotionevent_xrel_peek event
                     delta_y<-SDLI.sdl_mousemotionevent_yrel_peek event
-                    loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Move {x=(x-width/2)*scale_x,y=(height/2-y)*scale_y,delta_x=delta_x*scale_x,delta_y=(negate delta_y)*scale_y}}) event engine
+                    loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Move {x=(x-width/2)*scale_x,y=(height/2-y)*scale_y,delta_x=delta_x*scale_x,delta_y=negate delta_y*scale_y}}) event engine
     SDLI.SDL_EVENT_MOUSE_WHEEL->do
         sdl_window_id<-SDLI.sdl_mousewheelevent_windowid_peek event
         case DHMS.lookup sdl_window_id engine.window_map of
@@ -134,7 +134,7 @@ loop_event on event_type event engine=case event_type of
                     y<-SDLI.sdl_mousewheelevent_y_peek event
                     mouse_x<-SDLI.sdl_mousewheelevent_mouse_x_peek event
                     mouse_y<-SDLI.sdl_mousewheelevent_mouse_y_peek event
-                    loop_event_b on (At {window_id=window_id,action=let scale_x=adaptive_width/width in let scale_y=adaptive_height/height in Scroll {x=(mouse_x-width/2)*scale_x,y=(height/2-mouse_y)*scale_y,delta_x=x,delta_y=y}}) event engine
+                    loop_event_b on (At {window_id=window_id,action=Scroll {x=(mouse_x-width/2)*adaptive_width/width,y=(height/2-mouse_y)*adaptive_height/height,delta_x=x,delta_y=y}}) event engine
     _->if event_type==engine.event_number+1
         then do
             custom<-pop_event event
@@ -159,12 +159,12 @@ run_widget event engine this_widget=case this_widget of
     Trigger {next,trigger}->Trigger_result {next=next,update=trigger event,value=this_widget}
     Io_trigger {next,io_trigger}->Trigger_result {next=next,update=create_request (Io {io=io_trigger event}),value=this_widget}
     Mix_trigger {next,mix_trigger,order}->Trigger_result {next=next,update=let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=this_widget}
-    Widget_trigger {next,widget_trigger,widget}->let (new_widget,update)=widget_trigger event engine widget in Trigger_result {next=next,update=update,value=Widget_trigger {next=next,widget_trigger=widget_trigger,widget=new_widget}}
-    Widget_io_trigger {next,widget_io_trigger,widget}->let (new_widget,update)=widget_io_trigger event engine widget in Trigger_result {next=next,update=create_request (Io {io=update}),value=Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=new_widget}}
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=new_widget}}
-    Visual_trigger {next,visual_trigger,visual}->let (new_visual,update)=visual_trigger event engine visual in Trigger_result {next=next,update=update,value=Visual_trigger {next=next,visual_trigger=visual_trigger,visual=new_visual}}
-    Visual_io_trigger {next,visual_io_trigger,visual}->let (new_visual,update)=visual_io_trigger event engine visual in Trigger_result {next=next,update=create_request (Io {io=update}),value=Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=new_visual}}
-    Visual_mix_trigger {next,visual_mix_trigger,order,visual}->let (new_visual,update,io_update)=visual_mix_trigger event engine visual in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=new_visual}}
+    Widget_trigger {next,widget,widget_trigger}->let (new_widget,update)=widget_trigger event engine widget in Trigger_result {next=next,update=update,value=Widget_trigger {next=next,widget=new_widget,widget_trigger=widget_trigger}}
+    Widget_io_trigger {next,widget,widget_io_trigger}->let (new_widget,update)=widget_io_trigger event engine widget in Trigger_result {next=next,update=create_request (Io {io=update}),value=Widget_io_trigger {next=next,widget=new_widget,widget_io_trigger=widget_io_trigger}}
+    Widget_mix_trigger {next,widget,widget_mix_trigger,order}->let (new_widget,update,io_update)=widget_mix_trigger event engine widget in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Widget_mix_trigger {next=next,widget=new_widget,widget_mix_trigger=widget_mix_trigger,order=order}}
+    Visual_trigger {next,visual,visual_trigger}->let (new_visual,update)=visual_trigger event engine visual in Trigger_result {next=next,update=update,value=Visual_trigger {next=next,visual=new_visual,visual_trigger=visual_trigger}}
+    Visual_io_trigger {next,visual,visual_io_trigger}->let (new_visual,update)=visual_io_trigger event engine visual in Trigger_result {next=next,update=create_request (Io {io=update}),value=Visual_io_trigger {next=next,visual=new_visual,visual_io_trigger=visual_io_trigger}}
+    Visual_mix_trigger {next,visual,visual_mix_trigger,order}->let (new_visual,update,io_update)=visual_mix_trigger event engine visual in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Visual_mix_trigger {next=next,visual=new_visual,visual_mix_trigger=visual_mix_trigger,order=order}}
     _->EF.empty_error
 
 run_request::ET.Has_call_stack=>Custom a=>Bool->Engine a->IO (Engine a,Bool)

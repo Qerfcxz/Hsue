@@ -22,6 +22,7 @@ import qualified Data.Bits as DB
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
+import qualified Data.Text as DT
 import qualified Data.Vector as DV
 import qualified Data.Vector.Mutable as DVM
 import qualified Data.Vector.Storable as DVS
@@ -86,24 +87,24 @@ create_widget leaf_id this_widget_request engine=case this_widget_request of
     Trigger_request {next,trigger}->return (engine,Trigger {next=next,trigger=trigger})
     Io_trigger_request {next,io_trigger}->return (engine,Io_trigger {next=next,io_trigger=io_trigger})
     Mix_trigger_request {next,mix_trigger,order}->return (engine,Mix_trigger {next=next,mix_trigger=mix_trigger,order=order})
-    Widget_trigger_request {next,widget_trigger,widget_request}->do
+    Widget_trigger_request {next,widget_request,widget_trigger}->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
-        return (new_engine,Widget_trigger {next=next,widget_trigger=widget_trigger,widget=widget})
-    Widget_io_trigger_request {next,widget_io_trigger,widget_request}->do
+        return (new_engine,Widget_trigger {next=next,widget=widget,widget_trigger=widget_trigger})
+    Widget_io_trigger_request {next,widget_request,widget_io_trigger}->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
-        return (new_engine,Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=widget})
-    Widget_mix_trigger_request {next,widget_mix_trigger,order,widget_request}->do
+        return (new_engine,Widget_io_trigger {next=next,widget=widget,widget_io_trigger=widget_io_trigger})
+    Widget_mix_trigger_request {next,widget_request,widget_mix_trigger,order}->do
         (new_engine,widget)<-create_widget leaf_id widget_request engine
-        return (new_engine,Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=widget})
-    Visual_trigger_request {next,visual_trigger,visual_request}->do
+        return (new_engine,Widget_mix_trigger {next=next,widget=widget,widget_mix_trigger=widget_mix_trigger,order=order})
+    Visual_trigger_request {next,visual_request,visual_trigger}->do
         (new_engine,visual)<-create_visual visual_request engine
-        return (new_engine,Visual_trigger {next=next,visual_trigger=visual_trigger,visual=visual})
-    Visual_io_trigger_request {next,visual_io_trigger,visual_request}->do
+        return (new_engine,Visual_trigger {next=next,visual=visual,visual_trigger=visual_trigger})
+    Visual_io_trigger_request {next,visual_request,visual_io_trigger}->do
         (new_engine,visual)<-create_visual visual_request engine
-        return (new_engine,Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=visual})
-    Visual_mix_trigger_request {next,visual_mix_trigger,order,visual_request}->do
+        return (new_engine,Visual_io_trigger {next=next,visual=visual,visual_io_trigger=visual_io_trigger})
+    Visual_mix_trigger_request {next,visual_request,visual_mix_trigger,order}->do
         (new_engine,visual)<-create_visual visual_request engine
-        return (new_engine,Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=visual})
+        return (new_engine,Visual_mix_trigger {next=next,visual=visual,visual_mix_trigger=visual_mix_trigger,order=order})
     Group_visual_request {arrange,group_visual_request}->do
         (new_engine,group_visual)<-int_map_monad_action (const (\visual_request this_engine->create_visual visual_request this_engine)) group_visual_request engine
         return (new_engine,Group_visual {arrange=arrange,group_visual=group_visual})
@@ -150,11 +151,11 @@ create_visual visual_request engine=case visual_request of
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=to_storable_vector (create_large_atlas (fromIntegral width) (fromIntegral height)) clip_request (DS.length clip_request),index=0,album_id=engine.album_id})
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
-    Text_request {arrange,text_width,text_height,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
+    Text_request {arrange,text_width,text_height,max_search_index,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
             new_engine<-from_charset charset engine
-            return (new_engine,let (new_article,number)=for_text new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,number)=for_text engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
+            return (new_engine,let (new_article,number)=for_text max_search_index new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,number)=for_text max_search_index engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
     Editor_request {}->error "未完待续"
     Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
@@ -166,7 +167,7 @@ create_visual visual_request engine=case visual_request of
         (new_engine,new_custom)<-custom_visual_request custom engine
         return (new_engine,Custom_visual {custom=new_custom})
 
-do_image::ET.Has_call_stack=>(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual a)->String->Engine a->IO (Engine a,Visual a)
+do_image::ET.Has_call_stack=>(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual a)->DT.Text->Engine a->IO (Engine a,Visual a)
 do_image action path engine=do
     (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
     let (atlas,left,down,right,up)=atlas_insert width height engine.padding engine.atlas
@@ -174,10 +175,10 @@ do_image action path engine=do
     SDLF.sdl_release_gpu_texture engine.device texture
     return (engine {atlas=atlas},action width height left down right up)
 
-create_picture::ET.Has_call_stack=>Arrange->String->Engine a->IO (Engine a,Visual a)
+create_picture::ET.Has_call_stack=>Arrange->DT.Text->Engine a->IO (Engine a,Visual a)
 create_picture arrange path engine=do_image (\width height left down right up->Picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,min_u=scaleFloat (negate engine.exponent_width) (fromIntegral left),min_v=scaleFloat (negate engine.exponent_height) (fromIntegral down),max_u=scaleFloat (negate engine.exponent_width) (fromIntegral right),max_v=scaleFloat (negate engine.exponent_height) (fromIntegral up),path=path,locked=False}) path engine
 
-create_atlas::ET.Has_call_stack=>Arrange->String->DS.Seq Clip_request->Int->Engine a->IO (Engine a,Visual a)
+create_atlas::ET.Has_call_stack=>Arrange->DT.Text->DS.Seq Clip_request->Int->Engine a->IO (Engine a,Visual a)
 create_atlas arrange path clip_request index engine=do_image (\width height left down right up->Atlas {arrange=arrange,path=path,clip_request=clip_request,clip=to_storable_vector (create_atlas_a (fromIntegral width) (fromIntegral height) (fromIntegral (left+right)/2) (fromIntegral (down+up)/2) engine.exponent_width engine.exponent_height) clip_request (DS.length clip_request),index=index,locked=False}) path engine
 
 create_atlas_a::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Int->Int->Clip_request->Clip
@@ -188,8 +189,8 @@ create_large_atlas::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Clip_request->Cli
 create_large_atlas width height clip_request=case clip_request of
     Clip_request {x,y,min_u,min_v,max_u,max_v}->Clip {x=x,y=y,half_width=width*(max_u-min_u)/4,half_height=height*(max_v-min_v)/4,min_u=(1+min_u)/2,min_v=(1-max_v)/2,max_u=(1+max_u)/2,max_v=(1-min_v)/2}
 
-create_animation::ET.Has_call_stack=>Arrange->FCT.CFloat->Int->Int->Int->String->Engine a->IO (Engine a,Visual a)
-create_animation arrange min_delay padding exponent_width exponent_height path engine=with_string path $ \this_path->do
+create_animation::ET.Has_call_stack=>Arrange->FCT.CFloat->Int->Int->Int->DT.Text->Engine a->IO (Engine a,Visual a)
+create_animation arrange min_delay padding exponent_width exponent_height path engine=with_text path $ \this_path->do
     ptr_animation<-SDLF.img_load_animation this_path
     sdl_catch_null ptr_animation
     animation<-FS.peek ptr_animation

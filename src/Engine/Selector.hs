@@ -44,14 +44,14 @@ hosted_vector_selector_update bounded fallback wrapper function value index vect
 widget_trigger_selector_action::ET.Has_call_stack=>(Widget a->b->c)->Widget a->b->c
 widget_trigger_selector_action value=value
 
-widget_trigger_selector_update::ET.Has_call_stack=>((Widget a->Widget a)->b->c)->(d->Widget a->b)->d->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Widget a->(Widget a,Engine a->Engine a))->Widget a->c
-widget_trigger_selector_update wrapper function value next widget_trigger widget=wrapper (\this_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=this_widget}) (function value widget)
+widget_trigger_selector_update::ET.Has_call_stack=>((Widget a->Widget a)->b->c)->(d->Widget a->b)->d->(Event a->Engine a->Maybe Int)->Widget a->(Event a->Engine a->Widget a->(Widget a,Engine a->Engine a))->c
+widget_trigger_selector_update wrapper function value next widget widget_trigger=wrapper (\this_widget->Widget_trigger {next=next,widget=this_widget,widget_trigger=widget_trigger}) (function value widget)
 
-widget_io_trigger_selector_update::ET.Has_call_stack=>((Widget a->Widget a)->b->c)->(d->Widget a->b)->d->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)))->Widget a->c
-widget_io_trigger_selector_update wrapper function value next widget_io_trigger widget=wrapper (\this_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=this_widget}) (function value widget)
+widget_io_trigger_selector_update::ET.Has_call_stack=>((Widget a->Widget a)->b->c)->(d->Widget a->b)->d->(Event a->Engine a->Maybe Int)->Widget a->(Event a->Engine a->Widget a->(Widget a,Engine a->IO (Engine a)))->c
+widget_io_trigger_selector_update wrapper function value next widget widget_io_trigger=wrapper (\this_widget->Widget_io_trigger {next=next,widget=this_widget,widget_io_trigger=widget_io_trigger}) (function value widget)
 
-widget_mix_trigger_selector_update::ET.Has_call_stack=>((Widget a->Widget a)->b->c)->(d->Widget a->b)->d->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)))->Bool->Widget a->c
-widget_mix_trigger_selector_update wrapper function value next widget_mix_trigger order widget=wrapper (\this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_widget}) (function value widget)
+widget_mix_trigger_selector_update::ET.Has_call_stack=>((Widget a->Widget a)->b->c)->(d->Widget a->b)->d->(Event a->Engine a->Maybe Int)->Widget a->(Event a->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)))->Bool->c
+widget_mix_trigger_selector_update wrapper function value next widget widget_mix_trigger order=wrapper (\this_widget->Widget_mix_trigger {next=next,widget=this_widget,widget_mix_trigger=widget_mix_trigger,order=order}) (function value widget)
 
 any_coroutine_selector_action::ET.Has_call_stack=>((a->Coroutine_state b->c)->a->DIM.IntMap (Coroutine_state b)->c)->(Widget b->a->c)->DIM.IntMap (Coroutine_state b)->a->c
 any_coroutine_selector_action function value coroutine_state environment=function (\this_environment single_coroutine_state->value single_coroutine_state.widget this_environment) environment coroutine_state
@@ -238,17 +238,17 @@ selector_update update this_selector this_widget=case this_selector of
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_update_a maybe_value update (hosted_group_selector_update bounded this_widget id (\this_index this_this_selector this_group_widget->(if bounded then int_map_update else int_map_update_safe) this_index (selector_update update this_this_selector) this_group_widget) selector initial_min_index min_index initial_max_index max_index index group_widget)
         Vector {index,vector_widget}->selector_update_a maybe_value update (hosted_vector_selector_update bounded this_widget id (\this_index this_this_selector this_vector_widget->CMST.runST (action_vector (\this_this_vector_widget->DVM.write this_this_vector_widget this_index (selector_update update this_this_selector (this_vector_widget DV.! this_index))) this_vector_widget)) selector index vector_widget)
-        Widget_trigger {next,widget_trigger,widget}->selector_update_a maybe_value update (widget_trigger_selector_update id id (selector_update update selector) next widget_trigger widget)
-        Widget_io_trigger {next,widget_io_trigger,widget}->selector_update_a maybe_value update (widget_io_trigger_selector_update id id (selector_update update selector) next widget_io_trigger widget)
-        Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_update_a maybe_value update (widget_mix_trigger_selector_update id id (selector_update update selector) next widget_mix_trigger order widget)
+        Widget_trigger {next,widget,widget_trigger}->selector_update_a maybe_value update (widget_trigger_selector_update id id (selector_update update selector) next widget widget_trigger)
+        Widget_io_trigger {next,widget,widget_io_trigger}->selector_update_a maybe_value update (widget_io_trigger_selector_update id id (selector_update update selector) next widget widget_io_trigger)
+        Widget_mix_trigger {next,widget,widget_mix_trigger,order}->selector_update_a maybe_value update (widget_mix_trigger_selector_update id id (selector_update update selector) next widget widget_mix_trigger order)
         Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (hosted_coroutine_selector_update bounded this_widget id (\this_index this_this_selector this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (selector_update update this_this_selector)) this_coroutine_state) selector initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_update_b strict maybe_value update this_widget
     Any_selector {maybe_value,selector,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_update_a maybe_value update (any_group_selector_update id fmap (selector_update update selector) initial_min_index min_index initial_max_index max_index index group_widget)
         Vector {index,vector_widget}->selector_update_a maybe_value update (any_vector_selector_update id fmap (selector_update update selector) index vector_widget)
-        Widget_trigger {next,widget_trigger,widget}->selector_update_a maybe_value update (widget_trigger_selector_update id id (selector_update update selector) next widget_trigger widget)
-        Widget_io_trigger {next,widget_io_trigger,widget}->selector_update_a maybe_value update (widget_io_trigger_selector_update id id (selector_update update selector) next widget_io_trigger widget)
-        Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_update_a maybe_value update (widget_mix_trigger_selector_update id id (selector_update update selector) next widget_mix_trigger order widget)
+        Widget_trigger {next,widget,widget_trigger}->selector_update_a maybe_value update (widget_trigger_selector_update id id (selector_update update selector) next widget widget_trigger)
+        Widget_io_trigger {next,widget,widget_io_trigger}->selector_update_a maybe_value update (widget_io_trigger_selector_update id id (selector_update update selector) next widget widget_io_trigger)
+        Widget_mix_trigger {next,widget,widget_mix_trigger,order}->selector_update_a maybe_value update (widget_mix_trigger_selector_update id id (selector_update update selector) next widget widget_mix_trigger order)
         Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (any_coroutine_selector_update id fmap (update_coroutine_state (selector_update update selector)) initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_update_b strict maybe_value update this_widget
     Group_selector {maybe_value,group_selector,bounded,strict}->case this_widget of
@@ -258,13 +258,13 @@ selector_update update this_selector this_widget=case this_selector of
         Vector {index,vector_widget}->selector_update_a maybe_value update (Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->CM.void (DIM.traverseWithKey (\this_index single_selector->if bounded then DVM.write this_vector_widget this_index (selector_update update single_selector (vector_widget DV.! this_index)) else maybe (return ()) (DVM.write this_vector_widget this_index . selector_update update single_selector) (vector_widget DV.!? this_index)) vector_selector)) vector_widget)})
         _->selector_update_b strict maybe_value update this_widget
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_trigger {next,widget_trigger,widget}->selector_update_a maybe_value update (Widget_trigger {next=next,widget_trigger=widget_trigger,widget=selector_update update selector widget})
+        Widget_trigger {next,widget,widget_trigger}->selector_update_a maybe_value update (Widget_trigger {next=next,widget=selector_update update selector widget,widget_trigger=widget_trigger})
         _->selector_update_b strict maybe_value update this_widget
     Widget_io_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_io_trigger {next,widget_io_trigger,widget}->selector_update_a maybe_value update (Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=selector_update update selector widget})
+        Widget_io_trigger {next,widget,widget_io_trigger}->selector_update_a maybe_value update (Widget_io_trigger {next=next,widget=selector_update update selector widget,widget_io_trigger=widget_io_trigger})
         _->selector_update_b strict maybe_value update this_widget
     Widget_mix_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_update_a maybe_value update (Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=selector_update update selector widget})
+        Widget_mix_trigger {next,widget,widget_mix_trigger,order}->selector_update_a maybe_value update (Widget_mix_trigger {next=next,widget=selector_update update selector widget,widget_mix_trigger=widget_mix_trigger,order=order})
         _->selector_update_b strict maybe_value update this_widget
     Coroutine_selector {maybe_value,coroutine_selector,bounded,strict}->case this_widget of
         Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_update_a maybe_value update (Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=DIM.foldlWithKey' (\this_coroutine_state this_index single_selector->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (selector_update update single_selector)) this_coroutine_state) coroutine_state coroutine_selector,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative})
@@ -284,9 +284,9 @@ all_selector_update::ET.Has_call_stack=>(Widget a->Widget a)->Widget a->Widget a
 all_selector_update update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->any_group_selector_update id fmap (all_selector_update update) initial_min_index min_index initial_max_index max_index index group_widget
     Vector {index,vector_widget}->any_vector_selector_update id fmap (all_selector_update update) index vector_widget
-    Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update id id (all_selector_update update) next widget_trigger widget
-    Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update id id (all_selector_update update) next widget_io_trigger widget
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update id id (all_selector_update update) next widget_mix_trigger order widget
+    Widget_trigger {next,widget,widget_trigger}->widget_trigger_selector_update id id (all_selector_update update) next widget widget_trigger
+    Widget_io_trigger {next,widget,widget_io_trigger}->widget_io_trigger_selector_update id id (all_selector_update update) next widget widget_io_trigger
+    Widget_mix_trigger {next,widget,widget_mix_trigger,order}->widget_mix_trigger_selector_update id id (all_selector_update update) next widget widget_mix_trigger order
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->any_coroutine_selector_update id fmap (update_coroutine_state (all_selector_update update)) initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
@@ -301,9 +301,9 @@ default_selector_update::ET.Has_call_stack=>Bool->(Widget a->Widget a)->Widget a
 default_selector_update bounded update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->hosted_group_selector_update bounded this_widget id (\this_index this_update this_group_widget->(if bounded then int_map_update else int_map_update_safe) this_index (default_selector_update bounded this_update) this_group_widget) update initial_min_index min_index initial_max_index max_index index group_widget
     Vector {index,vector_widget}->hosted_vector_selector_update bounded this_widget id (\this_index this_update this_vector_widget->CMST.runST (action_vector (\this_this_vector_widget->DVM.write this_this_vector_widget this_index (default_selector_update bounded this_update (this_vector_widget DV.! this_index))) this_vector_widget)) update index vector_widget
-    Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update id id (default_selector_update bounded update) next widget_trigger widget
-    Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update id id (default_selector_update bounded update) next widget_io_trigger widget
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update id id (default_selector_update bounded update) next widget_mix_trigger order widget
+    Widget_trigger {next,widget,widget_trigger}->widget_trigger_selector_update id id (default_selector_update bounded update) next widget widget_trigger
+    Widget_io_trigger {next,widget,widget_io_trigger}->widget_io_trigger_selector_update id id (default_selector_update bounded update) next widget widget_io_trigger
+    Widget_mix_trigger {next,widget,widget_mix_trigger,order}->widget_mix_trigger_selector_update id id (default_selector_update bounded update) next widget widget_mix_trigger order
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->hosted_coroutine_selector_update bounded this_widget id (\this_index this_update this_coroutine_state->(if bounded then int_map_update else int_map_update_safe) this_index (update_coroutine_state (default_selector_update bounded this_update)) this_coroutine_state) update initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
@@ -318,17 +318,17 @@ selector_monad_update update this_selector this_widget=case this_selector of
     Hosted_selector {maybe_value,selector,bounded,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_monad_update_a maybe_value update (hosted_group_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_group_widget->int_map_functor_update this_index (selector_monad_update update this_this_selector) this_group_widget) selector initial_min_index min_index initial_max_index max_index index group_widget)
         Vector {index,vector_widget}->selector_monad_update_a maybe_value update (hosted_vector_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_vector_widget->fmap (\widget->CMST.runST (action_vector (\this_this_vector_widget->DVM.write this_this_vector_widget this_index widget) this_vector_widget)) (selector_monad_update update this_this_selector (this_vector_widget DV.! this_index))) selector index vector_widget)
-        Widget_trigger {next,widget_trigger,widget}->selector_monad_update_a maybe_value update (widget_trigger_selector_update fmap id (selector_monad_update update selector) next widget_trigger widget)
-        Widget_io_trigger {next,widget_io_trigger,widget}->selector_monad_update_a maybe_value update (widget_io_trigger_selector_update fmap id (selector_monad_update update selector) next widget_io_trigger widget)
-        Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_monad_update_a maybe_value update (widget_mix_trigger_selector_update fmap id (selector_monad_update update selector) next widget_mix_trigger order widget)
+        Widget_trigger {next,widget,widget_trigger}->selector_monad_update_a maybe_value update (widget_trigger_selector_update fmap id (selector_monad_update update selector) next widget widget_trigger)
+        Widget_io_trigger {next,widget,widget_io_trigger}->selector_monad_update_a maybe_value update (widget_io_trigger_selector_update fmap id (selector_monad_update update selector) next widget widget_io_trigger)
+        Widget_mix_trigger {next,widget,widget_mix_trigger,order}->selector_monad_update_a maybe_value update (widget_mix_trigger_selector_update fmap id (selector_monad_update update selector) next widget widget_mix_trigger order)
         Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_a maybe_value update (hosted_coroutine_selector_update bounded (return this_widget) fmap (\this_index this_this_selector this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (selector_monad_update update this_this_selector)) this_coroutine_state) selector initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_monad_update_b strict maybe_value update this_widget
     Any_selector {maybe_value,selector,strict}->case this_widget of
         Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->selector_monad_update_a maybe_value update (any_group_selector_update fmap traverse (selector_monad_update update selector) initial_min_index min_index initial_max_index max_index index group_widget)
         Vector {index,vector_widget}->selector_monad_update_a maybe_value update (any_vector_selector_update fmap traverse (selector_monad_update update selector) index vector_widget)
-        Widget_trigger {next,widget_trigger,widget}->selector_monad_update_a maybe_value update (widget_trigger_selector_update fmap id (selector_monad_update update selector) next widget_trigger widget)
-        Widget_io_trigger {next,widget_io_trigger,widget}->selector_monad_update_a maybe_value update (widget_io_trigger_selector_update fmap id (selector_monad_update update selector) next widget_io_trigger widget)
-        Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_monad_update_a maybe_value update (widget_mix_trigger_selector_update fmap id (selector_monad_update update selector) next widget_mix_trigger order widget)
+        Widget_trigger {next,widget,widget_trigger}->selector_monad_update_a maybe_value update (widget_trigger_selector_update fmap id (selector_monad_update update selector) next widget widget_trigger)
+        Widget_io_trigger {next,widget,widget_io_trigger}->selector_monad_update_a maybe_value update (widget_io_trigger_selector_update fmap id (selector_monad_update update selector) next widget widget_io_trigger)
+        Widget_mix_trigger {next,widget,widget_mix_trigger,order}->selector_monad_update_a maybe_value update (widget_mix_trigger_selector_update fmap id (selector_monad_update update selector) next widget widget_mix_trigger order)
         Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_a maybe_value update (any_coroutine_selector_update fmap traverse (functor_update_coroutine_state (selector_monad_update update selector)) initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state)
         _->selector_monad_update_b strict maybe_value update this_widget
     Group_selector {maybe_value,group_selector,bounded,strict}->case this_widget of
@@ -338,13 +338,13 @@ selector_monad_update update this_selector this_widget=case this_selector of
         Vector {index,vector_widget}->selector_monad_update_c maybe_value update (\this_vector_widget->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_this_vector_widget->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_widget) this_vector_widget)) vector_widget)}) (DIM.traverseWithKey (\this_index single_selector->if bounded then fmap Just (selector_monad_update update single_selector (vector_widget DV.! this_index)) else maybe (return Nothing) (fmap Just . selector_monad_update update single_selector) (vector_widget DV.!? this_index)) vector_selector)
         _->selector_monad_update_b strict maybe_value update this_widget
     Widget_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_trigger {next,widget_trigger,widget}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_trigger {next=next,widget_trigger=widget_trigger,widget=this_this_widget}) (selector_monad_update update selector widget)
+        Widget_trigger {next,widget,widget_trigger}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_trigger {next=next,widget=this_this_widget,widget_trigger=widget_trigger}) (selector_monad_update update selector widget)
         _->selector_monad_update_b strict maybe_value update this_widget
     Widget_io_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_io_trigger {next,widget_io_trigger,widget}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_io_trigger {next=next,widget_io_trigger=widget_io_trigger,widget=this_this_widget}) (selector_monad_update update selector widget)
+        Widget_io_trigger {next,widget,widget_io_trigger}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_io_trigger {next=next,widget=this_this_widget,widget_io_trigger=widget_io_trigger}) (selector_monad_update update selector widget)
         _->selector_monad_update_b strict maybe_value update this_widget
     Widget_mix_trigger_selector {maybe_value,selector,strict}->case this_widget of
-        Widget_mix_trigger {next,widget_mix_trigger,order,widget}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_mix_trigger {next=next,widget_mix_trigger=widget_mix_trigger,order=order,widget=this_this_widget}) (selector_monad_update update selector widget)
+        Widget_mix_trigger {next,widget,widget_mix_trigger,order}->selector_monad_update_c maybe_value update (\this_this_widget->Widget_mix_trigger {next=next,widget=this_this_widget,widget_mix_trigger=widget_mix_trigger,order=order}) (selector_monad_update update selector widget)
         _->selector_monad_update_b strict maybe_value update this_widget
     Coroutine_selector {maybe_value,coroutine_selector,bounded,strict}->case this_widget of
         Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->selector_monad_update_c maybe_value update (\this_coroutine_state->Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=this_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (functor_update_coroutine_state . selector_monad_update update) coroutine_selector coroutine_state)
@@ -373,9 +373,9 @@ all_selector_applicative_update::ET.Has_call_stack=>Applicative b=>(Widget a->b 
 all_selector_applicative_update update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->any_group_selector_update fmap traverse (all_selector_applicative_update update) initial_min_index min_index initial_max_index max_index index group_widget
     Vector {index,vector_widget}->any_vector_selector_update fmap traverse (all_selector_applicative_update update) index vector_widget
-    Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update fmap id (all_selector_applicative_update update) next widget_trigger widget
-    Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update fmap id (all_selector_applicative_update update) next widget_io_trigger widget
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update fmap id (all_selector_applicative_update update) next widget_mix_trigger order widget
+    Widget_trigger {next,widget,widget_trigger}->widget_trigger_selector_update fmap id (all_selector_applicative_update update) next widget widget_trigger
+    Widget_io_trigger {next,widget,widget_io_trigger}->widget_io_trigger_selector_update fmap id (all_selector_applicative_update update) next widget widget_io_trigger
+    Widget_mix_trigger {next,widget,widget_mix_trigger,order}->widget_mix_trigger_selector_update fmap id (all_selector_applicative_update update) next widget widget_mix_trigger order
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->any_coroutine_selector_update fmap traverse (functor_update_coroutine_state (all_selector_applicative_update update)) initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
@@ -390,9 +390,9 @@ default_selector_applicative_update::ET.Has_call_stack=>Applicative b=>Bool->(Wi
 default_selector_applicative_update bounded update this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->hosted_group_selector_update bounded (pure this_widget) fmap (\this_index this_update this_group_widget->int_map_functor_update this_index (default_selector_applicative_update bounded this_update) this_group_widget) update initial_min_index min_index initial_max_index max_index index group_widget
     Vector {index,vector_widget}->hosted_vector_selector_update bounded (pure this_widget) fmap (\this_index this_update this_vector_widget->fmap (\widget->CMST.runST (action_vector (\this_this_vector_widget->DVM.write this_this_vector_widget this_index widget) this_vector_widget)) (default_selector_applicative_update bounded this_update (this_vector_widget DV.! this_index))) update index vector_widget
-    Widget_trigger {next,widget_trigger,widget}->widget_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget_trigger widget
-    Widget_io_trigger {next,widget_io_trigger,widget}->widget_io_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget_io_trigger widget
-    Widget_mix_trigger {next,widget_mix_trigger,order,widget}->widget_mix_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget_mix_trigger order widget
+    Widget_trigger {next,widget,widget_trigger}->widget_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget widget_trigger
+    Widget_io_trigger {next,widget,widget_io_trigger}->widget_io_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget widget_io_trigger
+    Widget_mix_trigger {next,widget,widget_mix_trigger,order}->widget_mix_trigger_selector_update fmap id (default_selector_applicative_update bounded update) next widget widget_mix_trigger order
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->hosted_coroutine_selector_update bounded (pure this_widget) fmap (\this_index this_update this_coroutine_state->int_map_functor_update this_index (functor_update_coroutine_state (default_selector_applicative_update bounded this_update)) this_coroutine_state) update initial_min_index min_index initial_max_index max_index index variable_size user_variable_size layout linear_coroutine iterative coroutine_state
     _->update this_widget
 
@@ -431,11 +431,11 @@ visual_selector_action action visual_selector widget environment=case visual_sel
 
 any_visual_selector_action::ET.Has_call_stack=>Bool->((Arrange->Arrange)->Visual a->b->b)->Widget a->b->b
 any_visual_selector_action strict action widget environment=case widget of
-    Group_visual {arrange,group_visual}->any_group_visual_selector_action DIM.foldl' (action (combine_arrange arrange)) group_visual environment
-    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldl' (action (combine_arrange arrange)) vector_visual environment
     Visual_trigger {visual}->action id visual environment
     Visual_io_trigger {visual}->action id visual environment
     Visual_mix_trigger {visual}->action id visual environment
+    Group_visual {arrange,group_visual}->any_group_visual_selector_action DIM.foldl' (action (combine_arrange arrange)) group_visual environment
+    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldl' (action (combine_arrange arrange)) vector_visual environment
     _->if strict then EF.empty_error else environment
 
 visual_selector_monad_action::ET.Has_call_stack=>Monad d=>(a->(Arrange->Arrange)->Visual b->c->d c)->Visual_selector a->Widget b->c->d c
@@ -461,11 +461,11 @@ visual_selector_monad_action action visual_selector widget environment=case visu
 
 any_visual_selector_monad_action::ET.Has_call_stack=>Monad c=>Bool->((Arrange->Arrange)->Visual a->b->c b)->Widget a->b->c b
 any_visual_selector_monad_action strict action widget environment=case widget of
-    Group_visual {arrange,group_visual}->any_group_visual_selector_action DF.foldlM (action (combine_arrange arrange)) group_visual environment
-    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldlM (action (combine_arrange arrange)) vector_visual environment
     Visual_trigger {visual}->action id visual environment
     Visual_io_trigger {visual}->action id visual environment
     Visual_mix_trigger {visual}->action id visual environment
+    Group_visual {arrange,group_visual}->any_group_visual_selector_action DF.foldlM (action (combine_arrange arrange)) group_visual environment
+    Vector_visual {arrange,vector_visual}->any_vector_visual_selector_action DF.foldlM (action (combine_arrange arrange)) vector_visual environment
     _->if strict then EF.empty_error else return environment
 
 visual_selector_update::ET.Has_call_stack=>(a->(Arrange->Arrange)->Visual b->Visual b)->Visual_selector a->Widget b->Widget b
@@ -474,28 +474,28 @@ visual_selector_update update visual_selector widget=case visual_selector of
     Combine_visual_selector {combine_visual_selector}->DF.foldl' (flip (visual_selector_update update)) widget combine_visual_selector
     Any_visual_selector {value,strict}->any_visual_selector_update strict (update value) widget
     Visual_trigger_selector {value,strict}->case widget of
-        Visual_trigger {next,visual_trigger,visual}->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=update value id visual}
+        Visual_trigger {next,visual,visual_trigger}->Visual_trigger {next=next,visual=update value id visual,visual_trigger=visual_trigger}
         _->if strict then EF.empty_error else widget
     Visual_io_trigger_selector {value,strict}->case widget of
-        Visual_io_trigger {next,visual_io_trigger,visual}->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=update value id visual}
+        Visual_io_trigger {next,visual,visual_io_trigger}->Visual_io_trigger {next=next,visual=update value id visual,visual_io_trigger=visual_io_trigger}
         _->if strict then EF.empty_error else widget
     Visual_mix_trigger_selector {value,strict}->case widget of
-        Visual_mix_trigger {next,visual_mix_trigger,order,visual}->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=update value id visual}
+        Visual_mix_trigger {next,visual,visual_mix_trigger,order}->Visual_mix_trigger {next=next,visual=update value id visual,visual_mix_trigger=visual_mix_trigger,order=order}
         _->if strict then EF.empty_error else widget
     Group_visual_selector {group_value,bounded,strict}->case widget of
-        Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=DIM.foldlWithKey' (\this_group_visual index single_value->(if bounded then int_map_update else int_map_update_safe) index (update single_value (combine_arrange arrange)) this_group_visual) group_visual group_value}
+        Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=DIM.foldlWithKey' (\this_group_visual index value->(if bounded then int_map_update else int_map_update_safe) index (update value (combine_arrange arrange)) this_group_visual) group_visual group_value}
         _->if strict then EF.empty_error else widget
     Vector_visual_selector {vector_value,bounded,strict}->case widget of
-        Vector_visual {arrange,vector_visual}->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->CM.void (DIM.traverseWithKey (\index single_value->if bounded then DVM.write this_vector_visual index (update single_value (combine_arrange arrange) (vector_visual DV.! index)) else maybe (return ()) (DVM.write this_vector_visual index . update single_value (combine_arrange arrange)) (vector_visual DV.!? index)) vector_value)) vector_visual)}
+        Vector_visual {arrange,vector_visual}->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->CM.void (DIM.traverseWithKey (\index value->if bounded then DVM.write this_vector_visual index (update value (combine_arrange arrange) (vector_visual DV.! index)) else maybe (return ()) (DVM.write this_vector_visual index . update value (combine_arrange arrange)) (vector_visual DV.!? index)) vector_value)) vector_visual)}
         _->if strict then EF.empty_error else widget
 
 any_visual_selector_update::ET.Has_call_stack=>Bool->((Arrange->Arrange)->Visual a->Visual a)->Widget a->Widget a
 any_visual_selector_update strict update widget=case widget of
+    Visual_trigger {next,visual,visual_trigger}->Visual_trigger {next=next,visual=update id visual,visual_trigger=visual_trigger}
+    Visual_io_trigger {next,visual,visual_io_trigger}->Visual_io_trigger {next=next,visual=update id visual,visual_io_trigger=visual_io_trigger}
+    Visual_mix_trigger {next,visual,visual_mix_trigger,order}->Visual_mix_trigger {next=next,visual=update id visual,visual_mix_trigger=visual_mix_trigger,order=order}
     Group_visual {arrange,group_visual}->any_group_visual_selector_update id fmap (update (combine_arrange arrange)) arrange group_visual
     Vector_visual {arrange,vector_visual}->any_vector_visual_selector_update id fmap (update (combine_arrange arrange)) arrange vector_visual
-    Visual_trigger {next,visual_trigger,visual}->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=update id visual}
-    Visual_io_trigger {next,visual_io_trigger,visual}->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=update id visual}
-    Visual_mix_trigger {next,visual_mix_trigger,order,visual}->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=update id visual}
     _->if strict then EF.empty_error else widget
 
 visual_selector_monad_update::ET.Has_call_stack=>Monad c=>(a->(Arrange->Arrange)->Visual b->c (Visual b))->Visual_selector a->Widget b->c (Widget b)
@@ -504,28 +504,28 @@ visual_selector_monad_update update visual_selector widget=case visual_selector 
     Combine_visual_selector {combine_visual_selector}->DF.foldlM (flip (visual_selector_monad_update update)) widget combine_visual_selector
     Any_visual_selector {value,strict}->any_visual_selector_applicative_update strict (update value) widget
     Visual_trigger_selector {value,strict}->case widget of
-        Visual_trigger {next,visual_trigger,visual}->fmap (\this_visual->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=this_visual}) (update value id visual)
+        Visual_trigger {next,visual,visual_trigger}->fmap (\this_visual->Visual_trigger {next=next,visual=this_visual,visual_trigger=visual_trigger}) (update value id visual)
         _->if strict then EF.empty_error else pure widget
     Visual_io_trigger_selector {value,strict}->case widget of
-        Visual_io_trigger {next,visual_io_trigger,visual}->fmap (\this_visual->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=this_visual}) (update value id visual)
+        Visual_io_trigger {next,visual,visual_io_trigger}->fmap (\this_visual->Visual_io_trigger {next=next,visual=this_visual,visual_io_trigger=visual_io_trigger}) (update value id visual)
         _->if strict then EF.empty_error else pure widget
     Visual_mix_trigger_selector {value,strict}->case widget of
-        Visual_mix_trigger {next,visual_mix_trigger,order,visual}->fmap (\this_visual->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=this_visual}) (update value id visual)
+        Visual_mix_trigger {next,visual,visual_mix_trigger,order}->fmap (\this_visual->Visual_mix_trigger {next=next,visual=this_visual,visual_mix_trigger=visual_mix_trigger,order=order}) (update value id visual)
         _->if strict then EF.empty_error else pure widget
     Group_visual_selector {group_value,bounded,strict}->case widget of
-        Group_visual {arrange,group_visual}->fmap (\this_group_visual->Group_visual {arrange=arrange,group_visual=this_group_visual}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (\single_value->update single_value (combine_arrange arrange)) group_value group_visual)
+        Group_visual {arrange,group_visual}->fmap (\this_group_visual->Group_visual {arrange=arrange,group_visual=this_group_visual}) ((if bounded then int_map_applicative_update else int_map_applicative_update_safe) (\value->update value (combine_arrange arrange)) group_value group_visual)
         _->if strict then EF.empty_error else pure widget
     Vector_visual_selector {vector_value,bounded,strict}->case widget of
-        Vector_visual {arrange,vector_visual}->fmap (\this_vector_visual->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_this_vector_visual->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_visual) this_vector_visual)) vector_visual)}) (DIM.traverseWithKey (\index single_value->if bounded then fmap Just (update single_value (combine_arrange arrange) (vector_visual DV.! index)) else maybe (return Nothing) (fmap Just . update single_value (combine_arrange arrange)) (vector_visual DV.!? index)) vector_value)
+        Vector_visual {arrange,vector_visual}->fmap (\this_vector_visual->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_this_vector_visual->CM.void (DIM.traverseWithKey (maybe (return ()) . DVM.write this_this_vector_visual) this_vector_visual)) vector_visual)}) (DIM.traverseWithKey (\index value->if bounded then fmap Just (update value (combine_arrange arrange) (vector_visual DV.! index)) else maybe (return Nothing) (fmap Just . update value (combine_arrange arrange)) (vector_visual DV.!? index)) vector_value)
         _->if strict then EF.empty_error else pure widget
 
 any_visual_selector_applicative_update::ET.Has_call_stack=>Applicative b=>Bool->((Arrange->Arrange)->Visual a->b (Visual a))->Widget a->b (Widget a)
 any_visual_selector_applicative_update strict update widget=case widget of
+    Visual_trigger {next,visual,visual_trigger}->fmap (\this_visual->Visual_trigger {next=next,visual=this_visual,visual_trigger=visual_trigger}) (update id visual)
+    Visual_io_trigger {next,visual,visual_io_trigger}->fmap (\this_visual->Visual_io_trigger {next=next,visual=this_visual,visual_io_trigger=visual_io_trigger}) (update id visual)
+    Visual_mix_trigger {next,visual,visual_mix_trigger,order}->fmap (\this_visual->Visual_mix_trigger {next=next,visual=this_visual,visual_mix_trigger=visual_mix_trigger,order=order}) (update id visual)
     Group_visual {arrange,group_visual}->any_group_visual_selector_update fmap traverse (update (combine_arrange arrange)) arrange group_visual
     Vector_visual {arrange,vector_visual}->any_vector_visual_selector_update fmap traverse (update (combine_arrange arrange)) arrange vector_visual
-    Visual_trigger {next,visual_trigger,visual}->fmap (\this_visual->Visual_trigger {next=next,visual_trigger=visual_trigger,visual=this_visual}) (update id visual)
-    Visual_io_trigger {next,visual_io_trigger,visual}->fmap (\this_visual->Visual_io_trigger {next=next,visual_io_trigger=visual_io_trigger,visual=this_visual}) (update id visual)
-    Visual_mix_trigger {next,visual_mix_trigger,order,visual}->fmap (\this_visual->Visual_mix_trigger {next=next,visual_mix_trigger=visual_mix_trigger,order=order,visual=this_visual}) (update id visual)
     _->if strict then EF.empty_error else pure widget
 
 {-# INLINE any_group_selector_action #-}
