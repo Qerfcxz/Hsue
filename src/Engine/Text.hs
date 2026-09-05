@@ -83,7 +83,7 @@ to_charset_a sentence charset=case sentence of
 
 update_font::ET.Has_call_stack=>DT.Text->Maybe (DHS.HashSet Char)->Engine a->IO (Engine a)
 update_font path maybe_charset engine=case DHMS.lookup path engine.font_map of
-    Nothing->update_font_a DIM.empty engine.font_id path maybe_charset (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
+    Nothing->update_font_a DIM.empty engine.font_id path maybe_charset (engine {font_map=hash_map_insert_strict path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->update_font_a (maybe DIM.empty (\font->font.glyph) (DIM.lookup font_id engine.font)) font_id path maybe_charset engine
 
 update_font_a::ET.Has_call_stack=>DIM.IntMap Glyph->Int->DT.Text->Maybe (DHS.HashSet Char)->Engine a->IO (Engine a)
@@ -92,7 +92,7 @@ update_font_a glyph font_id path maybe_charset engine=case maybe_charset of
     Just charset->let unicode=DIS.difference (DHS.foldl' (\this_unicode char->DIS.insert (DC.ord char) this_unicode) DIS.empty charset) (DIM.keysSet glyph) in if DIS.null unicode then return engine else from_charset_b False glyph font_id path unicode engine
 
 update_atlas_font::ET.Has_call_stack=>Int->DT.Text->Maybe (DHS.HashSet Char)->Engine a->IO (Engine a)
-update_atlas_font atlas_font_id path maybe_charset engine=fmap (\atlas_font->engine {atlas_font=atlas_font}) (int_map_functor_update atlas_font_id (update_atlas_font_a path maybe_charset engine) engine.atlas_font)
+update_atlas_font atlas_font_id path maybe_charset engine=fmap (\atlas_font->engine {atlas_font=atlas_font}) (int_map_applicative_update engine.strict_exist atlas_font_id (update_atlas_font_a path maybe_charset engine) engine.atlas_font)
 
 update_atlas_font_a::ET.Has_call_stack=>DT.Text->Maybe (DHS.HashSet Char)->Engine a->Atlas_font->IO Atlas_font
 update_atlas_font_a path maybe_charset engine atlas_font=case maybe_charset of
@@ -124,7 +124,7 @@ from_charset charset engine=DHMS.foldlWithKey' (\action path single_charset->act
 
 from_charset_a::ET.Has_call_stack=>DT.Text->DHS.HashSet Char->Engine a->IO (Engine a)
 from_charset_a path charset engine=let unicode=DHS.foldl' (\this_unicode char->DIS.insert (DC.ord char) this_unicode) DIS.empty charset in case DHMS.lookup path engine.font_map of
-    Nothing->if DIS.null unicode then return (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font=DIM.insert engine.font_id (Font {glyph=DIM.empty,descent=0,ascent=0}) engine.font,font_id=engine.font_id+1}) else from_charset_b False DIM.empty engine.font_id path unicode (engine {font_map=hash_map_insert path engine.font_id engine.font_map,font_id=engine.font_id+1})
+    Nothing->if DIS.null unicode then return (engine {font_map=hash_map_insert_strict path engine.font_id engine.font_map,font=DIM.insert engine.font_id (Font {glyph=DIM.empty,descent=0,ascent=0}) engine.font,font_id=engine.font_id+1}) else from_charset_b False DIM.empty engine.font_id path unicode (engine {font_map=hash_map_insert_strict path engine.font_id engine.font_map,font_id=engine.font_id+1})
     Just font_id->let glyph=maybe DIM.empty (\font->font.glyph) (DIM.lookup font_id engine.font) in let new_unicode=DIS.difference unicode (DIM.keysSet glyph) in if DIS.null new_unicode then return engine else from_charset_b False glyph font_id path new_unicode engine
 
 from_charset_b::ET.Has_call_stack=>Bool->DIM.IntMap Glyph->Int->DT.Text->DIS.IntSet->Engine a->IO (Engine a)
@@ -153,20 +153,20 @@ from_charset_c x y exponent_width exponent_height index msdf_count msdf_glyph gl
     case single_msdf_glyph of
         MSDFI.MSDF_Glyph {msdf_unicode,msdf_advance,msdf_plane_left,msdf_plane_down,msdf_plane_right,msdf_plane_up,msdf_atlas_left,msdf_atlas_down,msdf_atlas_right,msdf_atlas_up}->from_charset_c x y exponent_width exponent_height (index+1) msdf_count msdf_glyph (DIM.insert (fromIntegral msdf_unicode) (Glyph {advance=msdf_advance,left=msdf_plane_left,down=msdf_plane_down,right=msdf_plane_right,up=msdf_plane_up,min_u=scaleFloat (negate exponent_width) (x+msdf_atlas_left),min_v=scaleFloat (negate exponent_height) (y+msdf_atlas_down),max_u=scaleFloat (negate exponent_width) (x+msdf_atlas_right),max_v=scaleFloat (negate exponent_height) (y+msdf_atlas_up)}) glyph)
 
-scroll_text::ET.Has_call_stack=>FCT.CFloat->Visual a->Visual a
-scroll_text scroll visual=case visual of
+scroll_text::ET.Has_call_stack=>Bool->FCT.CFloat->Visual a->Visual a
+scroll_text strict_match scroll visual=case visual of
     Text {arrange,half_width,half_height,current_y,min_y,max_y,anchor,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y (min (max min_y max_y) (current_y+scroll)),min_y=min_y,max_y=max_y,anchor=anchor,article=article,charset=charset,locked=locked}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else visual
 
-scroll_top_text::ET.Has_call_stack=>Visual a->Visual a
-scroll_top_text visual=case visual of
+scroll_top_text::ET.Has_call_stack=>Bool->Visual a->Visual a
+scroll_top_text strict_match visual=case visual of
     Text {arrange,half_width,half_height,min_y,max_y,anchor,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=min_y,min_y=min_y,max_y=max_y,anchor=anchor,article=article,charset=charset,locked=locked}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else visual
 
-scroll_bottom_text::ET.Has_call_stack=>Visual a->Visual a
-scroll_bottom_text visual=case visual of
+scroll_bottom_text::ET.Has_call_stack=>Bool->Visual a->Visual a
+scroll_bottom_text strict_match visual=case visual of
     Text {arrange,half_width,half_height,min_y,max_y,anchor,article,charset,locked}->Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=max min_y max_y,min_y=min_y,max_y=max_y,anchor=anchor,article=article,charset=charset,locked=locked}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else visual
 
 {-# INLINE do_typesetting #-}
 {-# INLINE for_text #-}

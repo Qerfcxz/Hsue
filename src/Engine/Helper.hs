@@ -31,22 +31,22 @@ all_selector::ET.Has_call_stack=>Bool->Selector ()
 all_selector maybe_value=All_selector {maybe_value=if maybe_value then Just () else Nothing,value=()}
 
 trigger_selector::ET.Has_call_stack=>Bool->Bool->Selector ()
-trigger_selector maybe_value bounded=Trigger_selector {maybe_value=if maybe_value then Just () else Nothing,value=(),bounded=bounded}
+trigger_selector strict_exist maybe_value=Trigger_selector {maybe_value=if maybe_value then Just () else Nothing,value=(),strict_exist=strict_exist}
 
 default_selector::ET.Has_call_stack=>Bool->Bool->Selector ()
-default_selector maybe_value bounded=Default_selector {maybe_value=if maybe_value then Just () else Nothing,value=(),bounded=bounded}
+default_selector strict_exist maybe_value=Default_selector {maybe_value=if maybe_value then Just () else Nothing,value=(),strict_exist=strict_exist}
 
 any_visual_selector::ET.Has_call_stack=>Bool->Visual_selector ()
-any_visual_selector strict=Any_visual_selector {value=(),strict=strict}
+any_visual_selector strict_match=Any_visual_selector {value=(),strict_match=strict_match}
 
 visual_trigger_selector::ET.Has_call_stack=>Bool->Visual_selector ()
-visual_trigger_selector strict=Visual_trigger_selector {value=(),strict=strict}
+visual_trigger_selector strict_match=Visual_trigger_selector {value=(),strict_match=strict_match}
 
 visual_io_trigger_selector::ET.Has_call_stack=>Bool->Visual_selector ()
-visual_io_trigger_selector strict=Visual_io_trigger_selector {value=(),strict=strict}
+visual_io_trigger_selector strict_match=Visual_io_trigger_selector {value=(),strict_match=strict_match}
 
 visual_mix_trigger_selector::ET.Has_call_stack=>Bool->Visual_selector ()
-visual_mix_trigger_selector strict=Visual_mix_trigger_selector {value=(),strict=strict}
+visual_mix_trigger_selector strict_match=Visual_mix_trigger_selector {value=(),strict_match=strict_match}
 
 const_dynamic_bool::ET.Has_call_stack=>Bool->Dynamic_bool a
 const_dynamic_bool bool=Dynamic_bool {dynamic_bool=const (const (const (const bool)))}
@@ -94,8 +94,8 @@ identity_matrix=Matrix {x=0,y=0,x_x=1,x_y=0,y_x=0,y_y=1}
 scale_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix
 scale_matrix x_scale y_scale=Matrix {x=0,y=0,x_x=x_scale,x_y=0,y_x=0,y_y=y_scale}
 
-translate_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix
-translate_matrix x_offset y_offset=Matrix {x=x_offset,y=y_offset,x_x=1,x_y=0,y_x=0,y_y=1}
+origin_matrix::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Matrix
+origin_matrix x y=Matrix {x=x,y=y,x_x=1,x_y=0,y_x=0,y_y=1}
 
 rotate_matrix::ET.Has_call_stack=>FCT.CFloat->Matrix
 rotate_matrix angle=let cos_angle=cos angle in let sin_angle=sin angle in Matrix {x=0,y=0,x_x=cos_angle,x_y=negate sin_angle,y_x=sin_angle,y_y=cos_angle}
@@ -111,7 +111,7 @@ update_y_matrix y y_y matrix=case matrix of
 multiply_matrix::ET.Has_call_stack=>Matrix->Matrix->Matrix
 multiply_matrix first_matrix second_matrix=case first_matrix of
     Matrix {x=first_x,y=first_y,x_x=first_x_x,x_y=first_x_y,y_x=first_y_x,y_y=first_y_y}->case second_matrix of
-        Matrix {x=second_x,y=second_y,x_x=second_x_x,x_y=second_x_y,y_x=second_y_x,y_y=second_y_y}->Matrix {x=first_x_x*second_x+first_x_y*second_y+first_x,y=first_y_x*second_x+first_y_y*second_y+first_y,x_x=first_x_x*second_x_x+first_x_y*second_y_x,x_y=first_x_x*second_x_y+first_x_y*second_y_y,y_x=first_y_x*second_x_x+first_y_y*second_y_x,y_y=first_y_x*second_x_y+first_y_y*second_y_y}
+        Matrix {x=second_x,y=second_y,x_x=second_x_x,x_y=second_x_y,y_x=second_y_x,y_y=second_y_y}->Matrix {x=if second_x==0&&second_y==0 then first_x else second_x,y=if second_x==0&&second_y==0 then first_y else second_y,x_x=first_x_x*second_x_x+first_x_y*second_y_x,x_y=first_x_x*second_x_y+first_x_y*second_y_y,y_x=first_y_x*second_x_x+first_y_y*second_y_x,y_y=first_y_x*second_x_y+first_y_y*second_y_y}
 
 opaque_color::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->Color
 opaque_color red green blue=Color {red=red,green=green,blue=blue,alpha=1}
@@ -145,7 +145,7 @@ from_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->Integer
 from_foldable_enumeration=DF.foldl' (\int enumeration->int DB..|. DB.bit (fromEnum enumeration)) 0
 
 insert_foldable_enumeration::ET.Has_call_stack=>Foldable a=>Enum b=>a b->c->DHMS.HashMap Integer c->DHMS.HashMap Integer c
-insert_foldable_enumeration foldable_enumeration=hash_map_insert (from_foldable_enumeration foldable_enumeration)
+insert_foldable_enumeration foldable_enumeration=hash_map_insert_strict (from_foldable_enumeration foldable_enumeration)
 
 get_clipboard_text::ET.Has_call_stack=>IO DT.Text
 get_clipboard_text=do
@@ -163,10 +163,10 @@ set_clipboard_text string=with_text string $ \this_string->do
     value<-SDLF.sdl_set_clipboard_text this_string
     return (FMU.toBool value)
 
-quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CFloat->FCT.CFloat->FCT.CInt->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Maybe DW.Word64->Int->Int->Sampler_create_info->Blend_state->IO (Engine a)
-quick_create_engine state main_id projection_strategy font_size pixel_range max_picture_size max_vertex_size max_index_size max_parameter_size padding width height maybe_interval exponent_width exponent_height sampler_create_info blend_state=case maybe_interval of
-    Nothing->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 Nothing 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state
-    Just interval->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 (Just (div nanosecond interval)) 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state
+quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CFloat->FCT.CFloat->FCT.CInt->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Maybe DW.Word64->Int->Int->Sampler_create_info->Blend_state->Bool->Bool->Bool->Bool->IO (Engine a)
+quick_create_engine state main_id projection_strategy font_size pixel_range max_picture_size max_vertex_size max_index_size max_parameter_size padding width height maybe_interval exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match strict_resource strict_capacity=case maybe_interval of
+    Nothing->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 Nothing 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match strict_resource strict_capacity
+    Just interval->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 (Just (div nanosecond interval)) 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match strict_resource strict_capacity
 
 {-# INLINE self_selector #-}
 {-# INLINE all_selector #-}
@@ -190,7 +190,7 @@ quick_create_engine state main_id projection_strategy font_size pixel_range max_
 {-# INLINE subtract_point #-}
 {-# INLINE identity_matrix #-}
 {-# INLINE scale_matrix #-}
-{-# INLINE translate_matrix #-}
+{-# INLINE origin_matrix #-}
 {-# INLINE rotate_matrix #-}
 {-# INLINE update_x_matrix #-}
 {-# INLINE update_y_matrix #-}
@@ -206,3 +206,4 @@ quick_create_engine state main_id projection_strategy font_size pixel_range max_
 {-# INLINE fit_window_matrix #-}
 {-# INLINE from_foldable_enumeration #-}
 {-# INLINE insert_foldable_enumeration #-}
+{-# INLINE quick_create_engine #-}

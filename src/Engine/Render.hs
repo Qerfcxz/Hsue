@@ -96,21 +96,22 @@ do_render_c canvas=case canvas of
 
 do_canvas_widget_render::ET.Has_call_stack=>Custom b=>Maybe Int->Projection_path->Selector a->Widget b->Engine b->IO (Engine b)
 do_canvas_widget_render maybe_sampler_id projection_path selector widget engine=case widget of
-    Collector {submit}->selector_monad_action (const (\this_widget this_engine->any_visual_selector_monad_action True (const (\visual->do_canvas_widget_render_a submit maybe_sampler_id visual)) this_widget this_engine)) selector (lookup_projection_widget projection_path engine) engine
-    _->EF.empty_error
+    Collector {submit}->selector_monad_action (const (\this_widget this_engine->any_visual_selector_monad_action engine.strict_match (const (\visual->do_canvas_widget_render_a submit maybe_sampler_id visual)) this_widget this_engine)) selector (lookup_projection_widget projection_path engine) engine
+    _->if engine.strict_match then EF.empty_error else return engine
 
 do_canvas_widget_render_a::ET.Has_call_stack=>Custom a=>DIM.IntMap (DS.Seq (Submit a))->Maybe Int->Visual a->Engine a->IO (Engine a)
-do_canvas_widget_render_a submit maybe_sampler_id visual engine=do
-    command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
-    sdl_catch_null command_buffer
-    case visual of
-        Canvas {half_width,half_height,canvas_id}->case int_map_lookup canvas_id engine.canvas of
+do_canvas_widget_render_a submit maybe_sampler_id visual engine=case visual of
+    Canvas {half_width,half_height,canvas_id}->case DIM.lookup canvas_id engine.canvas of
+        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Just canvas->case canvas of
+            Free_canvas {}->if engine.strict_match then EF.empty_error else return engine
             Bound_canvas {texture}->do
+                command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
+                sdl_catch_null command_buffer
                 do_render_canvas engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id submit
                 sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return engine
-            _->EF.empty_error
-        _->EF.empty_error
+    _->if engine.strict_match then EF.empty_error else return engine
 
 get_submit_size::ET.Has_call_stack=>DIM.IntMap (DS.Seq (Submit a))->(DW.Word32,DW.Word32,DW.Word32)
 get_submit_size=DIM.foldl' (\(vertex_number,index_number,parameter_number) submit->DF.foldl' (flip get_submit_size_a) (vertex_number,index_number,parameter_number) submit) (0,0,0)
@@ -120,19 +121,20 @@ get_submit_size_a submit (vertex_number,index_number,parameter_number)=case subm
     Submit {vertex_size,index_size}->(vertex_number+vertex_size,index_number+index_size,parameter_number+1)
 
 write_submit::ET.Has_call_stack=>Custom a=>Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->DIM.IntMap (DS.Seq (Submit a))->IO (DS.Seq (Submit_mode,DW.Word32,DW.Word32))
-write_submit engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=vertex_number*size_of_vertex in let index_size=index_number*size_of_index in let parameter_size=parameter_number*size_of_parameter in do
-    CM.when (engine.max_vertex_size<vertex_size||engine.max_index_size<index_size||engine.max_parameter_size<parameter_size) EF.empty_error
-    map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer engine.device engine.transfer_buffer (FMU.fromBool True)
-    sdl_catch_null map_transfer_buffer
-    (_,_,_,draw_call)<-CM.foldM (DF.foldlM (flip (write_submit_a (FP.castPtr map_transfer_buffer) (FP.castPtr (FP.plusPtr map_transfer_buffer (fromIntegral engine.max_vertex_size))) (FP.castPtr (FP.plusPtr map_transfer_buffer (fromIntegral (engine.max_vertex_size+engine.max_index_size))))))) (0,0,0,DS.empty) submit
-    SDLF.sdl_unmap_gpu_transfer_buffer engine.device engine.transfer_buffer
-    copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
-    sdl_catch_null copy_pass
-    FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=engine.transfer_buffer,sdl_offset=0}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=engine.vertex_buffer,sdl_offset=0,sdl_size=vertex_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
-    FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=engine.transfer_buffer,sdl_offset=engine.max_vertex_size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=engine.index_buffer,sdl_offset=0,sdl_size=index_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
-    FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=engine.transfer_buffer,sdl_offset=engine.max_vertex_size+engine.max_index_size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=engine.parameter_buffer,sdl_offset=0,sdl_size=parameter_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
-    SDLF.sdl_end_gpu_copy_pass copy_pass
-    return draw_call
+write_submit engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=vertex_number*size_of_vertex in let index_size=index_number*size_of_index in let parameter_size=parameter_number*size_of_parameter in if engine.max_vertex_size<vertex_size||engine.max_index_size<index_size||engine.max_parameter_size<parameter_size
+    then if engine.strict_capacity then EF.empty_error else return DS.empty
+    else do
+        map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer engine.device engine.transfer_buffer (FMU.fromBool True)
+        sdl_catch_null map_transfer_buffer
+        (_,_,_,draw_call)<-CM.foldM (DF.foldlM (flip (write_submit_a (FP.castPtr map_transfer_buffer) (FP.castPtr (FP.plusPtr map_transfer_buffer (fromIntegral engine.max_vertex_size))) (FP.castPtr (FP.plusPtr map_transfer_buffer (fromIntegral (engine.max_vertex_size+engine.max_index_size))))))) (0,0,0,DS.empty) submit
+        SDLF.sdl_unmap_gpu_transfer_buffer engine.device engine.transfer_buffer
+        copy_pass<-SDLF.sdl_begin_gpu_copy_pass command_buffer
+        sdl_catch_null copy_pass
+        FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=engine.transfer_buffer,sdl_offset=0}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=engine.vertex_buffer,sdl_offset=0,sdl_size=vertex_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
+        FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=engine.transfer_buffer,sdl_offset=engine.max_vertex_size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=engine.index_buffer,sdl_offset=0,sdl_size=index_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
+        FMU.with (SDLI.SDL_GPUTransferBufferLocation {sdl_transfer_buffer=engine.transfer_buffer,sdl_offset=engine.max_vertex_size+engine.max_index_size}) (\transfer_buffer_location->FMU.with (SDLI.SDL_GPUBufferRegion {sdl_buffer=engine.parameter_buffer,sdl_offset=0,sdl_size=parameter_size}) (\buffer_region->SDLF.sdl_upload_to_gpu_buffer copy_pass transfer_buffer_location buffer_region (FMU.fromBool True)))
+        SDLF.sdl_end_gpu_copy_pass copy_pass
+        return draw_call
 
 write_submit_a::ET.Has_call_stack=>Custom a=>FP.Ptr Vertex->FP.Ptr DW.Word32->FP.Ptr Parameter->Submit a->(DW.Word32,DW.Word32,DW.Word32,DS.Seq (Submit_mode,DW.Word32,DW.Word32))->IO (DW.Word32,DW.Word32,DW.Word32,DS.Seq (Submit_mode,DW.Word32,DW.Word32))
 write_submit_a vertex_ptr index_ptr parameter_ptr submit (vertex_index,index_index,parameter_index,draw_call)=case submit of
@@ -230,10 +232,18 @@ poke_vertex ptr offset parameter_id font_size x y u v red green blue alpha=do
     FS.pokeByteOff ptr (offset+36) alpha
 
 {-# INLINE do_render_c #-}
+{-# INLINE do_canvas_widget_render #-}
+{-# INLINE do_canvas_widget_render_a #-}
 {-# INLINE get_submit_size #-}
 {-# INLINE get_submit_size_a #-}
+{-# INLINE write_submit_a #-}
 {-# INLINE write_submit_b #-}
 {-# INLINE write_submit_data #-}
 {-# INLINE write_submit_rectangle #-}
 {-# INLINE write_submit_triangle #-}
+{-# INLINE write_submit_convex_polygon #-}
+{-# INLINE write_submit_regular_polygon #-}
+{-# INLINE write_submit_text #-}
+{-# INLINE write_submit_row #-}
+{-# INLINE write_submit_character #-}
 {-# INLINE poke_vertex #-}

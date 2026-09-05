@@ -17,6 +17,7 @@ import qualified Error.Type as ET
 import qualified Data.Foldable as DF
 import qualified Data.HashMap.Strict as DHMS
 import qualified Data.HashSet as DHS
+import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Word as DW
 import qualified Foreign.Marshal.Alloc as FMA
@@ -53,8 +54,8 @@ loop_engine_on_a event engine=do
 
 get_interval::ET.Has_call_stack=>Timer->DW.Word64
 get_interval timer=case timer of
+    Off->EF.empty_error
     On {interval}->interval
-    _->EF.empty_error
 
 to_mouse_button::ET.Has_call_stack=>DW.Word8->Mouse_button
 to_mouse_button button=case button of
@@ -148,14 +149,16 @@ loop_event_b::ET.Has_call_stack=>Custom a=>Bool->Event a->FP.Ptr ()->Engine a->I
 loop_event_b on event ptr engine=let new_engine=maybe engine (\leaf_id->run_event leaf_id event engine) (engine.main_id event engine) in if on then loop_engine_on ptr new_engine else loop_engine_off ptr new_engine
 
 run_event::ET.Has_call_stack=>Int->Event a->Engine a->Engine a
-run_event leaf_id event engine=let (next,update,leaf)=int_map_functor_update leaf_id (\projection->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event (lookup_projection_ancestry_id projection) in run_event_a new_event (`insert_projection_object` projection) (trigger_selector_applicative_update True (run_widget new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))) engine.leaf in let new_engine=update (engine {leaf=leaf}) in maybe new_engine (\this_leaf_id->run_event this_leaf_id event new_engine) (next new_engine)
+run_event leaf_id event engine=case DIM.lookup leaf_id engine.leaf of
+    Nothing->if engine.strict_exist then EF.empty_error else engine
+    Just _->let (next,update,leaf)=int_map_functor_update leaf_id (\projection->let new_event=DF.foldl' (\this_event node_id->(int_map_lookup node_id engine.node).event_transform engine this_event) event (lookup_projection_ancestry_id projection) in run_event_a new_event (`insert_projection_object` projection) (trigger_selector_applicative_update engine.strict_exist (run_widget engine.strict_match new_event engine) (lookup_projection (engine.projection_strategy event engine) projection))) engine.leaf in let new_engine=update (engine {leaf=leaf}) in maybe new_engine (\this_leaf_id->run_event this_leaf_id event new_engine) (next new_engine)
 
 run_event_a::ET.Has_call_stack=>Event a->(Widget a->Projection a)->Trigger_result a (Widget a)->(Engine a->Maybe Int,Engine a->Engine a,Projection a)
 run_event_a event transform trigger_result=case trigger_result of
     Trigger_result {next,update,value}->(next event,update,transform value)
 
-run_widget::ET.Has_call_stack=>Event a->Engine a->Widget a->Trigger_result a (Widget a)
-run_widget event engine this_widget=case this_widget of
+run_widget::ET.Has_call_stack=>Bool->Event a->Engine a->Widget a->Trigger_result a (Widget a)
+run_widget strict_match event engine this_widget=case this_widget of
     Trigger {next,trigger}->Trigger_result {next=next,update=trigger event,value=this_widget}
     Io_trigger {next,io_trigger}->Trigger_result {next=next,update=create_request (Io {io=io_trigger event}),value=this_widget}
     Mix_trigger {next,mix_trigger,order}->Trigger_result {next=next,update=let (update,io_update)=mix_trigger event in if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=this_widget}
@@ -165,7 +168,7 @@ run_widget event engine this_widget=case this_widget of
     Visual_trigger {next,visual,visual_trigger}->let (new_visual,update)=visual_trigger event engine visual in Trigger_result {next=next,update=update,value=Visual_trigger {next=next,visual=new_visual,visual_trigger=visual_trigger}}
     Visual_io_trigger {next,visual,visual_io_trigger}->let (new_visual,update)=visual_io_trigger event engine visual in Trigger_result {next=next,update=create_request (Io {io=update}),value=Visual_io_trigger {next=next,visual=new_visual,visual_io_trigger=visual_io_trigger}}
     Visual_mix_trigger {next,visual,visual_mix_trigger,order}->let (new_visual,update,io_update)=visual_mix_trigger event engine visual in Trigger_result {next=next,update=if order then create_request (Io {io=io_update}) . update else update . create_request (Io {io=io_update}),value=Visual_mix_trigger {next=next,visual=new_visual,visual_mix_trigger=visual_mix_trigger,order=order}}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else Trigger_result {next=const (const Nothing),update=id,value=this_widget}
 
 run_request::ET.Has_call_stack=>Custom a=>Bool->Engine a->IO (Engine a,Bool)
 run_request switch engine=case engine.request of

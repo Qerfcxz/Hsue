@@ -22,8 +22,8 @@ init_atlas width height=Leaf_atlas {border=Border {left=0,down=0,right=width,up=
 
 atlas_insert::ET.Has_call_stack=>DW.Word32->DW.Word32->DW.Word32->Atlas->(Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert width height padding atlas=case atlas_insert_a (width+2*padding) (height+2*padding) atlas of
+    Nothing->EF.empty_error
     Just (new_atlas,left,down,right,up)->(new_atlas,left+padding,down+padding,right-padding,up-padding)
-    _->EF.empty_error
 
 atlas_insert_a::ET.Has_call_stack=>DW.Word32->DW.Word32->Atlas->Maybe (Atlas,DW.Word32,DW.Word32,DW.Word32,DW.Word32)
 atlas_insert_a width height atlas=case atlas of
@@ -56,9 +56,9 @@ from_image device picture_transfer_buffer picture_size path=with_text path $ \th
     return (texture,new_width,new_height)
 
 from_pixel::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->FP.Ptr DW.Word8->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
-from_pixel device picture_transfer_buffer picture_size pixel width height=let size=fromIntegral (4*width*height) in do
+from_pixel device picture_transfer_buffer picture_size pixel width height=let size=4*width*height in do
     CM.when (picture_size<fromIntegral size) EF.empty_error
-    upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) size)
+    upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.copyBytes (FP.castPtr map_transfer_buffer) (FP.castPtr pixel) (fromIntegral size))
 
 upload_texture::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->DW.Word32->DW.Word32->(FP.Ptr ()->IO ())->IO (FP.Ptr SDLT.SDL_GPUTexture)
 upload_texture device picture_transfer_buffer width height action=do

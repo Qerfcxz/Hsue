@@ -33,46 +33,46 @@ import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
 from_same_insert_widget::ET.Has_call_stack=>Int->DS.Seq Insert_strategy->Widget a->Engine a->Engine a
-from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=int_map_update leaf_id (update_projection_object (from_same_insert_widget_a insert_widget_strategy widget)) engine.leaf}
+from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (from_same_insert_widget_a engine.strict_match insert_widget_strategy widget)) engine.leaf}
 
-from_same_insert_widget_a::ET.Has_call_stack=>DS.Seq Insert_strategy->Widget a->Widget a->Widget a
-from_same_insert_widget_a insert_widget_strategy widget this_widget=case this_widget of
+from_same_insert_widget_a::ET.Has_call_stack=>Bool->DS.Seq Insert_strategy->Widget a->Widget a->Widget a
+from_same_insert_widget_a strict_match insert_widget_strategy widget this_widget=case this_widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_same_insert_widget_b min_index max_index insert_widget_strategy (init_coroutine_state variable_size user_variable_size widget) coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else this_widget
 
 from_same_insert_widget_b::ET.Has_call_stack=>Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
 from_same_insert_widget_b min_index max_index insert_widget_strategy value int_map=case insert_widget_strategy of
     DS.Empty->(int_map,max_index,min_index)
     insert_strategy DS.:<| other_insert_strategy->case insert_strategy of
-        Min_strategy->from_same_insert_widget_b (min_index-1) max_index other_insert_strategy value (int_map_insert min_index value int_map)
-        Max_strategy->from_same_insert_widget_b min_index (max_index+1) other_insert_strategy value (int_map_insert max_index value int_map)
-        Index_strategy {seat}->if seat<=min_index then from_same_insert_widget_b (seat-1) max_index other_insert_strategy value (int_map_insert seat value int_map) else if max_index<=seat then from_same_insert_widget_b min_index (seat+1) other_insert_strategy value (int_map_insert seat value int_map) else from_same_insert_widget_b min_index max_index other_insert_strategy value (int_map_insert seat value int_map)
+        Min_strategy->from_same_insert_widget_b (min_index-1) max_index other_insert_strategy value (int_map_insert_strict min_index value int_map)
+        Max_strategy->from_same_insert_widget_b min_index (max_index+1) other_insert_strategy value (int_map_insert_strict max_index value int_map)
+        Index_strategy {seat}->if seat<=min_index then from_same_insert_widget_b (seat-1) max_index other_insert_strategy value (int_map_insert_strict seat value int_map) else if max_index<=seat then from_same_insert_widget_b min_index (seat+1) other_insert_strategy value (int_map_insert_strict seat value int_map) else from_same_insert_widget_b min_index max_index other_insert_strategy value (int_map_insert_strict seat value int_map)
 
 from_insert_widget::ET.Has_call_stack=>Int->DS.Seq (Insert (Widget a))->Engine a->Engine a
-from_insert_widget leaf_id insert_widget engine=engine {leaf=int_map_update leaf_id (update_projection_object (from_insert_widget_a insert_widget)) engine.leaf}
+from_insert_widget leaf_id insert_widget engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (from_insert_widget_a engine.strict_match insert_widget)) engine.leaf}
 
-from_insert_widget_a::ET.Has_call_stack=>DS.Seq (Insert (Widget a))->Widget a->Widget a
-from_insert_widget_a insert_widget widget=case widget of
+from_insert_widget_a::ET.Has_call_stack=>Bool->DS.Seq (Insert (Widget a))->Widget a->Widget a
+from_insert_widget_a strict_match insert_widget widget=case widget of
     Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->let (new_group_widget,new_max_index,new_min_index)=from_insert_widget_b min_index max_index id insert_widget group_widget in Group {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,group_widget=new_group_widget}
     Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (new_coroutine_state,new_max_index,new_min_index)=from_insert_widget_b min_index max_index (init_coroutine_state variable_size user_variable_size) insert_widget coroutine_state in Coroutine {initial_min_index=initial_min_index,min_index=new_min_index,initial_max_index=initial_max_index,max_index=new_max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else widget
 
 from_insert_widget_b::ET.Has_call_stack=>Int->Int->(Widget a->b)->DS.Seq (Insert (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
 from_insert_widget_b min_index max_index transform insert_widget int_map=case insert_widget of
     DS.Empty->(int_map,max_index,min_index)
     insert DS.:<| other_insert->case insert of
         Insert {insert_strategy,value}->case insert_strategy of
-            Min_strategy->from_insert_widget_b (min_index-1) max_index transform other_insert (int_map_insert min_index (transform value) int_map)
-            Max_strategy->from_insert_widget_b min_index (max_index+1) transform other_insert (int_map_insert max_index (transform value) int_map)
-            Index_strategy {seat}->if seat<=min_index then from_insert_widget_b (seat-1) max_index transform other_insert (int_map_insert seat (transform value) int_map) else if max_index<=seat then from_insert_widget_b min_index (seat+1) transform other_insert (int_map_insert seat (transform value) int_map) else from_insert_widget_b min_index max_index transform other_insert (int_map_insert seat (transform value) int_map)
+            Min_strategy->from_insert_widget_b (min_index-1) max_index transform other_insert (int_map_insert_strict min_index (transform value) int_map)
+            Max_strategy->from_insert_widget_b min_index (max_index+1) transform other_insert (int_map_insert_strict max_index (transform value) int_map)
+            Index_strategy {seat}->if seat<=min_index then from_insert_widget_b (seat-1) max_index transform other_insert (int_map_insert_strict seat (transform value) int_map) else if max_index<=seat then from_insert_widget_b min_index (seat+1) transform other_insert (int_map_insert_strict seat (transform value) int_map) else from_insert_widget_b min_index max_index transform other_insert (int_map_insert_strict seat (transform value) int_map)
 
 create_leaf::ET.Has_call_stack=>Custom a=>Int->Maybe Int->Widget_request a->Engine a->IO (Engine a)
 create_leaf leaf_id maybe_father_id widget_request engine=do
     (new_engine,widget)<-create_widget leaf_id widget_request engine
     case maybe_father_id of
-        Nothing->return (new_engine {leaf=int_map_insert leaf_id (Without {ancestry_id=DS.empty,object=widget}) new_engine.leaf})
-        Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {leaf_child=int_set_insert leaf_id this_node.leaf_child}) new_engine.node in return (new_engine {leaf=int_map_insert leaf_id (Without {ancestry_id=single_node.ancestry_id DS.|> father_id,object=widget}) new_engine.leaf,node=node})
+        Nothing->return (new_engine {leaf=int_map_insert_strict leaf_id (Without {ancestry_id=DS.empty,object=widget}) new_engine.leaf})
+        Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {leaf_child=int_set_insert leaf_id this_node.leaf_child}) new_engine.node in return (new_engine {leaf=int_map_insert_strict leaf_id (Without {ancestry_id=single_node.ancestry_id DS.|> father_id,object=widget}) new_engine.leaf,node=node})
 
 create_widget::ET.Has_call_stack=>Custom a=>Int->Widget_request a->Engine a->IO (Engine a,Widget a)
 create_widget leaf_id this_widget_request engine=case this_widget_request of
@@ -132,9 +132,9 @@ from_insert_widget_request leaf_id min_index max_index transform insert_widget_r
         Insert {insert_strategy,value}->do
             (new_engine,widget)<-create_widget leaf_id value engine
             case insert_strategy of
-                Min_strategy->from_insert_widget_request leaf_id (min_index-1) max_index transform other_insert (int_map_insert min_index (transform widget) int_map) new_engine
-                Max_strategy->from_insert_widget_request leaf_id min_index (max_index+1) transform other_insert (int_map_insert max_index (transform widget) int_map) new_engine
-                Index_strategy {seat}->if seat<=min_index then from_insert_widget_request leaf_id (seat-1) max_index transform other_insert (int_map_insert seat (transform widget) int_map) new_engine else if max_index<=seat then from_insert_widget_request leaf_id min_index (seat+1) transform other_insert (int_map_insert seat (transform widget) int_map) new_engine else from_insert_widget_request leaf_id min_index max_index transform other_insert (int_map_insert seat (transform widget) int_map) new_engine
+                Min_strategy->from_insert_widget_request leaf_id (min_index-1) max_index transform other_insert (int_map_insert_strict min_index (transform widget) int_map) new_engine
+                Max_strategy->from_insert_widget_request leaf_id min_index (max_index+1) transform other_insert (int_map_insert_strict max_index (transform widget) int_map) new_engine
+                Index_strategy {seat}->if seat<=min_index then from_insert_widget_request leaf_id (seat-1) max_index transform other_insert (int_map_insert_strict seat (transform widget) int_map) new_engine else if max_index<=seat then from_insert_widget_request leaf_id min_index (seat+1) transform other_insert (int_map_insert_strict seat (transform widget) int_map) new_engine else from_insert_widget_request leaf_id min_index max_index transform other_insert (int_map_insert_strict seat (transform widget) int_map) new_engine
 
 create_visual::ET.Has_call_stack=>Custom a=>Visual_request a->Engine a->IO (Engine a,Visual a)
 create_visual visual_request engine=case visual_request of
@@ -145,11 +145,11 @@ create_visual visual_request engine=case visual_request of
     Picture_request {arrange,path}->create_picture arrange path engine
     Large_picture_request {arrange,path}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
-        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
+        return (engine {album=int_map_insert_strict engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_picture {arrange=arrange,half_width=fromIntegral width/2,half_height=fromIntegral height/2,album_id=engine.album_id})
     Atlas_request {arrange,path,clip_request}->create_atlas arrange path clip_request 0 engine
     Large_atlas_request {arrange,path,clip_request}->do
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
-        return (engine {album=int_map_insert engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=to_storable_vector (create_large_atlas (fromIntegral width) (fromIntegral height)) clip_request (DS.length clip_request),index=0,album_id=engine.album_id})
+        return (engine {album=int_map_insert_strict engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=to_storable_vector (create_large_atlas (fromIntegral width) (fromIntegral height)) clip_request (DS.length clip_request),index=0,album_id=engine.album_id})
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
     Text_request {arrange,text_width,text_height,max_search_index,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
@@ -161,8 +161,8 @@ create_visual visual_request engine=case visual_request of
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         temporary_texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         case maybe_canvas_id of
-            Nothing->return (engine {canvas=int_map_insert engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
-            Just canvas_id->return (engine {canvas=int_map_insert canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max (canvas_id+1) engine.canvas_id},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
+            Nothing->return (engine {canvas=int_map_insert_strict engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
+            Just canvas_id->return (engine {canvas=int_map_insert_strict canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max (canvas_id+1) engine.canvas_id},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
     Custom_visual_request {custom}->do
         (new_engine,new_custom)<-custom_visual_request custom engine
         return (new_engine,Custom_visual {custom=new_custom})
@@ -214,7 +214,7 @@ create_animation arrange min_delay padding exponent_width exponent_height path e
 create_animation_a::ET.Has_call_stack=>(Int->Int->Int->FP.Ptr ()->IO ())->DW.Word32->DW.Word32->Int->Int->Int->Int->Engine a->IO (Engine a)
 create_animation_a action width height number count index album_id engine=if count<=index then return engine else do
     texture<-upload_texture engine.device engine.picture_transfer_buffer width height (action number count index)
-    create_animation_a action width height number count (index+number) (album_id+1) (engine {album=int_map_insert album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
+    create_animation_a action width height number count (index+number) (album_id+1) (engine {album=int_map_insert_strict album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=album_id+1})
 
 create_animation_b::ET.Has_call_stack=>FP.Ptr (FP.Ptr SDLT.SDL_Surface)->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->Int->FP.Ptr ()->IO ()
 create_animation_b frame padding width size frame_width frame_height pack_width pack_height width_number number count index map_transfer_buffer=do
@@ -229,32 +229,40 @@ create_animation_b frame padding width size frame_width frame_height pack_width 
         SDLF.sdl_destroy_surface surface
 
 remove_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_leaf leaf_id engine=let (leaf,projection)=int_map_delete_lookup leaf_id engine.leaf in case projection of
-    Without {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
-    With {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
+remove_leaf leaf_id engine=let (maybe_projection,leaf)=DIM.updateLookupWithKey (const (const Nothing)) leaf_id engine.leaf in case maybe_projection of
+    Nothing->if engine.strict_exist then EF.empty_error else return engine
+    Just projection->case projection of
+        Without {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
+        With {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
 
 remove_leaf_a::ET.Has_call_stack=>Custom a=>DS.Seq Int->Widget a->DIM.IntMap (Projection a)->Int->Engine a->IO (Engine a)
 remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
     DS.Empty->all_selector_monad_action remove_widget object (engine {leaf=leaf})
-    _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=int_map_update father_id (\node->node {leaf_child=int_set_delete leaf_id node.leaf_child}) engine.node})
+    _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=int_map_update engine.strict_exist father_id (\node->node {leaf_child=int_set_delete engine.strict_exist leaf_id node.leaf_child}) engine.node})
 
 remove_widget::ET.Has_call_stack=>Custom a=>Widget a->Engine a->IO (Engine a)
 remove_widget widget engine=any_visual_selector_monad_action False (const remove_visual) widget engine
 
 remove_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a)
 remove_visual visual engine=case visual of
-    Large_picture {album_id}->let (album,single_album)=int_map_delete_lookup album_id engine.album in do
-        SDLF.sdl_release_gpu_texture engine.device single_album.texture
-        return (engine {album=album})
-    Large_atlas {album_id}->let (album,single_album)=int_map_delete_lookup album_id engine.album in do
-        SDLF.sdl_release_gpu_texture engine.device single_album.texture
-        return (engine {album=album})
+    Large_picture {album_id}->let (maybe_single_album,album)=DIM.updateLookupWithKey (const (const Nothing)) album_id engine.album in case maybe_single_album of
+        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Just single_album->do
+            SDLF.sdl_release_gpu_texture engine.device single_album.texture
+            return (engine {album=album})
+    Large_atlas {album_id}->let (maybe_single_album,album)=DIM.updateLookupWithKey (const (const Nothing)) album_id engine.album in case maybe_single_album of
+        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Just single_album->do
+            SDLF.sdl_release_gpu_texture engine.device single_album.texture
+            return (engine {album=album})
     Animation {album_number,album_id}->do
-        new_album<-monad_fold 0 (album_number-1) engine.album (\index album->remove_animation engine.device index album_id album)
+        new_album<-monad_fold 0 (album_number-1) engine.album (\index album->remove_animation engine.strict_exist engine.device index album_id album)
         return (engine {album=new_album})
-    Canvas {canvas_id}->let (canvas,single_canvas)=int_map_delete_lookup canvas_id engine.canvas in do
-        clean_canvas engine.device single_canvas
-        return (engine {canvas=canvas})
+    Canvas {canvas_id}->let (maybe_single_canvas,canvas)=DIM.updateLookupWithKey (const (const Nothing)) canvas_id engine.canvas in case maybe_single_canvas of
+        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Just single_canvas->do
+            clean_canvas engine.device single_canvas
+            return (engine {canvas=canvas})
     Custom_visual {custom}->custom_visual_remove custom engine
     _->return engine
 
@@ -267,20 +275,24 @@ clean_canvas device canvas=case canvas of
         SDLF.sdl_release_gpu_texture device texture
         SDLF.sdl_release_gpu_texture device temporary_texture
 
-remove_animation::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)
-remove_animation device index album_id album=let (new_album,single_album)=int_map_delete_lookup (album_id+index) album in do
-    SDLF.sdl_release_gpu_texture device single_album.texture
-    return new_album
+remove_animation::ET.Has_call_stack=>Bool->FP.Ptr SDLT.SDL_GPUDevice->Int->Int->DIM.IntMap Album->IO (DIM.IntMap Album)
+remove_animation strict_exist device index album_id album=let (maybe_single_album,new_album)=DIM.updateLookupWithKey (const (const Nothing)) (album_id+index) album in case maybe_single_album of
+    Nothing->if strict_exist then EF.empty_error else return album
+    Just single_album->do
+        SDLF.sdl_release_gpu_texture device single_album.texture
+        return new_album
 
 create_node::ET.Has_call_stack=>Int->Maybe Int->(Engine a->Event a->Event a)->(Event a->Engine a->Widget a->Widget a)->Engine a->Engine a
 create_node node_id maybe_father_id event_transform widget_transform engine=case maybe_father_id of
-    Nothing->engine {node=int_map_insert node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
-    Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {node_child=int_set_insert node_id this_node.node_child}) engine.node in engine {node=int_map_insert node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
+    Nothing->engine {node=int_map_insert_strict node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
+    Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {node_child=int_set_insert node_id this_node.node_child}) engine.node in engine {node=int_map_insert_strict node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
 
 remove_node::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node node_id engine=let (node,single_node)=int_map_delete_lookup node_id engine.node in case single_node.ancestry_id of
-    DS.Empty->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
-    _ DS.:|> father_id->remove_node_a single_node.leaf_child single_node.node_child (engine {node=int_map_update father_id (\this_node->this_node {node_child=int_set_delete node_id this_node.node_child}) node})
+remove_node node_id engine=let (maybe_single_node,node)=DIM.updateLookupWithKey (const (const Nothing)) node_id engine.node in case maybe_single_node of
+    Nothing->if engine.strict_exist then EF.empty_error else return engine
+    Just single_node->case single_node.ancestry_id of
+        DS.Empty->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
+        _ DS.:|> father_id->remove_node_a single_node.leaf_child single_node.node_child (engine {node=int_map_update engine.strict_exist father_id (\this_node->this_node {node_child=int_set_delete engine.strict_exist node_id this_node.node_child}) node})
 
 remove_node_a::ET.Has_call_stack=>Custom a=>DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
 remove_node_a leaf_child node_child engine=do
@@ -288,10 +300,14 @@ remove_node_a leaf_child node_child engine=do
     int_set_monad_fold remove_node_node node_child new_engine
 
 remove_node_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node_leaf leaf_id engine=let (leaf,projection)=int_map_delete_lookup leaf_id engine.leaf in all_selector_monad_action remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
+remove_node_leaf leaf_id engine=let (maybe_projection,leaf)=DIM.updateLookupWithKey (const (const Nothing)) leaf_id engine.leaf in case maybe_projection of
+    Nothing->if engine.strict_exist then EF.empty_error else return engine
+    Just projection->all_selector_monad_action remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
 
 remove_node_node::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node_node node_id engine=let (node,single_node)=int_map_delete_lookup node_id engine.node in remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
+remove_node_node node_id engine=let (maybe_single_node,node)=DIM.updateLookupWithKey (const (const Nothing)) node_id engine.node in case maybe_single_node of
+    Nothing->if engine.strict_exist then EF.empty_error else return engine
+    Just single_node->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}

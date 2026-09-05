@@ -33,30 +33,36 @@ get_store_widget widget=case widget of
     Store {store}->convert store
     _->EF.empty_error
 
-update_store_widget::ET.Has_call_stack=>Convert Data a=>Convert a Data=>(a->a)->Widget b->Widget b
-update_store_widget update widget=case widget of
+update_store_widget::ET.Has_call_stack=>Convert Data a=>Convert a Data=>Bool->(a->a)->Widget b->Widget b
+update_store_widget strict_match update widget=case widget of
     Store {store}->Store {store=convert (update (convert store))}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else widget
 
-update_group_visual::ET.Has_call_stack=>Int->(Visual a->Visual a)->Widget a->Widget a
-update_group_visual index update widget=case widget of
-    Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=int_map_update index update group_visual}
-    _->EF.empty_error
+update_group_visual::ET.Has_call_stack=>Bool->Bool->Int->(Visual a->Visual a)->Widget a->Widget a
+update_group_visual strict_exist strict_match index update widget=case widget of
+    Group_visual {arrange,group_visual}->Group_visual {arrange=arrange,group_visual=int_map_update strict_exist index update group_visual}
+    _->if strict_match then EF.empty_error else widget
 
-update_vector_visual::ET.Has_call_stack=>Int->(Visual a->Visual a)->Widget a->Widget a
-update_vector_visual index update widget=case widget of
-    Vector_visual {arrange,vector_visual}->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->DVM.write this_vector_visual index (update (vector_visual DV.! index))) vector_visual)}
-    _->EF.empty_error
+update_vector_visual::ET.Has_call_stack=>Bool->Bool->Int->(Visual a->Visual a)->Widget a->Widget a
+update_vector_visual strict_exist strict_match index update widget=case widget of
+    Vector_visual {arrange,vector_visual}->case vector_visual DV.!? index of
+        Nothing->if strict_exist then EF.empty_error else widget
+        Just visual->Vector_visual {arrange=arrange,vector_visual=CMST.runST (action_vector (\this_vector_visual->DVM.write this_vector_visual index (update visual)) vector_visual)}
+    _->if strict_match then EF.empty_error else widget
 
-update_vector_widget::ET.Has_call_stack=>Int->(Widget a->Widget a)->Widget a->Widget a
-update_vector_widget this_index update widget=case widget of
-    Vector {index,vector_widget}->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->DVM.write this_vector_widget this_index (update (vector_widget DV.! this_index))) vector_widget)}
-    _->EF.empty_error
+update_vector_widget::ET.Has_call_stack=>Bool->Bool->Int->(Widget a->Widget a)->Widget a->Widget a
+update_vector_widget strict_exist strict_match this_index update widget=case widget of
+    Vector {index,vector_widget}->case vector_widget DV.!? this_index of
+        Nothing->if strict_exist then EF.empty_error else widget
+        Just single_widget->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->DVM.write this_vector_widget this_index (update single_widget)) vector_widget)}
+    _->if strict_match then EF.empty_error else widget
 
-hosted_update_vector_widget::ET.Has_call_stack=>(Widget a->Widget a)->Widget a->Widget a
-hosted_update_vector_widget update widget=case widget of
-    Vector {index,vector_widget}->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->DVM.write this_vector_widget index (update (vector_widget DV.! index))) vector_widget)}
-    _->EF.empty_error
+hosted_update_vector_widget::ET.Has_call_stack=>Bool->Bool->(Widget a->Widget a)->Widget a->Widget a
+hosted_update_vector_widget strict_exist strict_match update widget=case widget of
+    Vector {index,vector_widget}->case vector_widget DV.!? index of
+        Nothing->if strict_exist then EF.empty_error else widget
+        Just single_widget->Vector {index=index,vector_widget=CMST.runST (action_vector (\this_vector_widget->DVM.write this_vector_widget index (update single_widget)) vector_widget)}
+    _->if strict_match then EF.empty_error else widget
 
 action_vector::ET.Has_call_stack=>DVM.PrimMonad a=>(DVM.MVector (DVM.PrimState a) b->a ())->DV.Vector b->a (DV.Vector b)
 action_vector action vector_widget=do
@@ -64,15 +70,15 @@ action_vector action vector_widget=do
     action new_vector_widget
     DV.unsafeFreeze new_vector_widget
 
-update_group_widget::ET.Has_call_stack=>Int->(Widget a->Widget a)->Widget a->Widget a
-update_group_widget this_index update widget=case widget of
-    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update this_index update group_widget}
-    _->EF.empty_error
+update_group_widget::ET.Has_call_stack=>Bool->Bool->Int->(Widget a->Widget a)->Widget a->Widget a
+update_group_widget strict_exist strict_match this_index update widget=case widget of
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update strict_exist this_index update group_widget}
+    _->if strict_match then EF.empty_error else widget
 
-hosted_update_group_widget::ET.Has_call_stack=>(Widget a->Widget a)->Widget a->Widget a
-hosted_update_group_widget update widget=case widget of
-    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update index update group_widget}
-    _->EF.empty_error
+hosted_update_group_widget::ET.Has_call_stack=>Bool->Bool->(Widget a->Widget a)->Widget a->Widget a
+hosted_update_group_widget strict_exist strict_match update widget=case widget of
+    Group {initial_min_index,min_index,initial_max_index,max_index,index,group_widget}->Group {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,group_widget=int_map_update strict_exist index update group_widget}
+    _->if strict_match then EF.empty_error else widget
 
 update_coroutine_state::ET.Has_call_stack=>(Widget a->Widget a)->Coroutine_state a->Coroutine_state a
 update_coroutine_state update coroutine_state=case coroutine_state of
@@ -186,7 +192,7 @@ combine_arrange first_arrange second_arrange=case first_arrange of
             Point {x=first_point_x,y=first_point_y}->case second_point of
                 Point {x=second_point_x,y=second_point_y}->case first_matrix of
                     Matrix {x=first_matrix_x,y=first_matrix_y,x_x=first_matrix_x_x,x_y=first_matrix_x_y,y_x=first_matrix_y_x,y_y=first_matrix_y_y}->case second_matrix of
-                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_point_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_point_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},color=multiply_color first_color second_color}
+                        Matrix {x=second_matrix_x,y=second_matrix_y,x_x=second_matrix_x_x,x_y=second_matrix_x_y,y_x=second_matrix_y_x,y_y=second_matrix_y_y}->Arrange {point=let new_x=second_point_x+second_matrix_x-first_matrix_x in let new_y=second_point_y+second_matrix_y-first_matrix_y in Point {x=first_point_x+first_matrix_x-second_matrix_x+first_matrix_x_x*new_x+first_matrix_x_y*new_y,y=first_point_y+first_matrix_y-second_matrix_y+first_matrix_y_x*new_x+first_matrix_y_y*new_y},matrix=Matrix {x=second_matrix_x,y=second_matrix_y,x_x=first_matrix_x_x*second_matrix_x_x+first_matrix_x_y*second_matrix_y_x,x_y=first_matrix_x_x*second_matrix_x_y+first_matrix_x_y*second_matrix_y_y,y_x=first_matrix_y_x*second_matrix_x_x+first_matrix_y_y*second_matrix_y_x,y_y=first_matrix_y_x*second_matrix_x_y+first_matrix_y_y*second_matrix_y_y},color=multiply_color first_color second_color}
 
 size_of_vertex::ET.Has_call_stack=>Num a=>a
 size_of_vertex=40
@@ -228,6 +234,9 @@ millisecond=1000000
 {-# INLINE with_text #-}
 {-# INLINE monad_action_swap #-}
 {-# INLINE vector_io_map #-}
+{-# INLINE to_storable_vector #-}
+{-# INLINE monad_for #-}
+{-# INLINE monad_fold #-}
 {-# INLINE integral_action #-}
 {-# INLINE move_clip #-}
 {-# INLINE multiply_color #-}

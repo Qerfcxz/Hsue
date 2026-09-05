@@ -20,7 +20,7 @@ import qualified Data.Vector.Storable as DVS
 import qualified Foreign.C.Types as FCT
 
 clean_collect::ET.Has_call_stack=>Int->Selector a->Engine b->Engine b
-clean_collect leaf_id selector engine=engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
+clean_collect leaf_id selector engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
 
 clean_collect_a::ET.Has_call_stack=>Widget a->Widget a
 clean_collect_a widget=case widget of
@@ -28,46 +28,48 @@ clean_collect_a widget=case widget of
     _->widget
 
 collect_canvas::ET.Has_call_stack=>Arrange->Maybe (Border FCT.CFloat)->Int->Int->Selector a->Insert_strategy->Engine b->Engine b
-collect_canvas arrange maybe_border canvas_id leaf_id selector collect_strategy engine=case int_map_lookup canvas_id engine.canvas of
-    Free_canvas {half_width,half_height}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border arrange half_width half_height 0 0 1 1)) collect_strategy)) selector)) engine.leaf}
-    _->EF.empty_error
+collect_canvas arrange maybe_border canvas_id leaf_id selector collect_strategy engine=case DIM.lookup canvas_id engine.canvas of
+    Nothing->if engine.strict_exist then EF.empty_error else engine
+    Just canvas->case canvas of
+        Free_canvas {half_width,half_height}->engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const (collect_a engine.strict_match (DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border arrange half_width half_height 0 0 1 1)) collect_strategy)) selector)) engine.leaf}
+        _->if engine.strict_match then EF.empty_error else engine
 
 maybe_update_collect::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
-maybe_update_collect update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect visual_selector engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
+maybe_update_collect update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
     Nothing->engine
-    Just (submit,new_engine)->new_engine {leaf=int_map_update leaf_id (update_projection_object (collect_a submit collect_strategy)) new_engine.leaf}
+    Just (submit,new_engine)->new_engine {leaf=int_map_update new_engine.strict_exist leaf_id (update_projection_object (collect_a new_engine.strict_match submit collect_strategy)) new_engine.leaf}
 
 maybe_collect_update::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
-maybe_collect_update update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update leaf_id (update_projection_object (collect_a (to_collect visual_selector engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
+maybe_collect_update update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update engine.strict_exist leaf_id (update_projection_object (collect_a engine.strict_match (to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
 collect::ET.Has_call_stack=>Custom a=>(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
-collect view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (const (collect_a (to_collect visual_selector engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
+collect view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const (collect_a engine.strict_match (to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
 
-collect_a::ET.Has_call_stack=>DS.Seq (Submit a)->Insert_strategy->Widget a->Widget a
-collect_a this_submit collect_strategy widget=case widget of
+collect_a::ET.Has_call_stack=>Bool->DS.Seq (Submit a)->Insert_strategy->Widget a->Widget a
+collect_a strict_match this_submit collect_strategy widget=case widget of
     Collector {initial_min_index,min_index,initial_max_index,max_index,submit}->case collect_strategy of
-        Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert min_index this_submit submit}
-        Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=int_map_insert max_index this_submit submit}
-        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=int_map_insert seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert seat this_submit submit}
-    _->EF.empty_error
+        Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert_strict min_index this_submit submit}
+        Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=int_map_insert_strict max_index this_submit submit}
+        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert_strict seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=int_map_insert_strict seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert_strict seat this_submit submit}
+    _->if strict_match then EF.empty_error else widget
 
-to_collect::ET.Has_call_stack=>Custom b=>Visual_selector a->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget b->DS.Seq (Submit b)
-to_collect visual_selector u v maybe_border widget=visual_selector_action (const (\transform visual submit->submit DS.>< to_collect_visual transform u v maybe_border visual)) visual_selector widget DS.empty
+to_collect::ET.Has_call_stack=>Custom b=>Bool->Visual_selector a->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget b->DS.Seq (Submit b)
+to_collect strict_resource visual_selector u v maybe_border widget=visual_selector_action (const (\transform visual submit->submit DS.>< to_collect_visual strict_resource transform u v maybe_border visual)) visual_selector widget DS.empty
 
-to_collect_visual::ET.Has_call_stack=>Custom a=>(Arrange->Arrange)->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Visual a->DS.Seq (Submit a)
-to_collect_visual transform u v maybe_border visual=case visual of
+to_collect_visual::ET.Has_call_stack=>Custom a=>Bool->(Arrange->Arrange)->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Visual a->DS.Seq (Submit a)
+to_collect_visual strict_resource transform u v maybe_border visual=case visual of
     Rectangle {arrange,half_width,half_height}->DS.singleton (create_submit_rectangle Submit_default maybe_border (transform arrange) half_width half_height u v u v)
     Triangle {arrange,first_point,second_point,third_point}->DS.singleton (create_submit_triangle Submit_default maybe_border (transform arrange) first_point second_point third_point u v)
     Convex_polygon {arrange,point_set}->DS.singleton (create_submit_convex_polygon Submit_default maybe_border (transform arrange) point_set u v)
     Regular_polygon {arrange,number,radius,angle}->DS.singleton (create_submit_regular_polygon Submit_default maybe_border (transform arrange) number radius angle u v)
-    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,locked}->if locked then EF.empty_error else DS.singleton (create_submit_rectangle Submit_default maybe_border (transform arrange) half_width half_height min_u min_v max_u max_v)
+    Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,locked}->if locked then if strict_resource then EF.empty_error else DS.empty else DS.singleton (create_submit_rectangle Submit_default maybe_border (transform arrange) half_width half_height min_u min_v max_u max_v)
     Large_picture {arrange,half_width,half_height,album_id}->DS.singleton (create_submit_rectangle (Submit_album {album_id=album_id}) maybe_border (transform arrange) half_width half_height 0 0 1 1)
-    Atlas {arrange,clip,index,locked}->if locked then EF.empty_error else DS.singleton (create_submit_rectangle_clip Submit_default maybe_border (transform arrange) (clip DVS.! index))
+    Atlas {arrange,clip,index,locked}->if locked then if strict_resource then EF.empty_error else DS.empty else DS.singleton (create_submit_rectangle_clip Submit_default maybe_border (transform arrange) (clip DVS.! index))
     Large_atlas {arrange,clip,index,album_id}->DS.singleton (create_submit_rectangle_clip (Submit_album {album_id=album_id}) maybe_border (transform arrange) (clip DVS.! index))
-    Animation {arrange,half_width,half_height,padding,exponent_width,exponent_height,width_number,height_number,album_number,index,album_id}->let (quotient,remainder)=divMod index (width_number*height_number) in if album_number<=quotient then EF.empty_error else let (new_quotient,new_remainder)=divMod remainder width_number in let frame_x=2*fromIntegral new_remainder*(half_width+padding)+padding in let frame_y=2*fromIntegral new_quotient*(half_height+padding)+padding in DS.singleton (create_submit_rectangle (Submit_album {album_id=album_id+quotient}) maybe_border (transform arrange) half_width half_height (scaleFloat (negate exponent_width) frame_x) (scaleFloat (negate exponent_height) frame_y) (scaleFloat (negate exponent_width) (frame_x+2*half_width)) (scaleFloat (negate exponent_height) (frame_y+2*half_height)))
-    Text {arrange,half_width,half_height,current_y,anchor,article,locked}->if locked then EF.empty_error else DS.singleton (create_submit_text Submit_default maybe_border (transform arrange) half_width half_height current_y anchor article)
+    Animation {arrange,half_width,half_height,padding,exponent_width,exponent_height,width_number,height_number,album_number,index,album_id}->let (quotient,remainder)=divMod index (width_number*height_number) in if album_number<=quotient then if strict_resource then EF.empty_error else DS.empty else let (new_quotient,new_remainder)=divMod remainder width_number in let frame_x=2*fromIntegral new_remainder*(half_width+padding)+padding in let frame_y=2*fromIntegral new_quotient*(half_height+padding)+padding in DS.singleton (create_submit_rectangle (Submit_album {album_id=album_id+quotient}) maybe_border (transform arrange) half_width half_height (scaleFloat (negate exponent_width) frame_x) (scaleFloat (negate exponent_height) frame_y) (scaleFloat (negate exponent_width) (frame_x+2*half_width)) (scaleFloat (negate exponent_height) (frame_y+2*half_height)))
+    Text {arrange,half_width,half_height,current_y,anchor,article,locked}->if locked then if strict_resource then EF.empty_error else DS.empty else DS.singleton (create_submit_text Submit_default maybe_border (transform arrange) half_width half_height current_y anchor article)
     Editor {}->error "未完待续"
     Canvas {arrange,half_width,half_height,canvas_id}->DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border (transform arrange) half_width half_height 0 0 1 1)
     Custom_visual {custom}->custom_visual_collect transform u v maybe_border custom
@@ -97,13 +99,13 @@ create_submit_convex_polygon::ET.Has_call_stack=>Submit_mode->Maybe (Border FCT.
 create_submit_convex_polygon submit_mode maybe_border arrange point_set u v=case arrange of
     Arrange {point,matrix,color}->case point of
         Point {x,y}->case color of
-            Color {red,green,blue,alpha}->let number=DS.length point_set in if number<3 then EF.empty_error else Submit {submit_mode=submit_mode,submit_data=Submit_convex_polygon {red=red,green=green,blue=blue,alpha=alpha,u=u,v=v,x=x,y=y,point_set=point_set},parameter=to_parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=3*(fromIntegral number-2)}
+            Color {red,green,blue,alpha}->let number=DS.length point_set in if number<3 then EF.empty_error else let new_number=fromIntegral number in Submit {submit_mode=submit_mode,submit_data=Submit_convex_polygon {red=red,green=green,blue=blue,alpha=alpha,u=u,v=v,x=x,y=y,point_set=point_set},parameter=to_parameter x y matrix maybe_border,vertex_size=new_number,index_size=3*(new_number-2)}
 
 create_submit_regular_polygon::ET.Has_call_stack=>Submit_mode->Maybe (Border FCT.CFloat)->Arrange->Int->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Submit a
 create_submit_regular_polygon submit_mode maybe_border arrange number radius angle u v=case arrange of
     Arrange {point,matrix,color}->case point of
         Point {x,y}->case color of
-            Color {red,green,blue,alpha}->if number<3 then EF.empty_error else Submit {submit_mode=submit_mode,submit_data=Submit_regular_polygon {red=red,green=green,blue=blue,alpha=alpha,u=u,v=v,x=x,y=y,angle=angle,radius=radius,number=number},parameter=to_parameter x y matrix maybe_border,vertex_size=fromIntegral number,index_size=3*(fromIntegral number-2)}
+            Color {red,green,blue,alpha}->if number<3 then EF.empty_error else let new_number=fromIntegral number in Submit {submit_mode=submit_mode,submit_data=Submit_regular_polygon {red=red,green=green,blue=blue,alpha=alpha,u=u,v=v,x=x,y=y,angle=angle,radius=radius,number=number},parameter=to_parameter x y matrix maybe_border,vertex_size=new_number,index_size=3*(new_number-2)}
 
 create_submit_text::ET.Has_call_stack=>Submit_mode->Maybe (Border FCT.CFloat)->Arrange->FCT.CFloat->FCT.CFloat->FCT.CFloat->Anchor->DS.Seq (DS.Seq Row)->Submit a
 create_submit_text submit_mode maybe_border arrange half_width half_height current_y anchor article=case arrange of
@@ -135,23 +137,24 @@ end_text this_y height row=case row of
     Row {y,max_up}->y<=this_y+max_up+height
 
 move::ET.Has_call_stack=>Projection_move->Int->Selector (Selector Insert_strategy)->Engine a->Engine a
-move projection_move leaf_id selector engine=let (new_engine,widget)=move_lookup projection_move engine in selector_action (move_a leaf_id) selector widget new_engine
+move projection_move leaf_id selector engine=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
+    Nothing->if engine.strict_exist then EF.empty_error else engine
+    Just _->let (new_engine,widget)=move_lookup projection_move engine in selector_action (move_a new_engine.strict_match leaf_id) selector widget new_engine
 
-move_a::ET.Has_call_stack=>Int->Selector Insert_strategy->Widget a->Engine a->Engine a
-move_a leaf_id selector widget engine=case widget of
-    Collector {submit}->engine {leaf=int_map_update leaf_id (update_projection_object (selector_update (collect_a (DF.fold submit)) selector)) engine.leaf}
-    _->EF.empty_error
+move_a::ET.Has_call_stack=>Bool->Int->Selector Insert_strategy->Widget a->Engine a->Engine a
+move_a strict_match leaf_id selector widget engine=case widget of
+    Collector {submit}->engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (collect_a strict_match (DF.fold submit)) selector)) engine.leaf}
+    _->if strict_match then EF.empty_error else engine
 
 move_lookup::ET.Has_call_stack=>Projection_move->Engine a->(Engine a,Widget a)
 move_lookup projection_move engine=case projection_move of
-    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=int_map_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (default_selector_update True consume_widget)) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (int_map_lookup leaf_id engine.leaf))
-    Image_move {leaf_id}->(engine,lookup_projection_image (int_map_lookup leaf_id engine.leaf))
-    Image_safe_move {leaf_id}->(engine,lookup_projection_image_safe (int_map_lookup leaf_id engine.leaf))
+    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=int_map_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (default_selector_update engine.strict_exist (consume_widget engine.strict_match))) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (int_map_lookup leaf_id engine.leaf))
+    Image_move {leaf_id,strict_exist}->(engine,lookup_projection_image strict_exist (int_map_lookup leaf_id engine.leaf))
 
-consume_widget::ET.Has_call_stack=>Widget a->Widget a
-consume_widget widget=case widget of
+consume_widget::ET.Has_call_stack=>Bool->Widget a->Widget a
+consume_widget strict_match widget=case widget of
     Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else widget
 
 {-# INLINE clean_collect #-}
 {-# INLINE clean_collect_a #-}
