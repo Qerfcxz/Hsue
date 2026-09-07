@@ -37,14 +37,10 @@ insert_projection_object widget projection=case projection of
     With {ancestry_id}->Without {ancestry_id=ancestry_id,object=widget}
 
 update_projection_object::ET.Has_call_stack=>(Widget a->Widget a)->Projection a->Projection a
-update_projection_object update projection=case projection of
-    Without {ancestry_id,object}->Without {ancestry_id=ancestry_id,object=update object}
-    With {ancestry_id,object}->Without {ancestry_id=ancestry_id,object=update object}
+update_projection_object update projection=Without {ancestry_id=lookup_projection_ancestry_id projection,object=update (lookup_projection_object projection)}
 
 functor_update_projection_object::ET.Has_call_stack=>Functor b=>(Widget a->b (Widget a))->Projection a->b (Projection a)
-functor_update_projection_object update projection=case projection of
-    Without {ancestry_id,object}->fmap (\this_object->Without {ancestry_id=ancestry_id,object=this_object}) (update object)
-    With {ancestry_id,object}->fmap (\this_object->Without {ancestry_id=ancestry_id,object=this_object}) (update object)
+functor_update_projection_object update projection=fmap (\this_object->Without {ancestry_id=lookup_projection_ancestry_id projection,object=this_object}) (update (lookup_projection_object projection))
 
 lookup_projection::ET.Has_call_stack=>Projection_strategy->Projection a->Widget a
 lookup_projection projection_strategy=case projection_strategy of
@@ -77,9 +73,7 @@ update_lookup_projection_widget projection_path update engine=case projection_pa
     Image_path {leaf_id,strict_exist}->(engine,lookup_projection_image strict_exist (int_map_lookup leaf_id engine.leaf))
 
 update_lookup_projection_widget_a::ET.Has_call_stack=>(Widget a->Widget a)->Projection a->(Projection a,Widget a)
-update_lookup_projection_widget_a update projection=case projection of
-    Without {ancestry_id,object}->(Without {ancestry_id=ancestry_id,object=update object},object)
-    With {ancestry_id,object}->(Without {ancestry_id=ancestry_id,object=update object},object)
+update_lookup_projection_widget_a update projection=let object=lookup_projection_object projection in (Without {ancestry_id=lookup_projection_ancestry_id projection,object=update object},object)
 
 functor_lookup_projection_widget::ET.Has_call_stack=>Functor b=>Projection_path->(Widget a->b (Widget a))->Engine a->b (Engine a)
 functor_lookup_projection_widget projection_path update engine=case projection_path of

@@ -57,36 +57,40 @@ do_render_a engine width height pipeline command_buffer sampler render_pass draw
     FMU.with engine.parameter_buffer (\parameter_buffer->SDLF.sdl_bind_gpu_vertex_storage_buffers render_pass 0 parameter_buffer 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.vertex_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_vertex_buffers render_pass 0 buffer_binding 1)
     FMU.with (SDLI.SDL_GPUBufferBinding {sdl_buffer=engine.index_buffer,sdl_offset=0}) (\buffer_binding->SDLF.sdl_bind_gpu_index_buffer render_pass buffer_binding SDLI.sdl_gpu_indexelementsize_32bit)
-    FMA.allocaBytesAligned 16 16 $ \ptr->do
+    FMA.allocaBytesAligned 16 16 $ \ptr->FMA.alloca $ \texture_sampler_binding->do
         FMU.fillBytes ptr 0 16
         FS.pokeByteOff ptr 0 width
         FS.pokeByteOff ptr 4 height
-        DF.mapM_ (\(submit_mode,index_size,index_index)->do_render_b engine command_buffer sampler render_pass submit_mode index_size index_index ptr) draw_call
+        DF.mapM_ (\(submit_mode,index_size,index_index)->do_render_b engine command_buffer sampler render_pass texture_sampler_binding submit_mode index_size index_index ptr) draw_call
 
-do_render_b::ET.Has_call_stack=>Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUSampler->FP.Ptr SDLT.SDL_GPURenderPass->Submit_mode->DW.Word32->DW.Word32->FP.Ptr FCT.CFloat->IO ()
-do_render_b engine command_buffer sampler render_pass submit_mode index_size index_index ptr=do
+do_render_b::ET.Has_call_stack=>Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->FP.Ptr SDLT.SDL_GPUSampler->FP.Ptr SDLT.SDL_GPURenderPass->FP.Ptr SDLI.SDL_GPUTextureSamplerBinding->Submit_mode->DW.Word32->DW.Word32->FP.Ptr FCT.CFloat->IO ()
+do_render_b engine command_buffer sampler render_pass texture_sampler_binding submit_mode index_size index_index ptr=do
     case submit_mode of
         Submit_default->do
             FS.pokeByteOff ptr 8 engine.font_size
             FS.pokeByteOff ptr 12 engine.pixel_range
             SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) 16
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            FS.poke texture_sampler_binding (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=engine.texture,sdl_sampler=sampler})
+            SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
         Submit_canvas {canvas_id}->do
             FS.pokeByteOff ptr 8 engine.font_size
             FS.pokeByteOff ptr 12 engine.pixel_range
             SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) 16
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (int_map_lookup canvas_id engine.canvas),sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            FS.poke texture_sampler_binding (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=do_render_c (int_map_lookup canvas_id engine.canvas),sdl_sampler=sampler})
+            SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
         Submit_album {album_id}->do
             FS.pokeByteOff ptr 8 engine.font_size
             FS.pokeByteOff ptr 12 engine.pixel_range
             SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) 16
-            FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(int_map_lookup album_id engine.album).texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+            FS.poke texture_sampler_binding (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=(int_map_lookup album_id engine.album).texture,sdl_sampler=sampler})
+            SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
         Submit_atlas_font {atlas_font_id}->case int_map_lookup atlas_font_id engine.atlas_font of
             Atlas_font {texture,font_size,pixel_range}->do
                 FS.pokeByteOff ptr 8 font_size
                 FS.pokeByteOff ptr 12 pixel_range
                 SDLF.sdl_push_gpu_vertex_uniform_data command_buffer 0 (FP.castPtr ptr) 16
-                FMU.with (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=sampler}) (\texture_sampler_binding->SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1)
+                FS.poke texture_sampler_binding (SDLI.SDL_GPUTextureSamplerBinding {sdl_texture=texture,sdl_sampler=sampler})
+                SDLF.sdl_bind_gpu_fragment_samplers render_pass 0 texture_sampler_binding 1
     SDLF.sdl_draw_gpu_indexed_primitives render_pass index_size 1 index_index 0 0
 
 do_render_c::ET.Has_call_stack=>Canvas->FP.Ptr SDLT.SDL_GPUTexture
@@ -114,11 +118,11 @@ do_canvas_widget_render_a submit maybe_sampler_id visual engine=case visual of
     _->if engine.strict_match then EF.empty_error else return engine
 
 get_submit_size::ET.Has_call_stack=>DIM.IntMap (DS.Seq (Submit a))->(DW.Word32,DW.Word32,DW.Word32)
-get_submit_size=DIM.foldl' (\(vertex_number,index_number,parameter_number) submit->DF.foldl' (flip get_submit_size_a) (vertex_number,index_number,parameter_number) submit) (0,0,0)
+get_submit_size=DIM.foldl' (\(vertex_number,index_number,parameter_number) submit->let (new_vertex_number,new_index_number)=DF.foldl' (flip get_submit_size_a) (vertex_number,index_number) submit in (new_vertex_number,new_index_number,parameter_number+fromIntegral (DS.length submit))) (0,0,0)
 
-get_submit_size_a::ET.Has_call_stack=>Submit a->(DW.Word32,DW.Word32,DW.Word32)->(DW.Word32,DW.Word32,DW.Word32)
-get_submit_size_a submit (vertex_number,index_number,parameter_number)=case submit of
-    Submit {vertex_size,index_size}->(vertex_number+vertex_size,index_number+index_size,parameter_number+1)
+get_submit_size_a::ET.Has_call_stack=>Submit a->(DW.Word32,DW.Word32)->(DW.Word32,DW.Word32)
+get_submit_size_a submit (vertex_number,index_number)=case submit of
+    Submit {vertex_size,index_size}->(vertex_number+vertex_size,index_number+index_size)
 
 write_submit::ET.Has_call_stack=>Custom a=>Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->DIM.IntMap (DS.Seq (Submit a))->IO (DS.Seq (Submit_mode,DW.Word32,DW.Word32))
 write_submit engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=vertex_number*size_of_vertex in let index_size=index_number*size_of_index in let parameter_size=parameter_number*size_of_parameter in if engine.max_vertex_size<vertex_size||engine.max_index_size<index_size||engine.max_parameter_size<parameter_size

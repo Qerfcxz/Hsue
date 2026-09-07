@@ -19,6 +19,7 @@ import qualified Error.Function as EF
 import qualified Error.Type as ET
 import qualified Control.Monad as CM
 import qualified Data.Bits as DB
+import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.IntSet as DIS
 import qualified Data.Sequence as DS
@@ -42,12 +43,13 @@ from_same_insert_widget_a strict_match insert_widget_strategy widget this_widget
     _->if strict_match then EF.empty_error else this_widget
 
 from_same_insert_widget_b::ET.Has_call_stack=>Int->Int->DS.Seq Insert_strategy->a->DIM.IntMap a->(DIM.IntMap a,Int,Int)
-from_same_insert_widget_b min_index max_index insert_widget_strategy value int_map=case insert_widget_strategy of
-    DS.Empty->(int_map,max_index,min_index)
-    insert_strategy DS.:<| other_insert_strategy->case insert_strategy of
-        Min_strategy->from_same_insert_widget_b (min_index-1) max_index other_insert_strategy value (int_map_insert_strict min_index value int_map)
-        Max_strategy->from_same_insert_widget_b min_index (max_index+1) other_insert_strategy value (int_map_insert_strict max_index value int_map)
-        Index_strategy {seat}->if seat<=min_index then from_same_insert_widget_b (seat-1) max_index other_insert_strategy value (int_map_insert_strict seat value int_map) else if max_index<=seat then from_same_insert_widget_b min_index (seat+1) other_insert_strategy value (int_map_insert_strict seat value int_map) else from_same_insert_widget_b min_index max_index other_insert_strategy value (int_map_insert_strict seat value int_map)
+from_same_insert_widget_b min_index max_index insert_widget_strategy value int_map=DF.foldl' (from_same_insert_widget_c value) (int_map,max_index,min_index) insert_widget_strategy
+
+from_same_insert_widget_c::ET.Has_call_stack=>a->(DIM.IntMap a,Int,Int)->Insert_strategy->(DIM.IntMap a,Int,Int)
+from_same_insert_widget_c value (int_map,max_index,min_index) insert_strategy=case insert_strategy of
+    Min_strategy->(int_map_insert_strict min_index value int_map,max_index,min_index-1)
+    Max_strategy->(int_map_insert_strict max_index value int_map,max_index+1,min_index)
+    Index_strategy {seat}->if seat<=min_index then (int_map_insert_strict seat value int_map,max_index,seat-1) else if max_index<=seat then (int_map_insert_strict seat value int_map,seat+1,min_index) else (int_map_insert_strict seat value int_map,max_index,min_index)
 
 from_insert_widget::ET.Has_call_stack=>Int->DS.Seq (Insert (Widget a))->Engine a->Engine a
 from_insert_widget leaf_id insert_widget engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (from_insert_widget_a engine.strict_match insert_widget)) engine.leaf}
@@ -59,13 +61,14 @@ from_insert_widget_a strict_match insert_widget widget=case widget of
     _->if strict_match then EF.empty_error else widget
 
 from_insert_widget_b::ET.Has_call_stack=>Int->Int->(Widget a->b)->DS.Seq (Insert (Widget a))->DIM.IntMap b->(DIM.IntMap b,Int,Int)
-from_insert_widget_b min_index max_index transform insert_widget int_map=case insert_widget of
-    DS.Empty->(int_map,max_index,min_index)
-    insert DS.:<| other_insert->case insert of
-        Insert {insert_strategy,value}->case insert_strategy of
-            Min_strategy->from_insert_widget_b (min_index-1) max_index transform other_insert (int_map_insert_strict min_index (transform value) int_map)
-            Max_strategy->from_insert_widget_b min_index (max_index+1) transform other_insert (int_map_insert_strict max_index (transform value) int_map)
-            Index_strategy {seat}->if seat<=min_index then from_insert_widget_b (seat-1) max_index transform other_insert (int_map_insert_strict seat (transform value) int_map) else if max_index<=seat then from_insert_widget_b min_index (seat+1) transform other_insert (int_map_insert_strict seat (transform value) int_map) else from_insert_widget_b min_index max_index transform other_insert (int_map_insert_strict seat (transform value) int_map)
+from_insert_widget_b min_index max_index transform insert_widget int_map=DF.foldl' (from_insert_widget_c transform) (int_map,max_index,min_index) insert_widget
+
+from_insert_widget_c::ET.Has_call_stack=>(Widget a->b)->(DIM.IntMap b,Int,Int)->Insert (Widget a)->(DIM.IntMap b,Int,Int)
+from_insert_widget_c transform (this_int_map,this_max_index,this_min_index) insert=case insert of
+    Insert {insert_strategy,value}->let transformed_value=transform value in case insert_strategy of
+        Min_strategy->(int_map_insert_strict this_min_index transformed_value this_int_map,this_max_index,this_min_index-1)
+        Max_strategy->(int_map_insert_strict this_max_index transformed_value this_int_map,this_max_index+1,this_min_index)
+        Index_strategy {seat}->if seat<=this_min_index then (int_map_insert_strict seat transformed_value this_int_map,this_max_index,seat-1) else if this_max_index<=seat then (int_map_insert_strict seat transformed_value this_int_map,seat+1,this_min_index) else (int_map_insert_strict seat transformed_value this_int_map,this_max_index,this_min_index)
 
 create_leaf::ET.Has_call_stack=>Custom a=>Int->Maybe Int->Widget_request a->Engine a->IO (Engine a)
 create_leaf leaf_id maybe_father_id widget_request engine=do
@@ -151,11 +154,11 @@ create_visual visual_request engine=case visual_request of
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=int_map_insert_strict engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=to_storable_vector (create_large_atlas (fromIntegral width) (fromIntegral height)) clip_request (DS.length clip_request),index=0,album_id=engine.album_id})
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
-    Text_request {arrange,text_width,text_height,max_search_index,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
+    Text_request {arrange,text_width,text_height,failure_advance,failure_left,failure_down,failure_right,failure_up,max_search_index,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
         then do
             new_engine<-from_charset charset engine
-            return (new_engine,let (new_article,number)=for_text max_search_index new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,number)=for_text max_search_index engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
+            return (new_engine,let (new_article,number)=for_text new_engine.u new_engine.v failure_advance failure_left failure_down failure_right failure_up max_search_index new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,number)=for_text engine.u engine.v failure_advance failure_left failure_down failure_right failure_up max_search_index engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
     Editor_request {}->error "未完待续"
     Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
@@ -209,7 +212,7 @@ create_animation arrange min_delay padding exponent_width exponent_height path e
             delay<-DVS.generateM count (fmap (\this_delay->max min_delay (fromIntegral this_delay*millisecond)) . FS.peekElemOff img_delays)
             new_engine<-create_animation_a (create_animation_b img_frames padding width size frame_width frame_height pack_width pack_height width_number) (fromIntegral width) (fromIntegral height) number count 0 engine.album_id engine
             SDLF.img_free_animation ptr_animation
-            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral frame_width/2,half_height=fromIntegral frame_height/2,padding=fromIntegral padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,count=count,index=0,album_id=engine.album_id})
+            return (new_engine,Animation {arrange=arrange,delay=delay,moment=0,half_width=fromIntegral img_w/2,half_height=fromIntegral img_h/2,padding=fromIntegral padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=div (count+number-1) number,count=count,index=0,album_id=engine.album_id})
 
 create_animation_a::ET.Has_call_stack=>(Int->Int->Int->FP.Ptr ()->IO ())->DW.Word32->DW.Word32->Int->Int->Int->Int->Engine a->IO (Engine a)
 create_animation_a action width height number count index album_id engine=if count<=index then return engine else do
@@ -311,8 +314,12 @@ remove_node_node node_id engine=let (maybe_single_node,node)=DIM.updateLookupWit
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}
+{-# INLINE from_same_insert_widget_b #-}
+{-# INLINE from_same_insert_widget_c #-}
 {-# INLINE from_insert_widget #-}
 {-# INLINE from_insert_widget_a #-}
+{-# INLINE from_insert_widget_b #-}
+{-# INLINE from_insert_widget_c #-}
 {-# INLINE create_atlas_a #-}
 {-# INLINE create_large_atlas #-}
 {-# INLINE create_node #-}

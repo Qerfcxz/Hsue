@@ -111,7 +111,7 @@ update_y_matrix y y_y matrix=case matrix of
 multiply_matrix::ET.Has_call_stack=>Matrix->Matrix->Matrix
 multiply_matrix first_matrix second_matrix=case first_matrix of
     Matrix {x=first_x,y=first_y,x_x=first_x_x,x_y=first_x_y,y_x=first_y_x,y_y=first_y_y}->case second_matrix of
-        Matrix {x=second_x,y=second_y,x_x=second_x_x,x_y=second_x_y,y_x=second_y_x,y_y=second_y_y}->Matrix {x=if second_x==0&&second_y==0 then first_x else second_x,y=if second_x==0&&second_y==0 then first_y else second_y,x_x=first_x_x*second_x_x+first_x_y*second_y_x,x_y=first_x_x*second_x_y+first_x_y*second_y_y,y_x=first_y_x*second_x_x+first_y_y*second_y_x,y_y=first_y_x*second_x_y+first_y_y*second_y_y}
+        Matrix {x_x=second_x_x,x_y=second_x_y,y_x=second_y_x,y_y=second_y_y}->Matrix {x=first_x,y=first_y,x_x=first_x_x*second_x_x+first_x_y*second_y_x,x_y=first_x_x*second_x_y+first_x_y*second_y_y,y_x=first_y_x*second_x_x+first_y_y*second_y_x,y_y=first_y_x*second_x_y+first_y_y*second_y_y}
 
 opaque_color::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->FCT.CFloat->Color
 opaque_color red green blue=Color {red=red,green=green,blue=blue,alpha=1}

@@ -31,6 +31,7 @@ import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
 import qualified Data.Text.Encoding as DTE
 import qualified Data.Word as DW
+import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
 import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
@@ -40,7 +41,7 @@ create_request request engine=engine {request=engine.request DS.|> request}
 
 do_request::ET.Has_call_stack=>Custom a=>Request a->Engine a->IO (Engine a,Bool)
 do_request request engine=case request of
-    Reset_timer {interval,strict_parameter}->if 0<interval
+    Reset_timer {interval}->if 0<interval
         then case engine.timer of
             Off->do
                 timer_id<-SDLF.sdl_add_timer_ns interval engine.callback FP.nullPtr
@@ -51,7 +52,7 @@ do_request request engine=case request of
                 new_timer_id<-SDLF.sdl_add_timer_ns interval engine.callback FP.nullPtr
                 sdl_catch_zero new_timer_id
                 return (engine {timer=On {timer_id=new_timer_id,interval=interval}},False)
-        else if strict_parameter then EF.empty_error else return (engine,False)
+        else EF.empty_error
     Stop_timer {strict_match}->case engine.timer of
         Off->if strict_match then EF.empty_error else return (engine,False)
         On {timer_id}->do
@@ -92,7 +93,7 @@ do_request request engine=case request of
                 SDLF.sdl_release_gpu_texture engine.device texture
                 SDLF.sdl_release_gpu_texture engine.device temporary_texture
                 return (engine {canvas=canvas},False)
-            _->if engine.strict_match then EF.empty_error else return (engine,False)
+            Bound_canvas {}->if engine.strict_match then EF.empty_error else return (engine,False)
     Create_shader {shader_id,stage,num_sampler,num_uniform_buffer,path}->do
         shader<-load_shader engine.device SDLI.sdl_gpu_shaderformat_dxil stage num_sampler 0 num_uniform_buffer path
         return (engine {shader=int_map_insert_strict shader_id (Shader {sdl_shader=shader,reference=0}) engine.shader},False)
@@ -105,12 +106,18 @@ do_request request engine=case request of
                     return (engine {shader=shader},False)
                 else if strict_resource then EF.empty_error else return (engine,False)
     Create_pipeline {maybe_vertex_shader_id,fragment_shader_id,pipeline_id,blend_state}->case maybe_vertex_shader_id of
-        Nothing->let (shader,fragment_shader)=int_map_update_lookup fragment_shader_id (update_shader_reference (+1)) engine.shader in do
-            pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
-            return (engine {pipeline=int_map_insert_strict pipeline_id (Default_pipeline {sdl_pipeline=pipeline,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=shader},False)
-        Just vertex_shader_id->let (shader,vertex_shader)=int_map_update_lookup vertex_shader_id (update_shader_reference (+1)) engine.shader in let (new_shader,fragment_shader)=int_map_update_lookup fragment_shader_id (update_shader_reference (+1)) shader in do
-            pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
-            return (engine {pipeline=int_map_insert_strict pipeline_id (Pipeline {sdl_pipeline=pipeline,vertex_shader_id=vertex_shader_id,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
+        Nothing->let (shader,maybe_fragment_shader)=int_map_update_maybe_lookup fragment_shader_id (update_shader_reference (+1)) engine.shader in case maybe_fragment_shader of
+            Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+            Just fragment_shader->do
+                pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
+                return (engine {pipeline=int_map_insert_strict pipeline_id (Default_pipeline {sdl_pipeline=pipeline,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=shader},False)
+        Just vertex_shader_id->let (shader,maybe_vertex_shader)=int_map_update_maybe_lookup vertex_shader_id (update_shader_reference (+1)) engine.shader in case maybe_vertex_shader of
+            Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+            Just vertex_shader->let (new_shader,maybe_fragment_shader)=int_map_update_maybe_lookup fragment_shader_id (update_shader_reference (+1)) shader in case maybe_fragment_shader of
+                Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+                Just fragment_shader->do
+                    pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
+                    return (engine {pipeline=int_map_insert_strict pipeline_id (Pipeline {sdl_pipeline=pipeline,vertex_shader_id=vertex_shader_id,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
     Remove_pipeline {pipeline_id}->let (maybe_single_pipeline,pipeline)=DIM.updateLookupWithKey (const (const Nothing)) pipeline_id engine.pipeline in case maybe_single_pipeline of
         Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
         Just single_pipeline->case single_pipeline of
@@ -193,7 +200,7 @@ do_request request engine=case request of
         Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
         Just initial_album->let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas (DB.shiftL 1 engine.exponent_width) (DB.shiftL 1 engine.exponent_height)) in do
             copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-            return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,u=scaleFloat (negate engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate engine.exponent_height) (fromIntegral (down+up)/2)},False)
+            return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,font_map=DHMS.empty,font_id=engine.initial_font_id,u=scaleFloat (negate engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate engine.exponent_height) (fromIntegral (down+up)/2)},False)
     Unlock {leaf_id}->do
         (leaf,new_engine)<-CMTS.runStateT (int_map_applicative_update engine.strict_exist leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
@@ -208,7 +215,7 @@ do_request request engine=case request of
         Just window->for_render projection_move engine $ \new_engine widget->do
             command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
             sdl_catch_null command_buffer
-            do_render new_engine window command_buffer maybe_sampler_id (get_submit render_selector widget)
+            do_render new_engine window command_buffer maybe_sampler_id (get_submit new_engine.strict_match render_selector widget)
             return (new_engine,False)
     Canvas_render {canvas_id,canvas_render_selector,projection_move,maybe_sampler_id}->case DIM.lookup canvas_id engine.canvas of
         Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
@@ -216,10 +223,10 @@ do_request request engine=case request of
             Free_canvas {half_width,half_height,texture}->for_render projection_move engine $ \new_engine widget->do
                 command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
                 sdl_catch_null command_buffer
-                do_render_canvas new_engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id (get_submit canvas_render_selector widget)
+                do_render_canvas new_engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id (get_submit new_engine.strict_match canvas_render_selector widget)
                 sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return (new_engine,False)
-            _->if engine.strict_match then EF.empty_error else return (engine,False)
+            Bound_canvas {}->if engine.strict_match then EF.empty_error else return (engine,False)
     Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->for_render projection_move engine $ \new_engine widget->do
         final_engine<-selector_monad_action (do_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
         return (final_engine,False)
@@ -251,24 +258,25 @@ for_unlock_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a
 for_unlock_visual visual engine=case visual of
     Picture {arrange,path,locked}->if locked then create_picture arrange path engine else return (engine,visual)
     Atlas {arrange,path,clip_request,index,locked}->if locked then create_atlas arrange path clip_request index engine else return (engine,visual)
-    Text {arrange,half_width,half_height,current_y,min_y,max_y,anchor,article,charset,locked}->if locked
+    Text {arrange,half_width,half_height,failure_advance,failure_left,failure_down,failure_right,failure_up,current_y,min_y,max_y,anchor,article,charset,locked}->if locked
         then do
             new_engine<-from_charset charset engine
-            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=fmap (fmap (update_article new_engine.font)) article,charset=charset,locked=False})
+            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=fmap (fmap (update_article new_engine.u new_engine.v new_engine.font)) article,charset=charset,locked=False})
         else return (engine,visual)
     Custom_visual {custom}->do
         (new_engine,new_custom)<-custom_visual_unlock custom engine
         return (new_engine,Custom_visual {custom=new_custom})
     _->return (engine,visual)
 
-update_article::ET.Has_call_stack=>DIM.IntMap Font->Row->Row
-update_article font row=case row of
-    Row {row_core,index,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a font) row_core,index=index,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
+update_article::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DIM.IntMap Font->Row->Row
+update_article u v font row=case row of
+    Row {row_core,index,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a u v font) row_core,index=index,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
 
-update_article_a::ET.Has_call_stack=>DIM.IntMap Font->Character->Character
-update_article_a font character=case character of
-    Character {unicode,font_id,font_size,left,down,right,up,color}->case int_map_lookup unicode (int_map_lookup font_id font).glyph of
-        Glyph {min_u,min_v,max_u,max_v}->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}
+update_article_a::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DIM.IntMap Font->Character->Character
+update_article_a u v font character=case character of
+    Character {unicode,font_id,font_size,left,down,right,up,color}->case DIM.lookup unicode (int_map_lookup font_id font).glyph of
+        Nothing->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=u,min_v=v,max_u=u,max_v=v,color=color}
+        Just (Glyph {min_u,min_v,max_u,max_v})->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}
 
 do_shader_canvas::ET.Has_call_stack=>Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a->IO (Engine a,Bool)
 do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine=case DIM.lookup pipeline_id engine.pipeline of
@@ -290,19 +298,19 @@ do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture t
             sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
             return (engine {canvas=DIM.insert canvas_id canvas engine.canvas},False)
 
-get_submit::ET.Has_call_stack=>Selector a->Widget b->DIM.IntMap (DS.Seq (Submit b))
-get_submit selector widget=selector_action (const get_submit_a) selector widget DIM.empty
+get_submit::ET.Has_call_stack=>Bool->Selector a->Widget b->DIM.IntMap (DS.Seq (Submit b))
+get_submit strict_match selector widget=selector_action (const (get_submit_a strict_match)) selector widget DIM.empty
 
-get_submit_a::ET.Has_call_stack=>Widget a->DIM.IntMap (DS.Seq (Submit a))->DIM.IntMap (DS.Seq (Submit a))
-get_submit_a widget this_submit=case widget of
+get_submit_a::ET.Has_call_stack=>Bool->Widget a->DIM.IntMap (DS.Seq (Submit a))->DIM.IntMap (DS.Seq (Submit a))
+get_submit_a strict_match widget this_submit=case widget of
     Collector {submit}->DIM.unionWith (DS.><) this_submit submit
-    _->EF.empty_error
+    _->if strict_match then EF.empty_error else this_submit
 
 for_render::ET.Has_call_stack=>Projection_move->Engine a->(Engine a->Widget a->IO (Engine a,Bool))->IO (Engine a,Bool)
 for_render projection_move engine action=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
     Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
     Just projection->case projection_move of
-        Object_move {consume}->if consume then let (new_engine,widget)=move_lookup projection_move engine in action new_engine widget else action engine (lookup_projection_object projection)
+        Object_move {leaf_id,consume}->if consume then let (new_projection,widget)=update_lookup_projection_widget_a (default_selector_update engine.strict_exist (consume_widget engine.strict_match)) projection in action (engine {leaf=DIM.insert leaf_id new_projection engine.leaf}) widget else action engine (lookup_projection_object projection)
         Image_move {strict_exist}->action engine (lookup_projection_image strict_exist projection)
 
 {-# INLINE create_request #-}

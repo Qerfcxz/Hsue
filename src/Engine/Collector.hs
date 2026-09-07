@@ -32,7 +32,7 @@ collect_canvas arrange maybe_border canvas_id leaf_id selector collect_strategy 
     Nothing->if engine.strict_exist then EF.empty_error else engine
     Just canvas->case canvas of
         Free_canvas {half_width,half_height}->engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const (collect_a engine.strict_match (DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border arrange half_width half_height 0 0 1 1)) collect_strategy)) selector)) engine.leaf}
-        _->if engine.strict_match then EF.empty_error else engine
+        Bound_canvas {}->if engine.strict_match then EF.empty_error else engine
 
 maybe_update_collect::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
 maybe_update_collect update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
@@ -52,7 +52,7 @@ collect_a strict_match this_submit collect_strategy widget=case widget of
     Collector {initial_min_index,min_index,initial_max_index,max_index,submit}->case collect_strategy of
         Min_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert_strict min_index this_submit submit}
         Max_strategy->Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index+1,submit=int_map_insert_strict max_index this_submit submit}
-        Index_strategy {seat}->if seat<=min_index then Collector {initial_min_index=initial_min_index,min_index=seat-1,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert_strict seat this_submit submit} else if max_index<=seat then Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=seat+1,submit=int_map_insert_strict seat this_submit submit} else Collector {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,submit=int_map_insert_strict seat this_submit submit}
+        Index_strategy {seat}->Collector {initial_min_index=initial_min_index,min_index=if seat<=min_index then seat-1 else min_index,initial_max_index=initial_max_index,max_index=if max_index<=seat then seat+1 else max_index,submit=int_map_insert_strict seat this_submit submit}
     _->if strict_match then EF.empty_error else widget
 
 to_collect::ET.Has_call_stack=>Custom b=>Bool->Visual_selector a->FCT.CFloat->FCT.CFloat->Maybe (Border FCT.CFloat)->Widget b->DS.Seq (Submit b)
@@ -83,8 +83,9 @@ create_submit_rectangle submit_mode maybe_border arrange half_width half_height 
 create_submit_rectangle_clip::ET.Has_call_stack=>Submit_mode->Maybe (Border FCT.CFloat)->Arrange->Clip->Submit a
 create_submit_rectangle_clip submit_mode maybe_border arrange clip=case arrange of
     Arrange {point,matrix,color}->case move_clip point clip of
-        Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->case color of
-            Color {red,green,blue,alpha}->Submit {submit_mode=submit_mode,submit_data=Submit_rectangle {red=red,green=green,blue=blue,alpha=alpha,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,left=x-half_width,down=y-half_height,right=x+half_width,up=y+half_height},parameter=to_parameter point.x point.y matrix maybe_border,vertex_size=4,index_size=6}
+        Clip {x,y,half_width,half_height,min_u,min_v,max_u,max_v}->case point of
+            Point {x=point_x,y=point_y}->case color of
+                Color {red,green,blue,alpha}->Submit {submit_mode=submit_mode,submit_data=Submit_rectangle {red=red,green=green,blue=blue,alpha=alpha,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,left=x-half_width,down=y-half_height,right=x+half_width,up=y+half_height},parameter=to_parameter point_x point_y matrix maybe_border,vertex_size=4,index_size=6}
 
 create_submit_triangle::ET.Has_call_stack=>Submit_mode->Maybe (Border FCT.CFloat)->Arrange->Point->Point->Point->FCT.CFloat->FCT.CFloat->Submit a
 create_submit_triangle submit_mode maybe_border arrange first_point second_point third_point u v=case arrange of

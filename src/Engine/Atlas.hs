@@ -87,8 +87,8 @@ copy_texture device texture_from texture_to x y width height=do
     sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
 
 create_white_texture::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->FP.Ptr SDLT.SDL_GPUTransferBuffer->FCT.CInt->DW.Word32->DW.Word32->IO (FP.Ptr SDLT.SDL_GPUTexture)
-create_white_texture device picture_transfer_buffer picture_size width height=let size=fromIntegral (4*width*height) in do
-    CM.when (picture_size<size) EF.empty_error
+create_white_texture device picture_transfer_buffer picture_size width height=let size=4*width*height in do
+    CM.when (picture_size<fromIntegral size) EF.empty_error
     upload_texture device picture_transfer_buffer width height (\map_transfer_buffer->FMU.fillBytes (FP.castPtr map_transfer_buffer) 255 (fromIntegral size))
 
 {-# INLINE init_atlas #-}

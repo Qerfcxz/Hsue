@@ -8,17 +8,18 @@ import Engine.Container
 import Engine.Projection
 import Engine.Selector
 import Engine.Type
+import qualified Error.Function as EF
 import qualified Error.Type as ET
 import qualified Data.Vector.Storable as DVS
 import qualified Foreign.C.Types as FCT
 
 step_animation::ET.Has_call_stack=>FCT.CFloat->Int->Selector (Visual_selector Bool)->Engine a->Engine a
-step_animation time leaf_id selector engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (\visual_selector->visual_selector_update (\loop _->step_animation_visual loop time) visual_selector) selector)) engine.leaf}
+step_animation time leaf_id selector engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (\visual_selector->visual_selector_update (\loop _->step_animation_visual engine.strict_match loop time) visual_selector) selector)) engine.leaf}
 
-step_animation_visual::ET.Has_call_stack=>Bool->FCT.CFloat->Visual a->Visual a
-step_animation_visual loop time visual=case visual of
+step_animation_visual::ET.Has_call_stack=>Bool->Bool->FCT.CFloat->Visual a->Visual a
+step_animation_visual strict_match loop time visual=case visual of
     Animation {arrange,delay,moment,half_width,half_height,padding,exponent_width,exponent_height,width_number,height_number,album_number,count,index,album_id}->let (new_index,new_moment)=step_animation_visual_a loop delay (moment+time) count index in Animation {arrange=arrange,delay=delay,moment=new_moment,half_width=half_width,half_height=half_height,padding=padding,exponent_width=exponent_width,exponent_height=exponent_height,width_number=width_number,height_number=height_number,album_number=album_number,count=count,index=new_index,album_id=album_id}
-    _->visual
+    _->if strict_match then EF.empty_error else visual
 
 step_animation_visual_a::ET.Has_call_stack=>Bool->DVS.Vector FCT.CFloat->FCT.CFloat->Int->Int->(Int,FCT.CFloat)
 step_animation_visual_a loop delay moment count index=let single_delay=delay DVS.! index in if moment<single_delay then (index,moment) else let new_moment=moment-single_delay in let new_index=index+1 in if count<=new_index then if loop then step_animation_visual_a loop delay new_moment count 0 else (count-1,single_delay) else step_animation_visual_a loop delay new_moment count new_index
