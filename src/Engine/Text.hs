@@ -94,8 +94,8 @@ update_font_a glyph font_id path maybe_charset engine=case maybe_charset of
         Nothing->from_charset_b False glyph font_id path unicode engine
         Just _->let new_unicode=DIS.difference unicode (DIM.keysSet glyph) in if DIS.null new_unicode then return engine else from_charset_b False glyph font_id path new_unicode engine
 
-update_atlas_font::ET.Has_call_stack=>Int->DT.Text->Maybe (DHS.HashSet Char)->Engine a->IO (Engine a)
-update_atlas_font atlas_font_id path maybe_charset engine=fmap (\atlas_font->engine {atlas_font=atlas_font}) (int_map_applicative_update engine.strict_exist atlas_font_id (update_atlas_font_a path maybe_charset engine) engine.atlas_font)
+update_atlas_font::ET.Has_call_stack=>Bool->Int->DT.Text->Maybe (DHS.HashSet Char)->Engine a->IO (Engine a)
+update_atlas_font strict_exist atlas_font_id path maybe_charset engine=fmap (\atlas_font->engine {atlas_font=atlas_font}) (int_map_applicative_update strict_exist atlas_font_id (update_atlas_font_a path maybe_charset engine) engine.atlas_font)
 
 update_atlas_font_a::ET.Has_call_stack=>DT.Text->Maybe (DHS.HashSet Char)->Engine a->Atlas_font->IO Atlas_font
 update_atlas_font_a path maybe_charset engine atlas_font=case maybe_charset of

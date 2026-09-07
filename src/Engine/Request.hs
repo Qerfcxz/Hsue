@@ -61,12 +61,12 @@ do_request request engine=case request of
     Create_widget {leaf_id,maybe_father_id,widget_request}->do
         new_engine<-create_leaf leaf_id maybe_father_id widget_request engine
         return (new_engine,False)
-    Remove_widget {leaf_id}->do
-        new_engine<-remove_leaf leaf_id engine
+    Remove_widget {leaf_id,strict_exist}->do
+        new_engine<-remove_leaf strict_exist leaf_id engine
         return (new_engine,False)
     Create_node {node_id,maybe_father_id,event_transform,widget_transform}->return (create_node node_id maybe_father_id event_transform widget_transform engine,False)
-    Remove_node {node_id}->do
-        new_engine<-remove_node node_id engine
+    Remove_node {node_id,strict_exist}->do
+        new_engine<-remove_node strict_exist node_id engine
         return (new_engine,False)
     Create_window {window_id,title,window_width,window_height,color,window_flag,blend_state}->DBS.useAsCString (DTE.encodeUtf8 title) $ \this_title->do
         window<-SDLF.sdl_create_window this_title window_width window_height (DF.foldl' (\this_window_flag single_window_flag->this_window_flag DB..|. from_window_flag single_window_flag) 0 window_flag)
@@ -77,8 +77,8 @@ do_request request engine=case request of
         sdl_catch_zero sdl_window_id
         graphics_pipeline<-create_graphics_pipeline window engine.device engine.vertex_shader engine.fragment_shader blend_state
         let new_window_width=fromIntegral window_width in let new_window_height=fromIntegral window_height in return (engine {window=int_map_insert_strict window_id (Window {window_id=window_id,sdl_window_id=sdl_window_id,sdl_window=window,graphics_pipeline=graphics_pipeline,design_width=new_window_width,design_height=new_window_height,adaptive_width=new_window_width,adaptive_height=new_window_height,width=new_window_width,height=new_window_height,color=color}) engine.window,window_map=hash_map_insert_strict sdl_window_id window_id engine.window_map},False)
-    Remove_window {window_id}->do
-        new_engine<-remove_window engine.strict_exist window_id engine
+    Remove_window {window_id,strict_exist}->do
+        new_engine<-remove_window strict_exist window_id engine
         return (new_engine,False)
     Create_canvas {canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
@@ -86,56 +86,56 @@ do_request request engine=case request of
         case maybe_canvas_id of
             Nothing->return (engine {canvas=int_map_insert_strict engine.canvas_id (Free_canvas {width=canvas_width,height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},False)
             Just canvas_id->return (engine {canvas=int_map_insert_strict canvas_id (Free_canvas {width=canvas_width,height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max (canvas_id+1) engine.canvas_id},False)
-    Remove_canvas {canvas_id}->let (maybe_single_canvas,canvas)=DIM.updateLookupWithKey (const (const Nothing)) canvas_id engine.canvas in case maybe_single_canvas of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Remove_canvas {canvas_id,strict_exist,strict_match}->let (maybe_single_canvas,canvas)=DIM.updateLookupWithKey (const (const Nothing)) canvas_id engine.canvas in case maybe_single_canvas of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just single_canvas->case single_canvas of
             Free_canvas {texture,temporary_texture}->do
                 SDLF.sdl_release_gpu_texture engine.device texture
                 SDLF.sdl_release_gpu_texture engine.device temporary_texture
                 return (engine {canvas=canvas},False)
-            Bound_canvas {}->if engine.strict_match then EF.empty_error else return (engine,False)
+            Bound_canvas {}->if strict_match then EF.empty_error else return (engine,False)
     Create_shader {shader_id,stage,num_sampler,num_uniform_buffer,path}->do
         shader<-load_shader engine.device SDLI.sdl_gpu_shaderformat_dxil stage num_sampler 0 num_uniform_buffer path
         return (engine {shader=int_map_insert_strict shader_id (Shader {sdl_shader=shader,reference=0}) engine.shader},False)
-    Remove_shader {shader_id,strict_resource}->let (maybe_single_shader,shader)=DIM.updateLookupWithKey (const (const Nothing)) shader_id engine.shader in case maybe_single_shader of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Remove_shader {shader_id,strict_exist,strict_resource}->let (maybe_single_shader,shader)=DIM.updateLookupWithKey (const (const Nothing)) shader_id engine.shader in case maybe_single_shader of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just single_shader->case single_shader of
             Shader {sdl_shader,reference}->if reference==0
                 then do
                     SDLF.sdl_release_gpu_shader engine.device sdl_shader
                     return (engine {shader=shader},False)
                 else if strict_resource then EF.empty_error else return (engine,False)
-    Create_pipeline {maybe_vertex_shader_id,fragment_shader_id,pipeline_id,blend_state}->case maybe_vertex_shader_id of
+    Create_pipeline {maybe_vertex_shader_id,fragment_shader_id,pipeline_id,blend_state,strict_exist}->case maybe_vertex_shader_id of
         Nothing->let (shader,maybe_fragment_shader)=int_map_update_maybe_lookup fragment_shader_id (update_shader_reference (+1)) engine.shader in case maybe_fragment_shader of
-            Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+            Nothing->if strict_exist then EF.empty_error else return (engine,False)
             Just fragment_shader->do
                 pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=engine.default_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
                 return (engine {pipeline=int_map_insert_strict pipeline_id (Default_pipeline {sdl_pipeline=pipeline,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=shader},False)
         Just vertex_shader_id->let (shader,maybe_vertex_shader)=int_map_update_maybe_lookup vertex_shader_id (update_shader_reference (+1)) engine.shader in case maybe_vertex_shader of
-            Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+            Nothing->if strict_exist then EF.empty_error else return (engine,False)
             Just vertex_shader->let (new_shader,maybe_fragment_shader)=int_map_update_maybe_lookup fragment_shader_id (update_shader_reference (+1)) shader in case maybe_fragment_shader of
-                Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+                Nothing->if strict_exist then EF.empty_error else return (engine,False)
                 Just fragment_shader->do
                     pipeline<-FMU.with SDLI.SDL_GPUColorTargetDescription {sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_blend_state=from_blend_state blend_state} (\color_target_description->FMU.with SDLI.SDL_GPUGraphicsPipelineCreateInfo {sdl_vertex_shader=vertex_shader.sdl_shader,sdl_fragment_shader=fragment_shader.sdl_shader,sdl_vertex_input_state=SDLI.SDL_GPUVertexInputState {sdl_vertex_buffer_descriptions=FP.nullPtr,sdl_num_vertex_buffers=0,sdl_vertex_attributes=FP.nullPtr,sdl_num_vertex_attributes=0},sdl_primitive_type=SDLI.sdl_gpu_primitivetype_trianglelist,sdl_target_info=SDLI.SDL_GPUGraphicsPipelineTargetInfo {sdl_color_target_descriptions=color_target_description,sdl_num_color_targets=1,sdl_has_depth_stencil_target=FMU.fromBool False}} (sdl_return_catch_null . SDLF.sdl_create_gpu_graphics_pipeline engine.device))
                     return (engine {pipeline=int_map_insert_strict pipeline_id (Pipeline {sdl_pipeline=pipeline,vertex_shader_id=vertex_shader_id,fragment_shader_id=fragment_shader_id}) engine.pipeline,shader=new_shader},False)
-    Remove_pipeline {pipeline_id}->let (maybe_single_pipeline,pipeline)=DIM.updateLookupWithKey (const (const Nothing)) pipeline_id engine.pipeline in case maybe_single_pipeline of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Remove_pipeline {pipeline_id,strict_exist}->let (maybe_single_pipeline,pipeline)=DIM.updateLookupWithKey (const (const Nothing)) pipeline_id engine.pipeline in case maybe_single_pipeline of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just single_pipeline->case single_pipeline of
             Pipeline {sdl_pipeline,vertex_shader_id,fragment_shader_id}->do
                 SDLF.sdl_release_gpu_graphics_pipeline engine.device sdl_pipeline
-                return (engine {pipeline=pipeline,shader=int_map_update engine.strict_exist fragment_shader_id (update_shader_reference (subtract 1)) (int_map_update engine.strict_exist vertex_shader_id (update_shader_reference (subtract 1)) engine.shader)},False)
+                return (engine {pipeline=pipeline,shader=int_map_update strict_exist fragment_shader_id (update_shader_reference (subtract 1)) (int_map_update strict_exist vertex_shader_id (update_shader_reference (subtract 1)) engine.shader)},False)
             Default_pipeline {sdl_pipeline,fragment_shader_id}->do
                 SDLF.sdl_release_gpu_graphics_pipeline engine.device sdl_pipeline
-                return (engine {pipeline=pipeline,shader=int_map_update engine.strict_exist fragment_shader_id (update_shader_reference (subtract 1)) engine.shader},False)
+                return (engine {pipeline=pipeline,shader=int_map_update strict_exist fragment_shader_id (update_shader_reference (subtract 1)) engine.shader},False)
     Create_sampler {sampler_id,sampler_create_info}->do
         sampler<-FMU.with (from_sampler_create_info sampler_create_info) (sdl_return_catch_null . SDLF.sdl_create_gpu_sampler engine.device)
         return (engine {sampler=int_map_insert_strict sampler_id sampler engine.sampler},False)
-    Remove_sampler {sampler_id}->let (maybe_single_sampler,sampler)=DIM.updateLookupWithKey (const (const Nothing)) sampler_id engine.sampler in case maybe_single_sampler of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Remove_sampler {sampler_id,strict_exist}->let (maybe_single_sampler,sampler)=DIM.updateLookupWithKey (const (const Nothing)) sampler_id engine.sampler in case maybe_single_sampler of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just single_sampler->do
             SDLF.sdl_release_gpu_sampler engine.device single_sampler
             return (engine {sampler=sampler},False)
-    Create_atlas_font {atlas_font_id,exponent_width,exponent_height,padding,width,height,font_size,pixel_range,path,maybe_charset}->let new_width=DB.shiftL 1 exponent_width in let new_height=DB.shiftL 1 exponent_height in do
+    Create_atlas_font {atlas_font_id,exponent_width,exponent_height,padding,width,height,font_size,pixel_range,path,maybe_charset,strict_exist}->let new_width=DB.shiftL 1 exponent_width in let new_height=DB.shiftL 1 exponent_height in do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=new_width,sdl_height=new_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
         sdl_catch_null command_buffer
@@ -148,18 +148,18 @@ do_request request engine=case request of
         let (atlas,left,down,right,up)=atlas_insert width height padding (init_atlas new_width new_height)
         copy_texture engine.device white_texture texture left down width height
         SDLF.sdl_release_gpu_texture engine.device white_texture
-        new_engine<-update_atlas_font atlas_font_id path maybe_charset (engine {atlas_font=int_map_insert_strict atlas_font_id (Atlas_font {path=path,texture=texture,font_atlas=atlas,glyph=DIM.empty,descent=0,ascent=0,u=scaleFloat (negate exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range,padding=padding,exponent_width=exponent_width,exponent_height=exponent_height,reference=0}) engine.atlas_font})
+        new_engine<-update_atlas_font strict_exist atlas_font_id path maybe_charset (engine {atlas_font=int_map_insert_strict atlas_font_id (Atlas_font {path=path,texture=texture,font_atlas=atlas,glyph=DIM.empty,descent=0,ascent=0,u=scaleFloat (negate exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate exponent_height) (fromIntegral (down+up)/2),font_size=font_size,pixel_range=pixel_range,padding=padding,exponent_width=exponent_width,exponent_height=exponent_height,reference=0}) engine.atlas_font})
         return (new_engine,False)
-    Remove_atlas_font {atlas_font_id,strict_resource}->let (maybe_single_atlas_font,atlas_font)=DIM.updateLookupWithKey (const (const Nothing)) atlas_font_id engine.atlas_font in case maybe_single_atlas_font of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Remove_atlas_font {atlas_font_id,strict_exist,strict_resource}->let (maybe_single_atlas_font,atlas_font)=DIM.updateLookupWithKey (const (const Nothing)) atlas_font_id engine.atlas_font in case maybe_single_atlas_font of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just single_atlas_font->case single_atlas_font of
             Atlas_font {texture,reference}->if reference==0
                 then do
                     SDLF.sdl_release_gpu_texture engine.device texture
                     return (engine {atlas_font=atlas_font},False)
                 else if strict_resource then EF.empty_error else return (engine,False)
-    Set_window_icon {window_id,path}->case DIM.lookup window_id engine.window of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Set_window_icon {window_id,path,strict_exist}->case DIM.lookup window_id engine.window of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just window->case window of
             Window {sdl_window}->with_text path $ \this_path->do
                 surface<-SDLF.img_load this_path
@@ -167,74 +167,74 @@ do_request request engine=case request of
                 sdl_catch_false (SDLF.sdl_set_window_icon sdl_window surface)
                 SDLF.sdl_destroy_surface surface
                 return (engine,False)
-    Set_window_size {window_id,window_width,window_height}->case DIM.lookup window_id engine.window of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Set_window_size {window_id,window_width,window_height,strict_exist}->case DIM.lookup window_id engine.window of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just window->case window of
             Window {sdl_window}->do
                 sdl_catch_false (SDLF.sdl_set_window_size sdl_window window_width window_height)
                 return (engine,False)
-    Set_window_position {window_id,x,y}->case DIM.lookup window_id engine.window of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Set_window_position {window_id,x,y,strict_exist}->case DIM.lookup window_id engine.window of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just window->case window of
             Window {sdl_window}->do
                 sdl_catch_false (SDLF.sdl_set_window_position sdl_window x y)
                 return (engine,False)
-    Set_window_title {window_id,title}->case DIM.lookup window_id engine.window of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Set_window_title {window_id,title,strict_exist}->case DIM.lookup window_id engine.window of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just window->case window of
             Window {sdl_window}->do
                 sdl_catch_false (DBS.useAsCString (DTE.encodeUtf8 title) (SDLF.sdl_set_window_title sdl_window))
                 return (engine,False)
-    Set_window_fullscreen {window_id,fullscreen}->case DIM.lookup window_id engine.window of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Set_window_fullscreen {window_id,fullscreen,strict_exist}->case DIM.lookup window_id engine.window of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just window->case window of
             Window {sdl_window}->do
                 sdl_catch_false (SDLF.sdl_set_window_fullscreen sdl_window (FMU.fromBool fullscreen))
                 return (engine,False)
-    Set_system_cursor {system_cursor}->case DHMS.lookup system_cursor engine.system_cursor_map of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Set_system_cursor {system_cursor,strict_exist}->case DHMS.lookup system_cursor engine.system_cursor_map of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just cursor->do
             sdl_catch_false (SDLF.sdl_set_cursor cursor)
             return (engine,False)
-    Clean_atlas->case DIM.lookup engine.initial_album_id engine.album of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+    Clean_atlas {strict_exist}->case DIM.lookup engine.initial_album_id engine.album of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just initial_album->let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas (DB.shiftL 1 engine.exponent_width) (DB.shiftL 1 engine.exponent_height)) in do
             copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
             return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,font_map=DHMS.empty,font_id=engine.initial_font_id,u=scaleFloat (negate engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate engine.exponent_height) (fromIntegral (down+up)/2)},False)
-    Unlock {leaf_id}->do
-        (leaf,new_engine)<-CMTS.runStateT (int_map_applicative_update engine.strict_exist leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
+    Unlock {leaf_id,strict_exist}->do
+        (leaf,new_engine)<-CMTS.runStateT (int_map_applicative_update strict_exist leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
     Update_font {path,maybe_charset}->do
         new_engine<-update_font path maybe_charset engine
         return (new_engine,False)
-    Update_atlas_font {atlas_font_id,path,maybe_charset}->do
-        new_engine<-update_atlas_font atlas_font_id path maybe_charset engine
+    Update_atlas_font {atlas_font_id,path,maybe_charset,strict_exist}->do
+        new_engine<-update_atlas_font strict_exist atlas_font_id path maybe_charset engine
         return (new_engine,False)
-    Render {window_id,render_selector,projection_move,maybe_sampler_id}->case DIM.lookup window_id engine.window of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
-        Just window->for_render projection_move engine $ \new_engine widget->do
-            command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
+    Render {window_id,render_selector,projection_move,maybe_sampler_id,strict_exist,strict_match,strict_capacity}->case DIM.lookup window_id engine.window of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
+        Just window->for_render strict_exist strict_match projection_move engine $ \this_engine widget->do
+            command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
             sdl_catch_null command_buffer
-            do_render new_engine window command_buffer maybe_sampler_id (get_submit new_engine.strict_match render_selector widget)
-            return (new_engine,False)
-    Canvas_render {canvas_id,canvas_render_selector,projection_move,maybe_sampler_id}->case DIM.lookup canvas_id engine.canvas of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+            do_render strict_capacity this_engine window command_buffer maybe_sampler_id (get_submit strict_match render_selector widget)
+            return (this_engine,False)
+    Canvas_render {canvas_id,canvas_render_selector,projection_move,maybe_sampler_id,strict_exist,strict_match,strict_capacity}->case DIM.lookup canvas_id engine.canvas of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just canvas->case canvas of
-            Free_canvas {half_width,half_height,texture}->for_render projection_move engine $ \new_engine widget->do
-                command_buffer<-SDLF.sdl_acquire_gpu_command_buffer new_engine.device
+            Free_canvas {half_width,half_height,texture}->for_render strict_exist strict_match projection_move engine $ \this_engine widget->do
+                command_buffer<-SDLF.sdl_acquire_gpu_command_buffer this_engine.device
                 sdl_catch_null command_buffer
-                do_render_canvas new_engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id (get_submit new_engine.strict_match canvas_render_selector widget)
+                do_render_canvas strict_capacity this_engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id (get_submit strict_match canvas_render_selector widget)
                 sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
-                return (new_engine,False)
-            Bound_canvas {}->if engine.strict_match then EF.empty_error else return (engine,False)
-    Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id}->for_render projection_move engine $ \new_engine widget->do
-        final_engine<-selector_monad_action (do_canvas_widget_render maybe_sampler_id projection_path) canvas_widget_render_selector widget new_engine
-        return (final_engine,False)
-    Shader_canvas {uniform,canvas_id,pipeline_id,maybe_sampler_id}->case DIM.lookup canvas_id engine.canvas of
-        Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+                return (this_engine,False)
+            Bound_canvas {}->if strict_match then EF.empty_error else return (engine,False)
+    Canvas_widget_render {projection_path,canvas_widget_render_selector,projection_move,maybe_sampler_id,strict_exist,strict_match,strict_capacity}->for_render strict_exist strict_match projection_move engine $ \this_engine widget->do
+        new_engine<-selector_monad_action (do_canvas_widget_render strict_exist strict_match strict_capacity maybe_sampler_id projection_path) canvas_widget_render_selector widget this_engine
+        return (new_engine,False)
+    Shader_canvas {uniform,canvas_id,pipeline_id,maybe_sampler_id,strict_exist}->case DIM.lookup canvas_id engine.canvas of
+        Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just canvas->case canvas of
-            Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
-            Bound_canvas {texture,temporary_texture}->do_shader_canvas (Bound_canvas {texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
+            Free_canvas {width,height,half_width,half_height,texture,temporary_texture}->do_shader_canvas strict_exist (Free_canvas {width=width,height=height,half_width=half_width,half_height=half_height,texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
+            Bound_canvas {texture,temporary_texture}->do_shader_canvas strict_exist (Bound_canvas {texture=temporary_texture,temporary_texture=texture}) uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine
     Io {io}->do
         new_engine<-io engine
         return (new_engine,False)
@@ -278,9 +278,9 @@ update_article_a u v font character=case character of
         Nothing->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=u,min_v=v,max_u=u,max_v=v,color=color}
         Just (Glyph {min_u,min_v,max_u,max_v})->Character {unicode=unicode,font_id=font_id,font_size=font_size,left=left,down=down,right=right,up=up,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,color=color}
 
-do_shader_canvas::ET.Has_call_stack=>Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a->IO (Engine a,Bool)
-do_shader_canvas canvas uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine=case DIM.lookup pipeline_id engine.pipeline of
-    Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+do_shader_canvas::ET.Has_call_stack=>Bool->Canvas->Uniform->Int->Int->Maybe Int->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUTexture->Engine a->IO (Engine a,Bool)
+do_shader_canvas strict_exist canvas uniform canvas_id pipeline_id maybe_sampler_id texture temporary_texture engine=case DIM.lookup pipeline_id engine.pipeline of
+    Nothing->if strict_exist then EF.empty_error else return (engine,False)
     Just pipeline->do
         command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
         sdl_catch_null command_buffer
@@ -306,12 +306,12 @@ get_submit_a strict_match widget this_submit=case widget of
     Collector {submit}->DIM.unionWith (DS.><) this_submit submit
     _->if strict_match then EF.empty_error else this_submit
 
-for_render::ET.Has_call_stack=>Projection_move->Engine a->(Engine a->Widget a->IO (Engine a,Bool))->IO (Engine a,Bool)
-for_render projection_move engine action=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
-    Nothing->if engine.strict_exist then EF.empty_error else return (engine,False)
+for_render::ET.Has_call_stack=>Bool->Bool->Projection_move->Engine a->(Engine a->Widget a->IO (Engine a,Bool))->IO (Engine a,Bool)
+for_render strict_exist strict_match projection_move engine action=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
+    Nothing->if strict_exist then EF.empty_error else return (engine,False)
     Just projection->case projection_move of
-        Object_move {leaf_id,consume}->if consume then let (new_projection,widget)=update_lookup_projection_widget_a (default_selector_update engine.strict_exist (consume_widget engine.strict_match)) projection in action (engine {leaf=DIM.insert leaf_id new_projection engine.leaf}) widget else action engine (lookup_projection_object projection)
-        Image_move {strict_exist}->action engine (lookup_projection_image strict_exist projection)
+        Object_move {leaf_id,consume}->if consume then let (new_projection,widget)=update_lookup_projection_widget_a (default_selector_update strict_exist (consume_widget strict_match)) projection in action (engine {leaf=DIM.insert leaf_id new_projection engine.leaf}) widget else action engine (lookup_projection_object projection)
+        Image_move {strict_exist=this_strict_exist}->action engine (lookup_projection_image this_strict_exist projection)
 
 {-# INLINE create_request #-}
 {-# INLINE from_system_cursor #-}

@@ -33,8 +33,8 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-from_same_insert_widget::ET.Has_call_stack=>Int->DS.Seq Insert_strategy->Widget a->Engine a->Engine a
-from_same_insert_widget leaf_id insert_widget_strategy widget engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (from_same_insert_widget_a engine.strict_match insert_widget_strategy widget)) engine.leaf}
+from_same_insert_widget::ET.Has_call_stack=>Bool->Bool->Int->DS.Seq Insert_strategy->Widget a->Engine a->Engine a
+from_same_insert_widget strict_exist strict_match leaf_id insert_widget_strategy widget engine=engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (from_same_insert_widget_a strict_match insert_widget_strategy widget)) engine.leaf}
 
 from_same_insert_widget_a::ET.Has_call_stack=>Bool->DS.Seq Insert_strategy->Widget a->Widget a->Widget a
 from_same_insert_widget_a strict_match insert_widget_strategy widget this_widget=case this_widget of
@@ -51,8 +51,8 @@ from_same_insert_widget_c value (int_map,max_index,min_index) insert_strategy=ca
     Max_strategy->(int_map_insert_strict max_index value int_map,max_index+1,min_index)
     Index_strategy {seat}->if seat<=min_index then (int_map_insert_strict seat value int_map,max_index,seat-1) else if max_index<=seat then (int_map_insert_strict seat value int_map,seat+1,min_index) else (int_map_insert_strict seat value int_map,max_index,min_index)
 
-from_insert_widget::ET.Has_call_stack=>Int->DS.Seq (Insert (Widget a))->Engine a->Engine a
-from_insert_widget leaf_id insert_widget engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (from_insert_widget_a engine.strict_match insert_widget)) engine.leaf}
+from_insert_widget::ET.Has_call_stack=>Bool->Bool->Int->DS.Seq (Insert (Widget a))->Engine a->Engine a
+from_insert_widget strict_exist strict_match leaf_id insert_widget engine=engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (from_insert_widget_a strict_match insert_widget)) engine.leaf}
 
 from_insert_widget_a::ET.Has_call_stack=>Bool->DS.Seq (Insert (Widget a))->Widget a->Widget a
 from_insert_widget_a strict_match insert_widget widget=case widget of
@@ -231,38 +231,38 @@ create_animation_b frame padding width size frame_width frame_height pack_width 
         let new_pitch=fromIntegral pitch in monad_for 0 (frame_height-1) (\y->FMU.copyBytes (FP.plusPtr map_transfer_buffer (((div this_index width_number*pack_height+padding+y)*width+mod this_index width_number*pack_width+padding)*4)) (FP.plusPtr pixel (y*new_pitch)) (frame_width*4))
         SDLF.sdl_destroy_surface surface
 
-remove_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_leaf leaf_id engine=let (maybe_projection,leaf)=DIM.updateLookupWithKey (const (const Nothing)) leaf_id engine.leaf in case maybe_projection of
-    Nothing->if engine.strict_exist then EF.empty_error else return engine
+remove_leaf::ET.Has_call_stack=>Custom a=>Bool->Int->Engine a->IO (Engine a)
+remove_leaf strict_exist leaf_id engine=let (maybe_projection,leaf)=DIM.updateLookupWithKey (const (const Nothing)) leaf_id engine.leaf in case maybe_projection of
+    Nothing->if strict_exist then EF.empty_error else return engine
     Just projection->case projection of
-        Without {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
-        With {ancestry_id,object}->remove_leaf_a ancestry_id object leaf leaf_id engine
+        Without {ancestry_id,object}->remove_leaf_a strict_exist ancestry_id object leaf leaf_id engine
+        With {ancestry_id,object}->remove_leaf_a strict_exist ancestry_id object leaf leaf_id engine
 
-remove_leaf_a::ET.Has_call_stack=>Custom a=>DS.Seq Int->Widget a->DIM.IntMap (Projection a)->Int->Engine a->IO (Engine a)
-remove_leaf_a ancestry_id object leaf leaf_id engine=case ancestry_id of
-    DS.Empty->all_selector_monad_action remove_widget object (engine {leaf=leaf})
-    _ DS.:|> father_id->all_selector_monad_action remove_widget object (engine {leaf=leaf,node=int_map_update engine.strict_exist father_id (\node->node {leaf_child=int_set_delete engine.strict_exist leaf_id node.leaf_child}) engine.node})
+remove_leaf_a::ET.Has_call_stack=>Custom a=>Bool->DS.Seq Int->Widget a->DIM.IntMap (Projection a)->Int->Engine a->IO (Engine a)
+remove_leaf_a strict_exist ancestry_id object leaf leaf_id engine=case ancestry_id of
+    DS.Empty->all_selector_monad_action (remove_widget strict_exist) object (engine {leaf=leaf})
+    _ DS.:|> father_id->all_selector_monad_action (remove_widget strict_exist) object (engine {leaf=leaf,node=int_map_update strict_exist father_id (\node->node {leaf_child=int_set_delete strict_exist leaf_id node.leaf_child}) engine.node})
 
-remove_widget::ET.Has_call_stack=>Custom a=>Widget a->Engine a->IO (Engine a)
-remove_widget widget engine=any_visual_selector_monad_action False (const remove_visual) widget engine
+remove_widget::ET.Has_call_stack=>Custom a=>Bool->Widget a->Engine a->IO (Engine a)
+remove_widget strict_exist widget engine=any_visual_selector_monad_action False (const (remove_visual strict_exist)) widget engine
 
-remove_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a)
-remove_visual visual engine=case visual of
+remove_visual::ET.Has_call_stack=>Custom a=>Bool->Visual a->Engine a->IO (Engine a)
+remove_visual strict_exist visual engine=case visual of
     Large_picture {album_id}->let (maybe_single_album,album)=DIM.updateLookupWithKey (const (const Nothing)) album_id engine.album in case maybe_single_album of
-        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Nothing->if strict_exist then EF.empty_error else return engine
         Just single_album->do
             SDLF.sdl_release_gpu_texture engine.device single_album.texture
             return (engine {album=album})
     Large_atlas {album_id}->let (maybe_single_album,album)=DIM.updateLookupWithKey (const (const Nothing)) album_id engine.album in case maybe_single_album of
-        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Nothing->if strict_exist then EF.empty_error else return engine
         Just single_album->do
             SDLF.sdl_release_gpu_texture engine.device single_album.texture
             return (engine {album=album})
     Animation {album_number,album_id}->do
-        new_album<-monad_fold 0 (album_number-1) engine.album (\index album->remove_animation engine.strict_exist engine.device index album_id album)
+        new_album<-monad_fold 0 (album_number-1) engine.album (\index album->remove_animation strict_exist engine.device index album_id album)
         return (engine {album=new_album})
     Canvas {canvas_id}->let (maybe_single_canvas,canvas)=DIM.updateLookupWithKey (const (const Nothing)) canvas_id engine.canvas in case maybe_single_canvas of
-        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Nothing->if strict_exist then EF.empty_error else return engine
         Just single_canvas->do
             clean_canvas engine.device single_canvas
             return (engine {canvas=canvas})
@@ -290,27 +290,27 @@ create_node node_id maybe_father_id event_transform widget_transform engine=case
     Nothing->engine {node=int_map_insert_strict node_id (Node {ancestry_id=DS.empty,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) engine.node}
     Just father_id->let (node,single_node)=int_map_update_lookup father_id (\this_node->this_node {node_child=int_set_insert node_id this_node.node_child}) engine.node in engine {node=int_map_insert_strict node_id (Node {ancestry_id=single_node.ancestry_id DS.|> father_id,leaf_child=DIS.empty,node_child=DIS.empty,event_transform=event_transform,widget_transform=widget_transform}) node}
 
-remove_node::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node node_id engine=let (maybe_single_node,node)=DIM.updateLookupWithKey (const (const Nothing)) node_id engine.node in case maybe_single_node of
-    Nothing->if engine.strict_exist then EF.empty_error else return engine
+remove_node::ET.Has_call_stack=>Custom a=>Bool->Int->Engine a->IO (Engine a)
+remove_node strict_exist node_id engine=let (maybe_single_node,node)=DIM.updateLookupWithKey (const (const Nothing)) node_id engine.node in case maybe_single_node of
+    Nothing->if strict_exist then EF.empty_error else return engine
     Just single_node->case single_node.ancestry_id of
-        DS.Empty->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
-        _ DS.:|> father_id->remove_node_a single_node.leaf_child single_node.node_child (engine {node=int_map_update engine.strict_exist father_id (\this_node->this_node {node_child=int_set_delete engine.strict_exist node_id this_node.node_child}) node})
+        DS.Empty->remove_node_a strict_exist single_node.leaf_child single_node.node_child (engine {node=node})
+        _ DS.:|> father_id->remove_node_a strict_exist single_node.leaf_child single_node.node_child (engine {node=int_map_update strict_exist father_id (\this_node->this_node {node_child=int_set_delete strict_exist node_id this_node.node_child}) node})
 
-remove_node_a::ET.Has_call_stack=>Custom a=>DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
-remove_node_a leaf_child node_child engine=do
-    new_engine<-int_set_monad_fold remove_node_leaf leaf_child engine
-    int_set_monad_fold remove_node_node node_child new_engine
+remove_node_a::ET.Has_call_stack=>Custom a=>Bool->DIS.IntSet->DIS.IntSet->Engine a->IO (Engine a)
+remove_node_a strict_exist leaf_child node_child engine=do
+    new_engine<-int_set_monad_fold (remove_node_leaf strict_exist) leaf_child engine
+    int_set_monad_fold (remove_node_node strict_exist) node_child new_engine
 
-remove_node_leaf::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node_leaf leaf_id engine=let (maybe_projection,leaf)=DIM.updateLookupWithKey (const (const Nothing)) leaf_id engine.leaf in case maybe_projection of
-    Nothing->if engine.strict_exist then EF.empty_error else return engine
-    Just projection->all_selector_monad_action remove_widget (lookup_projection_object projection) (engine {leaf=leaf})
+remove_node_leaf::ET.Has_call_stack=>Custom a=>Bool->Int->Engine a->IO (Engine a)
+remove_node_leaf strict_exist leaf_id engine=let (maybe_projection,leaf)=DIM.updateLookupWithKey (const (const Nothing)) leaf_id engine.leaf in case maybe_projection of
+    Nothing->if strict_exist then EF.empty_error else return engine
+    Just projection->all_selector_monad_action (remove_widget strict_exist) (lookup_projection_object projection) (engine {leaf=leaf})
 
-remove_node_node::ET.Has_call_stack=>Custom a=>Int->Engine a->IO (Engine a)
-remove_node_node node_id engine=let (maybe_single_node,node)=DIM.updateLookupWithKey (const (const Nothing)) node_id engine.node in case maybe_single_node of
-    Nothing->if engine.strict_exist then EF.empty_error else return engine
-    Just single_node->remove_node_a single_node.leaf_child single_node.node_child (engine {node=node})
+remove_node_node::ET.Has_call_stack=>Custom a=>Bool->Int->Engine a->IO (Engine a)
+remove_node_node strict_exist node_id engine=let (maybe_single_node,node)=DIM.updateLookupWithKey (const (const Nothing)) node_id engine.node in case maybe_single_node of
+    Nothing->if strict_exist then EF.empty_error else return engine
+    Just single_node->remove_node_a strict_exist single_node.leaf_child single_node.node_child (engine {node=node})
 
 {-# INLINE from_same_insert_widget #-}
 {-# INLINE from_same_insert_widget_a #-}

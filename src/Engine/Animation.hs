@@ -13,8 +13,8 @@ import qualified Error.Type as ET
 import qualified Data.Vector.Storable as DVS
 import qualified Foreign.C.Types as FCT
 
-step_animation::ET.Has_call_stack=>FCT.CFloat->Int->Selector (Visual_selector Bool)->Engine a->Engine a
-step_animation time leaf_id selector engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (\visual_selector->visual_selector_update (\loop _->step_animation_visual engine.strict_match loop time) visual_selector) selector)) engine.leaf}
+step_animation::ET.Has_call_stack=>Bool->Bool->FCT.CFloat->Int->Selector (Visual_selector Bool)->Engine a->Engine a
+step_animation strict_exist strict_match time leaf_id selector engine=engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (selector_update (\visual_selector->visual_selector_update (\loop _->step_animation_visual strict_match loop time) visual_selector) selector)) engine.leaf}
 
 step_animation_visual::ET.Has_call_stack=>Bool->Bool->FCT.CFloat->Visual a->Visual a
 step_animation_visual strict_match loop time visual=case visual of

@@ -12,11 +12,11 @@ import qualified Data.Foldable as DF
 import qualified Data.Sequence as DS
 import qualified Data.Tuple as DT
 
-create_image::ET.Has_call_stack=>Bool->Int->Event a->Engine a->Engine a
-create_image strict_conflict leaf_id event engine=engine {leaf=int_map_update engine.strict_exist leaf_id (create_projection_image strict_conflict event engine) engine.leaf}
+create_image::ET.Has_call_stack=>Bool->Bool->Int->Event a->Engine a->Engine a
+create_image strict_exist strict_conflict leaf_id event engine=engine {leaf=int_map_update strict_exist leaf_id (create_projection_image strict_conflict event engine) engine.leaf}
 
 remove_image::ET.Has_call_stack=>Bool->Int->Engine a->Engine a
-remove_image strict_exist leaf_id engine=engine {leaf=int_map_update engine.strict_exist leaf_id (remove_projection_image strict_exist) engine.leaf}
+remove_image strict_exist leaf_id engine=engine {leaf=int_map_update strict_exist leaf_id (remove_projection_image strict_exist) engine.leaf}
 
 do_widget_transform::ET.Has_call_stack=>DS.Seq Int->Event a->Engine a->Widget a->Widget a
 do_widget_transform ancestry_id event engine widget=DF.foldr (\node_id->(int_map_lookup node_id engine.node).widget_transform event engine) widget ancestry_id

@@ -22,13 +22,13 @@ import qualified Data.Vector.Storable.Mutable as DVSM
 import qualified Data.Vector.Unboxed as DVU
 import qualified Data.Vector.Unboxed.Mutable as DVUM
 
-run_coroutine::ET.Has_call_stack=>Int->Selector a->DS.Seq Int->Event b->Engine b->Engine b
-run_coroutine leaf_id selector index event engine=let (update,leaf)=int_map_applicative_update engine.strict_exist leaf_id (functor_update_projection_object (selector_monad_update (const (DT.swap . run_coroutine_a index event engine)) selector)) engine.leaf in DF.foldl' (\this_engine this_update->this_update this_engine) (engine {leaf=leaf}) update
+run_coroutine::ET.Has_call_stack=>Bool->Bool->Int->Selector a->DS.Seq Int->Event b->Engine b->Engine b
+run_coroutine strict_exist strict_match leaf_id selector index event engine=let (update,leaf)=int_map_applicative_update strict_exist leaf_id (functor_update_projection_object (selector_monad_update (const (DT.swap . run_coroutine_a strict_exist strict_match index event engine)) selector)) engine.leaf in DF.foldl' (\this_engine this_update->this_update this_engine) (engine {leaf=leaf}) update
 
-run_coroutine_a::ET.Has_call_stack=>DS.Seq Int->Event a->Engine a->Widget a->(Widget a,DS.Seq (Engine a->Engine a))
-run_coroutine_a this_index event engine widget=case widget of
-    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (update,new_coroutine_state)=DF.foldl' (run_coroutine_b engine.strict_exist iterative linear_coroutine layout event engine) (DS.empty,coroutine_state) this_index in (Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update)
-    _->if engine.strict_match then EF.empty_error else (widget,DS.empty)
+run_coroutine_a::ET.Has_call_stack=>Bool->Bool->DS.Seq Int->Event a->Engine a->Widget a->(Widget a,DS.Seq (Engine a->Engine a))
+run_coroutine_a strict_exist strict_match this_index event engine widget=case widget of
+    Coroutine {initial_min_index,min_index,initial_max_index,max_index,index,variable_size,user_variable_size,coroutine_state,layout,linear_coroutine,iterative}->let (update,new_coroutine_state)=DF.foldl' (run_coroutine_b strict_exist iterative linear_coroutine layout event engine) (DS.empty,coroutine_state) this_index in (Coroutine {initial_min_index=initial_min_index,min_index=min_index,initial_max_index=initial_max_index,max_index=max_index,index=index,variable_size=variable_size,user_variable_size=user_variable_size,coroutine_state=new_coroutine_state,layout=layout,linear_coroutine=linear_coroutine,iterative=iterative},update)
+    _->if strict_match then EF.empty_error else (widget,DS.empty)
 
 run_coroutine_b::ET.Has_call_stack=>Bool->Bool->DV.Vector (Linear_coroutine a)->DVS.Vector Layout->Event a->Engine a->(DS.Seq (Engine a->Engine a),DIM.IntMap (Coroutine_state a))->Int->(DS.Seq (Engine a->Engine a),DIM.IntMap (Coroutine_state a))
 run_coroutine_b strict_exist iterative linear_coroutine layout event engine (this_update,this_coroutine_state) single_index=DIM.alterF (run_coroutine_c strict_exist iterative linear_coroutine layout event engine this_update) single_index this_coroutine_state

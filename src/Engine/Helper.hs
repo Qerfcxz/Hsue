@@ -63,11 +63,11 @@ consume_object_move leaf_id=Object_move {leaf_id=leaf_id,consume=True}
 retain_object_move::ET.Has_call_stack=>Int->Projection_move
 retain_object_move leaf_id=Object_move {leaf_id=leaf_id,consume=False}
 
-simple_window_render_request::ET.Has_call_stack=>Int->Projection_move->Maybe Int->Request a
-simple_window_render_request window_id projection_move maybe_sampler_id=Render {window_id=window_id,render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id}
+simple_window_render_request::ET.Has_call_stack=>Bool->Bool->Bool->Int->Projection_move->Maybe Int->Request a
+simple_window_render_request strict_exist strict_match strict_capacity window_id projection_move maybe_sampler_id=Render {window_id=window_id,render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id,strict_exist=strict_exist,strict_match=strict_match,strict_capacity=strict_capacity}
 
-simple_canvas_render_request::ET.Has_call_stack=>Int->Projection_move->Maybe Int->Request a
-simple_canvas_render_request canvas_id projection_move maybe_sampler_id=Canvas_render {canvas_id=canvas_id,canvas_render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id}
+simple_canvas_render_request::ET.Has_call_stack=>Bool->Bool->Bool->Int->Projection_move->Maybe Int->Request a
+simple_canvas_render_request strict_exist strict_match strict_capacity canvas_id projection_move maybe_sampler_id=Canvas_render {canvas_id=canvas_id,canvas_render_selector=Self_selector {value=()},projection_move=projection_move,maybe_sampler_id=maybe_sampler_id,strict_exist=strict_exist,strict_match=strict_match,strict_capacity=strict_capacity}
 
 simple_calculate_typesetting::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat)
 simple_calculate_typesetting height line_spacing _ number index=if number==0||number<=index then (0,0,0) else let half_line_spacing=line_spacing/2 in let padding=(height-fromIntegral (number-1)*line_spacing)/2 in (if index==number-1 then padding else half_line_spacing,if index==0 then padding else half_line_spacing,0)
@@ -163,10 +163,10 @@ set_clipboard_text string=with_text string $ \this_string->do
     value<-SDLF.sdl_set_clipboard_text this_string
     return (FMU.toBool value)
 
-quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CFloat->FCT.CFloat->FCT.CInt->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Maybe DW.Word64->Int->Int->Sampler_create_info->Blend_state->Bool->Bool->Bool->Bool->IO (Engine a)
-quick_create_engine state main_id projection_strategy font_size pixel_range max_picture_size max_vertex_size max_index_size max_parameter_size padding width height maybe_interval exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match strict_resource strict_capacity=case maybe_interval of
-    Nothing->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 Nothing 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match strict_resource strict_capacity
-    Just interval->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 (Just (div nanosecond interval)) 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match strict_resource strict_capacity
+quick_create_engine::ET.Has_call_stack=>Custom_state a->(Event a->Engine a->Maybe Int)->(Event a->Engine a->Projection_strategy)->FCT.CFloat->FCT.CFloat->FCT.CInt->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Maybe DW.Word64->Int->Int->Sampler_create_info->Blend_state->Bool->Bool->IO (Engine a)
+quick_create_engine state main_id projection_strategy font_size pixel_range max_picture_size max_vertex_size max_index_size max_parameter_size padding width height maybe_interval exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match=case maybe_interval of
+    Nothing->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 Nothing 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match
+    Just interval->create_engine state main_id projection_strategy font_size pixel_range (max_picture_size*mebibyte) (max_vertex_size*mebibyte) (max_index_size*mebibyte) (max_parameter_size*mebibyte) padding width height 0 (Just (div nanosecond interval)) 0 0 0 0 exponent_width exponent_height sampler_create_info blend_state strict_exist strict_match
 
 {-# INLINE self_selector #-}
 {-# INLINE all_selector #-}

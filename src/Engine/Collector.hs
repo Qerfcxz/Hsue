@@ -19,33 +19,33 @@ import qualified Data.Tuple as DT
 import qualified Data.Vector.Storable as DVS
 import qualified Foreign.C.Types as FCT
 
-clean_collect::ET.Has_call_stack=>Int->Selector a->Engine b->Engine b
-clean_collect leaf_id selector engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
+clean_collect::ET.Has_call_stack=>Bool->Int->Selector a->Engine b->Engine b
+clean_collect strict_exist leaf_id selector engine=engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (selector_update (const clean_collect_a) selector)) engine.leaf}
 
 clean_collect_a::ET.Has_call_stack=>Widget a->Widget a
 clean_collect_a widget=case widget of
     Collector {initial_min_index,initial_max_index}->Collector {initial_min_index=initial_min_index,min_index=initial_min_index,initial_max_index=initial_max_index,max_index=initial_max_index,submit=DIM.empty}
     _->widget
 
-collect_canvas::ET.Has_call_stack=>Arrange->Maybe (Border FCT.CFloat)->Int->Int->Selector a->Insert_strategy->Engine b->Engine b
-collect_canvas arrange maybe_border canvas_id leaf_id selector collect_strategy engine=case DIM.lookup canvas_id engine.canvas of
-    Nothing->if engine.strict_exist then EF.empty_error else engine
+collect_canvas::ET.Has_call_stack=>Bool->Bool->Arrange->Maybe (Border FCT.CFloat)->Int->Int->Selector a->Insert_strategy->Engine b->Engine b
+collect_canvas strict_exist strict_match arrange maybe_border canvas_id leaf_id selector collect_strategy engine=case DIM.lookup canvas_id engine.canvas of
+    Nothing->if strict_exist then EF.empty_error else engine
     Just canvas->case canvas of
-        Free_canvas {half_width,half_height}->engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const (collect_a engine.strict_match (DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border arrange half_width half_height 0 0 1 1)) collect_strategy)) selector)) engine.leaf}
-        Bound_canvas {}->if engine.strict_match then EF.empty_error else engine
+        Free_canvas {half_width,half_height}->engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (selector_update (const (collect_a strict_match (DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border arrange half_width half_height 0 0 1 1)) collect_strategy)) selector)) engine.leaf}
+        Bound_canvas {}->if strict_match then EF.empty_error else engine
 
-maybe_update_collect::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
-maybe_update_collect update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
+maybe_update_collect::ET.Has_call_stack=>Custom a=>Bool->Bool->Bool->(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
+maybe_update_collect strict_exist strict_match strict_resource update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=case DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=fmap (\this_widget->(to_collect strict_resource visual_selector engine.u engine.v maybe_border (view this_widget),this_widget)) (selector_monad_update (const update) selector widget)}) engine) of
     Nothing->engine
-    Just (submit,new_engine)->new_engine {leaf=int_map_update new_engine.strict_exist leaf_id (update_projection_object (collect_a new_engine.strict_match submit collect_strategy)) new_engine.leaf}
+    Just (submit,new_engine)->new_engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (collect_a strict_match submit collect_strategy)) new_engine.leaf}
 
-maybe_collect_update::ET.Has_call_stack=>Custom a=>(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
-maybe_collect_update update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update engine.strict_exist leaf_id (update_projection_object (collect_a engine.strict_match (to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
+maybe_collect_update::ET.Has_call_stack=>Custom a=>Bool->Bool->Bool->(Widget a->Maybe (Widget a))->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
+maybe_collect_update strict_exist strict_match strict_resource update view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=let (new_update,maybe_engine)=DFC.getCompose (functor_lookup_projection_widget projection_path (\widget->DFC.Compose {getCompose=(int_map_update strict_exist leaf_id (update_projection_object (collect_a strict_match (to_collect strict_resource visual_selector engine.u engine.v maybe_border (view widget)) collect_strategy)),selector_monad_update (const update) selector widget)}) engine) in case maybe_engine of
     Nothing->engine
     Just new_engine->new_engine {leaf=new_update new_engine.leaf}
 
-collect::ET.Has_call_stack=>Custom a=>(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
-collect view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (const (collect_a engine.strict_match (to_collect engine.strict_resource visual_selector engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
+collect::ET.Has_call_stack=>Custom a=>Bool->Bool->Bool->(Widget a->Widget a)->Maybe (Border FCT.CFloat)->Projection_path->Int->Selector b->Visual_selector c->Insert_strategy->Engine a->Engine a
+collect strict_exist strict_match strict_resource view maybe_border projection_path leaf_id selector visual_selector collect_strategy engine=engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (selector_update (const (collect_a strict_match (to_collect strict_resource visual_selector engine.u engine.v maybe_border (view (lookup_projection_widget projection_path engine))) collect_strategy)) selector)) engine.leaf}
 
 collect_a::ET.Has_call_stack=>Bool->DS.Seq (Submit a)->Insert_strategy->Widget a->Widget a
 collect_a strict_match this_submit collect_strategy widget=case widget of
@@ -137,20 +137,20 @@ end_text::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Row->Bool
 end_text this_y height row=case row of
     Row {y,max_up}->y<=this_y+max_up+height
 
-move::ET.Has_call_stack=>Projection_move->Int->Selector (Selector Insert_strategy)->Engine a->Engine a
-move projection_move leaf_id selector engine=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
-    Nothing->if engine.strict_exist then EF.empty_error else engine
-    Just _->let (new_engine,widget)=move_lookup projection_move engine in selector_action (move_a new_engine.strict_match leaf_id) selector widget new_engine
+move::ET.Has_call_stack=>Bool->Bool->Projection_move->Int->Selector (Selector Insert_strategy)->Engine a->Engine a
+move strict_exist strict_match projection_move leaf_id selector engine=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
+    Nothing->if strict_exist then EF.empty_error else engine
+    Just _->let (new_engine,widget)=move_lookup strict_exist strict_match projection_move engine in selector_action (move_a strict_exist strict_match leaf_id) selector widget new_engine
 
-move_a::ET.Has_call_stack=>Bool->Int->Selector Insert_strategy->Widget a->Engine a->Engine a
-move_a strict_match leaf_id selector widget engine=case widget of
-    Collector {submit}->engine {leaf=int_map_update engine.strict_exist leaf_id (update_projection_object (selector_update (collect_a strict_match (DF.fold submit)) selector)) engine.leaf}
+move_a::ET.Has_call_stack=>Bool->Bool->Int->Selector Insert_strategy->Widget a->Engine a->Engine a
+move_a strict_exist strict_match leaf_id selector widget engine=case widget of
+    Collector {submit}->engine {leaf=int_map_update strict_exist leaf_id (update_projection_object (selector_update (collect_a strict_match (DF.fold submit)) selector)) engine.leaf}
     _->if strict_match then EF.empty_error else engine
 
-move_lookup::ET.Has_call_stack=>Projection_move->Engine a->(Engine a,Widget a)
-move_lookup projection_move engine=case projection_move of
-    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=int_map_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (default_selector_update engine.strict_exist (consume_widget engine.strict_match))) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (int_map_lookup leaf_id engine.leaf))
-    Image_move {leaf_id,strict_exist}->(engine,lookup_projection_image strict_exist (int_map_lookup leaf_id engine.leaf))
+move_lookup::ET.Has_call_stack=>Bool->Bool->Projection_move->Engine a->(Engine a,Widget a)
+move_lookup strict_exist strict_match projection_move engine=case projection_move of
+    Object_move {leaf_id,consume}->if consume then let (widget,leaf)=int_map_functor_update leaf_id (DT.swap . update_lookup_projection_widget_a (default_selector_update strict_exist (consume_widget strict_match))) engine.leaf in (engine {leaf=leaf},widget) else (engine,lookup_projection_object (int_map_lookup leaf_id engine.leaf))
+    Image_move {leaf_id,strict_exist=this_strict_exist}->(engine,lookup_projection_image this_strict_exist (int_map_lookup leaf_id engine.leaf))
 
 consume_widget::ET.Has_call_stack=>Bool->Widget a->Widget a
 consume_widget strict_match widget=case widget of

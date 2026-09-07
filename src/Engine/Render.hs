@@ -25,23 +25,23 @@ import qualified Foreign.Marshal.Utils as FMU
 import qualified Foreign.Ptr as FP
 import qualified Foreign.Storable as FS
 
-do_render_canvas::ET.Has_call_stack=>Custom a=>Engine a->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUCommandBuffer->Maybe Int->DIM.IntMap (DS.Seq (Submit a))->IO ()
-do_render_canvas engine width height texture command_buffer maybe_sampler_id submit=do
-    draw_call<-write_submit engine command_buffer submit
+do_render_canvas::ET.Has_call_stack=>Custom a=>Bool->Engine a->FCT.CFloat->FCT.CFloat->FP.Ptr SDLT.SDL_GPUTexture->FP.Ptr SDLT.SDL_GPUCommandBuffer->Maybe Int->DIM.IntMap (DS.Seq (Submit a))->IO ()
+do_render_canvas strict_capacity engine width height texture command_buffer maybe_sampler_id submit=do
+    draw_call<-write_submit strict_capacity engine command_buffer submit
     FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=0,sdl_g=0,sdl_b=0,sdl_a=0},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
         render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
         sdl_catch_null render_pass
         CM.unless (DS.null draw_call) (do_render_a engine width height engine.canvas_graphics_pipeline command_buffer (maybe engine.default_sampler (\sampler_id->int_map_lookup sampler_id engine.sampler) maybe_sampler_id) render_pass draw_call)
         SDLF.sdl_end_gpu_render_pass render_pass
 
-do_render::ET.Has_call_stack=>Custom a=>Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->Maybe Int->DIM.IntMap (DS.Seq (Submit a))->IO ()
-do_render engine window command_buffer maybe_sampler_id submit=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
+do_render::ET.Has_call_stack=>Custom a=>Bool->Engine a->Window->FP.Ptr SDLT.SDL_GPUCommandBuffer->Maybe Int->DIM.IntMap (DS.Seq (Submit a))->IO ()
+do_render strict_capacity engine window command_buffer maybe_sampler_id submit=FMA.alloca $ \ptr_texture->FMA.alloca $ \width->FMA.alloca $ \height->do
     value<-SDLF.sdl_acquire_gpu_swapchain_texture command_buffer window.sdl_window ptr_texture width height
     if FMU.toBool value
         then do
             texture<-FS.peek ptr_texture
             if texture==FP.nullPtr then sdl_catch_false (SDLF.sdl_cancel_gpu_command_buffer command_buffer) else do
-                draw_call<-write_submit engine command_buffer submit
+                draw_call<-write_submit strict_capacity engine command_buffer submit
                 case window.color of
                     Color {red,green,blue,alpha}->FMU.with (SDLI.SDL_GPUColorTargetInfo {sdl_texture=texture,sdl_clear_color=SDLI.SDL_FColor {sdl_r=red,sdl_g=green,sdl_b=blue,sdl_a=alpha},sdl_load_op=SDLI.sdl_gpu_loadop_clear,sdl_store_op=SDLI.sdl_gpu_storeop_store}) $ \color_target_info->do
                         render_pass<-SDLF.sdl_begin_gpu_render_pass command_buffer color_target_info 1 FP.nullPtr
@@ -98,24 +98,24 @@ do_render_c canvas=case canvas of
     Free_canvas {texture}->texture
     Bound_canvas {texture}->texture
 
-do_canvas_widget_render::ET.Has_call_stack=>Custom b=>Maybe Int->Projection_path->Selector a->Widget b->Engine b->IO (Engine b)
-do_canvas_widget_render maybe_sampler_id projection_path selector widget engine=case widget of
-    Collector {submit}->selector_monad_action (const (\this_widget this_engine->any_visual_selector_monad_action engine.strict_match (const (\visual->do_canvas_widget_render_a submit maybe_sampler_id visual)) this_widget this_engine)) selector (lookup_projection_widget projection_path engine) engine
-    _->if engine.strict_match then EF.empty_error else return engine
+do_canvas_widget_render::ET.Has_call_stack=>Custom b=>Bool->Bool->Bool->Maybe Int->Projection_path->Selector a->Widget b->Engine b->IO (Engine b)
+do_canvas_widget_render strict_exist strict_match strict_capacity maybe_sampler_id projection_path selector widget engine=case widget of
+    Collector {submit}->selector_monad_action (const (\this_widget this_engine->any_visual_selector_monad_action strict_match (const (\visual->do_canvas_widget_render_a strict_exist strict_match strict_capacity submit maybe_sampler_id visual)) this_widget this_engine)) selector (lookup_projection_widget projection_path engine) engine
+    _->if strict_match then EF.empty_error else return engine
 
-do_canvas_widget_render_a::ET.Has_call_stack=>Custom a=>DIM.IntMap (DS.Seq (Submit a))->Maybe Int->Visual a->Engine a->IO (Engine a)
-do_canvas_widget_render_a submit maybe_sampler_id visual engine=case visual of
+do_canvas_widget_render_a::ET.Has_call_stack=>Custom a=>Bool->Bool->Bool->DIM.IntMap (DS.Seq (Submit a))->Maybe Int->Visual a->Engine a->IO (Engine a)
+do_canvas_widget_render_a strict_exist strict_match strict_capacity submit maybe_sampler_id visual engine=case visual of
     Canvas {half_width,half_height,canvas_id}->case DIM.lookup canvas_id engine.canvas of
-        Nothing->if engine.strict_exist then EF.empty_error else return engine
+        Nothing->if strict_exist then EF.empty_error else return engine
         Just canvas->case canvas of
-            Free_canvas {}->if engine.strict_match then EF.empty_error else return engine
+            Free_canvas {}->if strict_match then EF.empty_error else return engine
             Bound_canvas {texture}->do
                 command_buffer<-SDLF.sdl_acquire_gpu_command_buffer engine.device
                 sdl_catch_null command_buffer
-                do_render_canvas engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id submit
+                do_render_canvas strict_capacity engine (half_width*2) (half_height*2) texture command_buffer maybe_sampler_id submit
                 sdl_catch_false (SDLF.sdl_submit_gpu_command_buffer command_buffer)
                 return engine
-    _->if engine.strict_match then EF.empty_error else return engine
+    _->if strict_match then EF.empty_error else return engine
 
 get_submit_size::ET.Has_call_stack=>DIM.IntMap (DS.Seq (Submit a))->(DW.Word32,DW.Word32,DW.Word32)
 get_submit_size=DIM.foldl' (\(vertex_number,index_number,parameter_number) submit->let (new_vertex_number,new_index_number)=DF.foldl' (flip get_submit_size_a) (vertex_number,index_number) submit in (new_vertex_number,new_index_number,parameter_number+fromIntegral (DS.length submit))) (0,0,0)
@@ -124,9 +124,9 @@ get_submit_size_a::ET.Has_call_stack=>Submit a->(DW.Word32,DW.Word32)->(DW.Word3
 get_submit_size_a submit (vertex_number,index_number)=case submit of
     Submit {vertex_size,index_size}->(vertex_number+vertex_size,index_number+index_size)
 
-write_submit::ET.Has_call_stack=>Custom a=>Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->DIM.IntMap (DS.Seq (Submit a))->IO (DS.Seq (Submit_mode,DW.Word32,DW.Word32))
-write_submit engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=vertex_number*size_of_vertex in let index_size=index_number*size_of_index in let parameter_size=parameter_number*size_of_parameter in if engine.max_vertex_size<vertex_size||engine.max_index_size<index_size||engine.max_parameter_size<parameter_size
-    then if engine.strict_capacity then EF.empty_error else return DS.empty
+write_submit::ET.Has_call_stack=>Custom a=>Bool->Engine a->FP.Ptr SDLT.SDL_GPUCommandBuffer->DIM.IntMap (DS.Seq (Submit a))->IO (DS.Seq (Submit_mode,DW.Word32,DW.Word32))
+write_submit strict_capacity engine command_buffer submit=let (vertex_number,index_number,parameter_number)=get_submit_size submit in if parameter_number==0 then return DS.empty else let vertex_size=vertex_number*size_of_vertex in let index_size=index_number*size_of_index in let parameter_size=parameter_number*size_of_parameter in if engine.max_vertex_size<vertex_size||engine.max_index_size<index_size||engine.max_parameter_size<parameter_size
+    then if strict_capacity then EF.empty_error else return DS.empty
     else do
         map_transfer_buffer<-SDLF.sdl_map_gpu_transfer_buffer engine.device engine.transfer_buffer (FMU.fromBool True)
         sdl_catch_null map_transfer_buffer
