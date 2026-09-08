@@ -112,7 +112,7 @@ lock_visual visual=case visual of
     Picture {arrange,half_width,half_height,min_u,min_v,max_u,max_v,path}->Picture {arrange=arrange,half_width=half_width,half_height=half_height,min_u=min_u,min_v=min_v,max_u=max_u,max_v=max_v,path=path,locked=True}
     Atlas {arrange,path,clip_request,clip,index}->Atlas {arrange=arrange,path=path,clip_request=clip_request,clip=clip,index=index,locked=True}
     Text {arrange,half_width,half_height,failure_advance,failure_left,failure_down,failure_right,failure_up,current_y,min_y,max_y,anchor,article,charset}->Text {arrange=arrange,half_width=half_width,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=article,charset=charset,locked=True}
-    Custom_visual {custom}->Custom_visual {custom=custom_visual_lock custom}
+    Custom_visual {visual_custom}->Custom_visual {visual_custom=custom_visual_lock visual_custom}
     _->visual
 
 sdl_error::ET.Has_call_stack=>IO a

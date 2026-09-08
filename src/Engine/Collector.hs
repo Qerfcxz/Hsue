@@ -72,7 +72,7 @@ to_collect_visual strict_resource transform u v maybe_border visual=case visual 
     Text {arrange,half_width,half_height,current_y,anchor,article,locked}->if locked then if strict_resource then EF.empty_error else DS.empty else DS.singleton (create_submit_text Submit_default maybe_border (transform arrange) half_width half_height current_y anchor article)
     Editor {}->error "未完待续"
     Canvas {arrange,half_width,half_height,canvas_id}->DS.singleton (create_submit_rectangle (Submit_canvas {canvas_id=canvas_id}) maybe_border (transform arrange) half_width half_height 0 0 1 1)
-    Custom_visual {custom}->custom_visual_collect transform u v maybe_border custom
+    Custom_visual {visual_custom}->custom_visual_collect transform u v maybe_border visual_custom
 
 create_submit_rectangle::ET.Has_call_stack=>Submit_mode->Maybe (Border FCT.CFloat)->Arrange->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Submit a
 create_submit_rectangle submit_mode maybe_border arrange half_width half_height min_u min_v max_u max_v=case arrange of

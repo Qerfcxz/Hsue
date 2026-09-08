@@ -263,9 +263,9 @@ for_unlock_visual visual engine=case visual of
             new_engine<-from_charset charset engine
             return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=fmap (fmap (update_article new_engine.u new_engine.v new_engine.font)) article,charset=charset,locked=False})
         else return (engine,visual)
-    Custom_visual {custom}->do
-        (new_engine,new_custom)<-custom_visual_unlock custom engine
-        return (new_engine,Custom_visual {custom=new_custom})
+    Custom_visual {visual_custom}->do
+        (new_engine,new_visual_custom)<-custom_visual_unlock visual_custom engine
+        return (new_engine,Custom_visual {visual_custom=new_visual_custom})
     _->return (engine,visual)
 
 update_article::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DIM.IntMap Font->Row->Row

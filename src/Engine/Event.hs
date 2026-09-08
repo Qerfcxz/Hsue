@@ -138,8 +138,8 @@ loop_event on event_type event engine=case event_type of
                     loop_event_b on (At {window_id=window_id,action=Scroll {x=(mouse_x-width/2)*adaptive_width/width,y=(height/2-mouse_y)*adaptive_height/height,delta_x=x,delta_y=y}}) event engine
     _->if event_type==engine.event_number+1
         then do
-            custom<-pop_event event
-            loop_event_b on (Custom_event {custom=custom}) event engine
+            event_custom<-pop_event event
+            loop_event_b on (Custom_event {event_custom=event_custom}) event engine
         else loop_event_a on event engine
 
 loop_event_a::ET.Has_call_stack=>Custom a=>Bool->FP.Ptr ()->Engine a->IO ()

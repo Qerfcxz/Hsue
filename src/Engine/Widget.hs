@@ -166,9 +166,9 @@ create_visual visual_request engine=case visual_request of
         case maybe_canvas_id of
             Nothing->return (engine {canvas=int_map_insert_strict engine.canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=engine.canvas_id+1},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=engine.canvas_id})
             Just canvas_id->return (engine {canvas=int_map_insert_strict canvas_id (Bound_canvas {texture=texture,temporary_texture=temporary_texture}) engine.canvas,canvas_id=max (canvas_id+1) engine.canvas_id},Canvas {arrange=arrange,canvas_width=canvas_width,canvas_height=canvas_height,half_width=fromIntegral canvas_width/2,half_height=fromIntegral canvas_height/2,canvas_id=canvas_id})
-    Custom_visual_request {custom}->do
-        (new_engine,new_custom)<-custom_visual_request custom engine
-        return (new_engine,Custom_visual {custom=new_custom})
+    Custom_visual_request {visual_request_custom}->do
+        (new_engine,visual_custom)<-custom_visual_request visual_request_custom engine
+        return (new_engine,Custom_visual {visual_custom=visual_custom})
 
 do_image::ET.Has_call_stack=>(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual a)->DT.Text->Engine a->IO (Engine a,Visual a)
 do_image action path engine=do
@@ -266,7 +266,7 @@ remove_visual strict_exist visual engine=case visual of
         Just single_canvas->do
             clean_canvas engine.device single_canvas
             return (engine {canvas=canvas})
-    Custom_visual {custom}->custom_visual_remove custom engine
+    Custom_visual {visual_custom}->custom_visual_remove visual_custom engine
     _->return engine
 
 clean_canvas::ET.Has_call_stack=>FP.Ptr SDLT.SDL_GPUDevice->Canvas->IO ()

@@ -159,7 +159,7 @@ write_submit_data vertex_ptr index_ptr vertex_index parameter_index submit_data=
     Submit_convex_polygon {red,green,blue,alpha,u,v,x,y,point_set}->write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y point_set
     Submit_regular_polygon {red,green,blue,alpha,u,v,x,y,angle,radius,number}->write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y angle radius number
     Submit_text {red,green,blue,alpha,x,y,current_y,ratio,article}->write_submit_text vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y current_y ratio article
-    Custom_submit_data {custom}->custom_submit_data vertex_ptr index_ptr vertex_index parameter_index custom
+    Custom_submit_data {submit_data_custom}->custom_submit_data vertex_ptr index_ptr vertex_index parameter_index submit_data_custom
 
 write_submit_rectangle::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->IO ()
 write_submit_rectangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha min_u min_v max_u max_v left down right up=do
