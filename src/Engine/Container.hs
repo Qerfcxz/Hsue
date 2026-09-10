@@ -75,10 +75,10 @@ int_map_applicative_update_a strict_exist update maybe_value=case maybe_value of
     Just value->fmap Just (update value)
 
 int_map_monad_mapping_update::ET.Has_call_stack=>Monad c=>Bool->(a->b->c b)->DIM.IntMap a->DIM.IntMap b->c (DIM.IntMap b)
-int_map_monad_mapping_update strict_exist update first_int_map second_int_map=DIM.foldrWithKey (\key value rest accumulator->int_map_applicative_update strict_exist key (update value) accumulator>>=rest) return first_int_map second_int_map
+int_map_monad_mapping_update strict_exist update first_int_map second_int_map=DIM.foldrWithKey (\key value action accumulator->int_map_applicative_update strict_exist key (update value) accumulator>>=action) return first_int_map second_int_map
 
 int_map_monad_fold::ET.Has_call_stack=>Monad c=>(Int->a->b->c b)->DIM.IntMap a->b->c b
-int_map_monad_fold transform int_map value=DIM.foldrWithKey (\key another_value rest accumulator->transform key another_value accumulator>>=rest) return int_map value
+int_map_monad_fold transform int_map value=DIM.foldrWithKey (\key another_value action accumulator->transform key another_value accumulator>>=action) return int_map value
 
 int_map_monad_action::ET.Has_call_stack=>Monad c=>(Int->a->b->c (b,d))->DIM.IntMap a->b->c (b,DIM.IntMap d)
 int_map_monad_action action int_map value=do
@@ -97,7 +97,7 @@ int_set_delete::ET.Has_call_stack=>Bool->Int->DIS.IntSet->DIS.IntSet
 int_set_delete strict_exist key int_set=if strict_exist then if DIS.member key int_set then DIS.delete key int_set else EF.empty_error else DIS.delete key int_set
 
 int_set_monad_fold::ET.Has_call_stack=>Monad b=>(Int->a->b a)->DIS.IntSet->a->b a
-int_set_monad_fold transform int_set value=DIS.foldr (\key rest accumulator->transform key accumulator>>=rest) return int_set value
+int_set_monad_fold transform int_set value=DIS.foldr (\key action accumulator->transform key accumulator>>=action) return int_set value
 
 hash_map_lookup::ET.Has_call_stack=>Eq a=>DH.Hashable a=>a->DHMS.HashMap a b->b
 hash_map_lookup key hash_map=case DHMS.lookup key hash_map of

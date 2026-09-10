@@ -44,7 +44,7 @@ loop_engine_on event engine=do
     (new_engine,switch)<-run_request False engine
     sdl_catch_false (SDLF.sdl_wait_event event)
     event_type<-SDLI.sdl_event_type_peek event
-    if event_type==engine.event_number then let count=engine.count+1 in let interval=get_interval engine.timer in let time=engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {time=time,count=count}) else loop_event (not switch) event_type event new_engine
+    if event_type==new_engine.event_number then let count=new_engine.count+1 in let interval=get_interval new_engine.timer in let time=new_engine.time+interval in loop_event_b (not switch) (Time {tick=count,time=time,interval=interval}) event (new_engine {time=time,count=count}) else loop_event (not switch) event_type event new_engine
 
 loop_engine_on_a::ET.Has_call_stack=>Custom a=>FP.Ptr ()->Engine a->IO ()
 loop_engine_on_a event engine=do

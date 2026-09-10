@@ -40,7 +40,7 @@ update_projection_object::ET.Has_call_stack=>(Widget a->Widget a)->Projection a-
 update_projection_object update projection=Without {ancestry_id=lookup_projection_ancestry_id projection,object=update (lookup_projection_object projection)}
 
 functor_update_projection_object::ET.Has_call_stack=>Functor b=>(Widget a->b (Widget a))->Projection a->b (Projection a)
-functor_update_projection_object update projection=fmap (\this_object->Without {ancestry_id=lookup_projection_ancestry_id projection,object=this_object}) (update (lookup_projection_object projection))
+functor_update_projection_object update projection=fmap (\object->Without {ancestry_id=lookup_projection_ancestry_id projection,object=object}) (update (lookup_projection_object projection))
 
 lookup_projection::ET.Has_call_stack=>Projection_strategy->Projection a->Widget a
 lookup_projection projection_strategy=case projection_strategy of

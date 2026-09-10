@@ -31,12 +31,12 @@ run_coroutine_a strict_exist strict_match this_index event engine widget=case wi
     _->if strict_match then EF.empty_error else (widget,DS.empty)
 
 run_coroutine_b::ET.Has_call_stack=>Bool->Bool->DV.Vector (Linear_coroutine a)->DVS.Vector Layout->Event a->Engine a->(DS.Seq (Engine a->Engine a),DIM.IntMap (Coroutine_state a))->Int->(DS.Seq (Engine a->Engine a),DIM.IntMap (Coroutine_state a))
-run_coroutine_b strict_exist iterative linear_coroutine layout event engine (this_update,this_coroutine_state) single_index=DIM.alterF (run_coroutine_c strict_exist iterative linear_coroutine layout event engine this_update) single_index this_coroutine_state
+run_coroutine_b strict_exist iterative linear_coroutine layout event engine (this_update,this_coroutine_state) index=DIM.alterF (run_coroutine_c strict_exist iterative linear_coroutine layout event engine this_update) index this_coroutine_state
 
 run_coroutine_c::ET.Has_call_stack=>Bool->Bool->DV.Vector (Linear_coroutine a)->DVS.Vector Layout->Event a->Engine a->DS.Seq (Engine a->Engine a)->Maybe (Coroutine_state a)->(DS.Seq (Engine a->Engine a),Maybe (Coroutine_state a))
 run_coroutine_c strict_exist iterative linear_coroutine layout event engine this_update maybe_coroutine_state=case maybe_coroutine_state of
     Nothing->if strict_exist then EF.empty_error else (this_update,Nothing)
-    Just single_coroutine_state->let (new_update,new_single_coroutine_state)=run_coroutine_d iterative linear_coroutine layout single_coroutine_state event engine this_update in (new_update,Just new_single_coroutine_state)
+    Just coroutine_state->let (new_update,new_coroutine_state)=run_coroutine_d iterative linear_coroutine layout coroutine_state event engine this_update in (new_update,Just new_coroutine_state)
 
 run_coroutine_d::ET.Has_call_stack=>Bool->DV.Vector (Linear_coroutine a)->DVS.Vector Layout->Coroutine_state a->Event a->Engine a->DS.Seq (Engine a->Engine a)->(DS.Seq (Engine a->Engine a),Coroutine_state a)
 run_coroutine_d iterative linear_coroutine layout coroutine_state event engine update=case coroutine_state of
@@ -254,9 +254,9 @@ step_coroutine_a linear_coroutine main_index clone_index this_code_index program
         int<-DVUM.read variable (int_index+clone_index)
         DVUM.write variable (int_index+clone_index) (int-1)
         if 0<int then step_coroutine linear_coroutine program_counter_index index_group_index (survived_main_index_group DS.|> main_index) newborn_main_index_group main_index_group index_group (DIM.insert main_index (Program_counter {code_index=this_code_index,clone_index=clone_index}) program_counter) layout user_variable variable updater update event engine widget else step_coroutine_a linear_coroutine main_index clone_index (this_code_index+1) program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget
-    Linear_countdown {int_index}->let var_index=int_index+clone_index in do
-        int<-DVUM.read variable var_index
-        DVUM.write variable var_index (int-1)
+    Linear_countdown {int_index}->let new_int_index=int_index+clone_index in do
+        int<-DVUM.read variable new_int_index
+        DVUM.write variable new_int_index (int-1)
         step_coroutine linear_coroutine program_counter_index index_group_index survived_main_index_group newborn_main_index_group main_index_group index_group program_counter layout user_variable variable updater update event engine widget
     Linear_wake {int_index}->do
         int<-DVUM.read variable (int_index+clone_index)

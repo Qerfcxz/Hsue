@@ -611,11 +611,6 @@ create_adaptive_window_trigger_request_strict=create_adaptive_window_trigger_req
 create_adaptive_window_trigger_request_lenient::ET.Has_call_stack=>(Event a->Engine a->Maybe Int)->DIS.IntSet->Widget_request a
 create_adaptive_window_trigger_request_lenient=create_adaptive_window_trigger_request False
 
-
-
-
-
-
 {-# INLINE const_dynamic_bool #-}
 {-# INLINE const_dynamic_int #-}
 {-# INLINE create_foldable_request #-}

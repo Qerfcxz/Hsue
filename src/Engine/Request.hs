@@ -200,7 +200,7 @@ do_request request engine=case request of
         Nothing->if strict_exist then EF.empty_error else return (engine,False)
         Just initial_album->let (atlas,left,down,right,up)=atlas_insert initial_album.width initial_album.height engine.padding (init_atlas (DB.shiftL 1 engine.exponent_width) (DB.shiftL 1 engine.exponent_height)) in do
             copy_texture engine.device initial_album.texture engine.texture left down initial_album.width initial_album.height
-            return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,font_map=DHMS.empty,font_id=engine.initial_font_id,u=scaleFloat (negate engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate engine.exponent_height) (fromIntegral (down+up)/2)},False)
+            return (engine {atlas=atlas,leaf=fmap (update_projection_object (all_selector_update (any_visual_selector_update False (const lock_visual)))) engine.leaf,font=DIM.empty,font_map=DHMS.empty,u=scaleFloat (negate engine.exponent_width) (fromIntegral (left+right)/2),v=scaleFloat (negate engine.exponent_height) (fromIntegral (down+up)/2),font_id=engine.initial_font_id},False)
     Unlock {leaf_id,strict_exist}->do
         (leaf,new_engine)<-CMTS.runStateT (int_map_applicative_update strict_exist leaf_id (functor_update_projection_object (all_selector_applicative_update for_unlock)) engine.leaf) engine
         return (new_engine {leaf=leaf},False)
@@ -258,10 +258,10 @@ for_unlock_visual::ET.Has_call_stack=>Custom a=>Visual a->Engine a->IO (Engine a
 for_unlock_visual visual engine=case visual of
     Picture {arrange,path,locked}->if locked then create_picture arrange path engine else return (engine,visual)
     Atlas {arrange,path,clip_request,index,locked}->if locked then create_atlas arrange path clip_request index engine else return (engine,visual)
-    Text {arrange,half_width,half_height,failure_advance,failure_left,failure_down,failure_right,failure_up,current_y,min_y,max_y,anchor,article,charset,locked}->if locked
+    Text {arrange,half_width,half_height,current_y,min_y,max_y,anchor,hole_index,hole,article,charset,locked}->if locked
         then do
             new_engine<-from_charset charset engine
-            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,article=fmap (fmap (update_article new_engine.u new_engine.v new_engine.font)) article,charset=charset,locked=False})
+            return (new_engine,Text {arrange=arrange,half_width=half_width,half_height=half_height,current_y=current_y,min_y=min_y,max_y=max_y,anchor=anchor,hole_index=hole_index,hole=hole,article=fmap (fmap (update_article new_engine.u new_engine.v new_engine.font)) article,charset=charset,locked=False})
         else return (engine,visual)
     Custom_visual {visual_custom}->do
         (new_engine,new_visual_custom)<-custom_visual_unlock visual_custom engine
@@ -270,7 +270,7 @@ for_unlock_visual visual engine=case visual of
 
 update_article::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DIM.IntMap Font->Row->Row
 update_article u v font row=case row of
-    Row {row_core,index,x,y,width,min_down,max_up,min_descent,max_ascent}->Row {row_core=fmap (update_article_a u v font) row_core,index=index,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent}
+    Row {row_core,index,x,y,width,min_down,max_up,min_descent,max_ascent,number}->Row {row_core=fmap (update_article_a u v font) row_core,index=index,x=x,y=y,width=width,min_down=min_down,max_up=max_up,min_descent=min_descent,max_ascent=max_ascent,number=number}
 
 update_article_a::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->DIM.IntMap Font->Character->Character
 update_article_a u v font character=case character of
@@ -307,11 +307,11 @@ get_submit_a strict_match widget this_submit=case widget of
     _->if strict_match then EF.empty_error else this_submit
 
 for_render::ET.Has_call_stack=>Bool->Bool->Projection_move->Engine a->(Engine a->Widget a->IO (Engine a,Bool))->IO (Engine a,Bool)
-for_render strict_exist strict_match projection_move engine action=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
-    Nothing->if strict_exist then EF.empty_error else return (engine,False)
+for_render this_strict_exist strict_match projection_move engine action=case DIM.lookup (lookup_move_leaf_id projection_move) engine.leaf of
+    Nothing->if this_strict_exist then EF.empty_error else return (engine,False)
     Just projection->case projection_move of
-        Object_move {leaf_id,consume}->if consume then let (new_projection,widget)=update_lookup_projection_widget_a (default_selector_update strict_exist (consume_widget strict_match)) projection in action (engine {leaf=DIM.insert leaf_id new_projection engine.leaf}) widget else action engine (lookup_projection_object projection)
-        Image_move {strict_exist=this_strict_exist}->action engine (lookup_projection_image this_strict_exist projection)
+        Object_move {leaf_id,consume}->if consume then let (new_projection,widget)=update_lookup_projection_widget_a (default_selector_update this_strict_exist (consume_widget strict_match)) projection in action (engine {leaf=DIM.insert leaf_id new_projection engine.leaf}) widget else action engine (lookup_projection_object projection)
+        Image_move {strict_exist}->action engine (lookup_projection_image strict_exist projection)
 
 {-# INLINE create_request #-}
 {-# INLINE from_system_cursor #-}

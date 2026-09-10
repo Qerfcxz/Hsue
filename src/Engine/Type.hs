@@ -206,15 +206,15 @@ data Widget a=Group {initial_min_index::Int,min_index::Int,initial_max_index::In
 
 data Widget_request a=Group_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DS.Seq (Insert (Widget_request a))}|Vector_request {index::Int,vector_widget_request::DS.Seq (Widget_request a)}|Trigger_request {next::Event a->Engine a->Maybe Int,trigger::Event a->Engine a->Engine a}|Io_trigger_request {next::Event a->Engine a->Maybe Int,io_trigger::Event a->Engine a->IO (Engine a)}|Mix_trigger_request {next::Event a->Engine a->Maybe Int,mix_trigger::Event a->(Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Widget_trigger_request {next::Event a->Engine a->Maybe Int,widget_request::Widget_request a,widget_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a)}|Widget_io_trigger_request {next::Event a->Engine a->Maybe Int,widget_request::Widget_request a,widget_io_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->IO (Engine a))}|Widget_mix_trigger_request {next::Event a->Engine a->Maybe Int,widget_request::Widget_request a,widget_mix_trigger::Event a->Engine a->Widget a->(Widget a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Visual_trigger_request {next::Event a->Engine a->Maybe Int,visual_request::Visual_request a,visual_trigger::Event a->Engine a->Visual a->(Visual a,Engine a->Engine a)}|Visual_io_trigger_request {next::Event a->Engine a->Maybe Int,visual_request::Visual_request a,visual_io_trigger::Event a->Engine a->Visual a->(Visual a,Engine a->IO (Engine a))}|Visual_mix_trigger_request {next::Event a->Engine a->Maybe Int,visual_request::Visual_request a,visual_mix_trigger::Event a->Engine a->Visual a->(Visual a,Engine a->Engine a,Engine a->IO (Engine a)),order::Bool}|Group_visual_request {arrange::Arrange,group_visual_request::DIM.IntMap (Visual_request a)}|Vector_visual_request {arrange::Arrange,vector_visual_request::DV.Vector (Visual_request a)}|Coroutine_request {initial_min_index::Int,initial_max_index::Int,index::Int,insert_widget_request::DS.Seq (Insert (Widget_request a)),raw_coroutine::Raw_coroutine a (),iterative::Bool}|Collector_request {initial_min_index::Int,initial_max_index::Int}|Store_request {store::Data}
 
-data Visual a=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::DT.Text,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,path::DT.Text,clip_request::DS.Seq Clip_request,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,index::Int,album_id::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,padding::FCT.CFloat,exponent_width::Int,exponent_height::Int,width_number::Int,height_number::Int,album_number::Int,count::Int,index::Int,album_id::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,anchor::Anchor,article::DS.Seq (DS.Seq Row),charset::DHMS.HashMap DT.Text (DHS.HashSet Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,cursor::Cursor,line::DS.Seq Line,appended_typesetting::DS.Seq Typesetting,typesetting::DVS.Vector Typesetting,max_typesetting_size::Int,atlas_font_id::Int}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}|Custom_visual {visual_custom::Custom_visual a}
+data Visual a=Rectangle {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat}|Triangle {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,path::DT.Text,locked::Bool}|Large_picture {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,album_id::Int}|Atlas {arrange::Arrange,path::DT.Text,clip_request::DS.Seq Clip_request,clip::DVS.Vector Clip,index::Int,locked::Bool}|Large_atlas {arrange::Arrange,clip::DVS.Vector Clip,index::Int,album_id::Int}|Animation {arrange::Arrange,delay::DVS.Vector FCT.CFloat,moment::FCT.CFloat,half_width::FCT.CFloat,half_height::FCT.CFloat,padding::FCT.CFloat,exponent_width::Int,exponent_height::Int,width_number::Int,height_number::Int,album_number::Int,count::Int,index::Int,album_id::Int}|Text {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,anchor::Anchor,hole_index::DIM.IntMap Int,hole::DVS.Vector Hole,article::DS.Seq (DS.Seq Row),charset::DHMS.HashMap DT.Text (DHS.HashSet Char),locked::Bool}|Editor {arrange::Arrange,half_width::FCT.CFloat,half_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,current_y::FCT.CFloat,min_y::FCT.CFloat,max_y::FCT.CFloat,font_size::FCT.CFloat,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,cursor::Cursor,line::DS.Seq Line,appended_typesetting::DS.Seq Typesetting,typesetting::DVS.Vector Typesetting,max_typesetting_size::Int,atlas_font_id::Int}|Canvas {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,half_width::FCT.CFloat,half_height::FCT.CFloat,canvas_id::Int}|Custom_visual {visual_custom::Custom_visual a}
 
-data Visual_request a=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::DT.Text}|Large_picture_request {arrange::Arrange,path::DT.Text}|Atlas_request {arrange::Arrange,path::DT.Text,clip_request::DS.Seq Clip_request}|Large_atlas_request {arrange::Arrange,path::DT.Text,clip_request::DS.Seq Clip_request}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,padding::Int,exponent_width::Int,exponent_height::Int,path::DT.Text}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,max_search_index::Int,calculate_width::DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,article::DS.Seq (DS.Seq Sentence),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,font_size::FCT.CFloat,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,max_typesetting_size::Int,atlas_font_id::Int}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Custom_visual_request {visual_request_custom::Custom_visual_request a}
+data Visual_request a=Rectangle_request {arrange::Arrange,rectangle_width::FCT.CFloat,rectangle_height::FCT.CFloat}|Triangle_request {arrange::Arrange,first_point::Point,second_point::Point,third_point::Point}|Convex_polygon_request {arrange::Arrange,point_set::DS.Seq Point}|Regular_polygon_request {arrange::Arrange,number::Int,radius::FCT.CFloat,angle::FCT.CFloat}|Picture_request {arrange::Arrange,path::DT.Text}|Large_picture_request {arrange::Arrange,path::DT.Text}|Atlas_request {arrange::Arrange,path::DT.Text,clip_request::DS.Seq Clip_request}|Large_atlas_request {arrange::Arrange,path::DT.Text,clip_request::DS.Seq Clip_request}|Animation_request {arrange::Arrange,min_delay::FCT.CFloat,padding::Int,exponent_width::Int,exponent_height::Int,path::DT.Text}|Text_request {arrange::Arrange,text_width::FCT.CFloat,text_height::FCT.CFloat,failure_glyph::Maybe Pure_glyph,max_search_index::Int,calculate_width::DS.Seq Row->DS.Seq (DS.Seq Row)->Int->FCT.CFloat,calculate_typesetting::DS.Seq (DS.Seq Row)->Int->Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,article::DS.Seq (DS.Seq Sentence),load::Bool}|Editor_request {arrange::Arrange,editor_width::FCT.CFloat,editor_height::FCT.CFloat,cursor_width::FCT.CFloat,failure_advance::FCT.CFloat,failure_left::FCT.CFloat,failure_down::FCT.CFloat,failure_right::FCT.CFloat,failure_up::FCT.CFloat,font_size::FCT.CFloat,text_color::Color,cursor_color::Color,box_color::Color,selected_color::Color,line_width::Int->FCT.CFloat,line_typesetting::Int->(FCT.CFloat,FCT.CFloat,FCT.CFloat),anchor::Anchor,max_typesetting_size::Int,atlas_font_id::Int}|Canvas_request {arrange::Arrange,canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Custom_visual_request {visual_request_custom::Custom_visual_request a}
 
 data Request a=Reset_timer {interval::DW.Word64}|Stop_timer {strict_match::Bool}|Create_widget {leaf_id::Int,maybe_father_id::Maybe Int,widget_request::Widget_request a}|Remove_widget {leaf_id::Int,strict_exist::Bool}|Create_node {node_id::Int,maybe_father_id::Maybe Int,event_transform::Engine a->Event a->Event a,widget_transform::Event a->Engine a->Widget a->Widget a}|Remove_node {node_id::Int,strict_exist::Bool}|Create_window {window_id::Int,title::DT.Text,window_width::FCT.CInt,window_height::FCT.CInt,color::Color,window_flag::DHS.HashSet Window_flag,blend_state::Blend_state}|Remove_window {window_id::Int,strict_exist::Bool}|Create_canvas {canvas_width::DW.Word32,canvas_height::DW.Word32,maybe_canvas_id::Maybe Int}|Remove_canvas {canvas_id::Int,strict_exist::Bool,strict_match::Bool}|Create_shader {shader_id::Int,stage::DW.Word32,num_sampler::DW.Word32,num_uniform_buffer::DW.Word32,path::DT.Text}|Remove_shader {shader_id::Int,strict_exist::Bool,strict_resource::Bool}|Create_pipeline {maybe_vertex_shader_id::Maybe Int,fragment_shader_id::Int,pipeline_id::Int,blend_state::Blend_state,strict_exist::Bool}|Remove_pipeline {pipeline_id::Int,strict_exist::Bool}|Create_sampler {sampler_id::Int,sampler_create_info::Sampler_create_info}|Remove_sampler {sampler_id::Int,strict_exist::Bool}|Create_atlas_font {atlas_font_id::Int,exponent_width::Int,exponent_height::Int,padding::DW.Word32,width::DW.Word32,height::DW.Word32,font_size::FCT.CFloat,pixel_range::FCT.CFloat,path::DT.Text,maybe_charset::Maybe (DHS.HashSet Char),strict_exist::Bool}|Remove_atlas_font {atlas_font_id::Int,strict_exist::Bool,strict_resource::Bool}|Set_window_icon {window_id::Int,path::DT.Text,strict_exist::Bool}|Set_window_size {window_id::Int,window_width::FCT.CInt,window_height::FCT.CInt,strict_exist::Bool}|Set_window_position {window_id::Int,x::FCT.CInt,y::FCT.CInt,strict_exist::Bool}|Set_window_title {window_id::Int,title::DT.Text,strict_exist::Bool}|Set_window_fullscreen {window_id::Int,fullscreen::Bool,strict_exist::Bool}|Set_system_cursor {system_cursor::System_cursor,strict_exist::Bool}|Clean_atlas {strict_exist::Bool}|Unlock {leaf_id::Int,strict_exist::Bool}|Update_font {path::DT.Text,maybe_charset::Maybe (DHS.HashSet Char)}|Update_atlas_font {atlas_font_id::Int,path::DT.Text,maybe_charset::Maybe (DHS.HashSet Char),strict_exist::Bool}|Render {window_id::Int,render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int,strict_exist::Bool,strict_match::Bool,strict_capacity::Bool}|Canvas_render {canvas_id::Int,canvas_render_selector::Selector (),projection_move::Projection_move,maybe_sampler_id::Maybe Int,strict_exist::Bool,strict_match::Bool,strict_capacity::Bool}|Canvas_widget_render {projection_path::Projection_path,canvas_widget_render_selector::Selector (Selector ()),projection_move::Projection_move,maybe_sampler_id::Maybe Int,strict_exist::Bool,strict_match::Bool,strict_capacity::Bool}|Shader_canvas {uniform::Uniform,canvas_id::Int,pipeline_id::Int,maybe_sampler_id::Maybe Int,strict_exist::Bool}|Io {io::Engine a->IO (Engine a)}
 
 data Submit a=Submit {submit_mode::Submit_mode,submit_data::Submit_data a,parameter::Parameter,vertex_size::DW.Word32,index_size::DW.Word32}
 
-data Submit_data a=Submit_rectangle {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat}|Submit_triangle {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,first_x::FCT.CFloat,first_y::FCT.CFloat,second_x::FCT.CFloat,second_y::FCT.CFloat,third_x::FCT.CFloat,third_y::FCT.CFloat}|Submit_convex_polygon {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,point_set::DS.Seq Point}|Submit_regular_polygon {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,angle::FCT.CFloat,radius::FCT.CFloat,number::Int}|Submit_text {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,current_y::FCT.CFloat,ratio::FCT.CFloat,article::DS.Seq (DS.Seq Row)}|Custom_submit_data {submit_data_custom::Custom_submit_data a}
+data Submit_data a=Submit_rectangle {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat}|Submit_triangle {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,first_x::FCT.CFloat,first_y::FCT.CFloat,second_x::FCT.CFloat,second_y::FCT.CFloat,third_x::FCT.CFloat,third_y::FCT.CFloat}|Submit_convex_polygon {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,point_set::DS.Seq Point}|Submit_regular_polygon {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,angle::FCT.CFloat,radius::FCT.CFloat,number::Int}|Submit_text {red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,u::FCT.CFloat,v::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat,current_y::FCT.CFloat,ratio::FCT.CFloat,hole_index::DIM.IntMap Int,hole::DVS.Vector Hole,article::DS.Seq (DS.Seq Row)}|Custom_submit_data {submit_data_custom::Custom_submit_data a}
 
 data Coroutine_state a=Coroutine_state {widget::Widget a,variable::DVU.Vector Int,user_variable::DVU.Vector Int,program_counter::DIM.IntMap Program_counter,index_group::DIM.IntMap (DS.Seq Int),main_index_group::DS.Seq Int,index_group_index::Int,program_counter_index::Int}
 
@@ -256,13 +256,13 @@ data Line=Line {width::FCT.CFloat,seat::DS.Seq Seat,line_break::Bool}
 
 data Seat=Seat {char::Char,advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
-data Row=Row {row_core::DS.Seq Character,index::Int,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
+data Row=Row {row_core::DS.Seq Character,index::Int,number::Int,x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,min_down::FCT.CFloat,max_up::FCT.CFloat,min_descent::FCT.CFloat,max_ascent::FCT.CFloat}
 
 data Character=Character {unicode::Int,font_id::Int,font_size::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat,color::Color}
 
 data Sentence=Sentence {sentence_core::DS.Seq Phrase,path::DT.Text}
 
-data Phrase=Phrase {phrase_core::DT.Text,font_size::FCT.CFloat,color::Color}
+data Phrase=Phrase {phrase_core::DT.Text,font_size::FCT.CFloat,color::Color}|Hole_phrase {hole_id::Int,maybe_color::Maybe Color,advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat}
 
 data Clip_request=Clip_request {x::FCT.CFloat,y::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -277,6 +277,8 @@ data Point=Point {x::FCT.CFloat,y::FCT.CFloat}
 data Arrange=Arrange {point::Point,matrix::Matrix,color::Color}
 
 data Atlas=Leaf_atlas {border::Border DW.Word32,used::Bool}|Node_atlas {border::Border DW.Word32,left_atlas::Atlas,right_atlas::Atlas}
+
+data Pure_glyph=Pure_glyph {advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat}
 
 data Glyph=Glyph {advance::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,min_u::FCT.CFloat,min_v::FCT.CFloat,max_u::FCT.CFloat,max_v::FCT.CFloat}
 
@@ -347,6 +349,52 @@ instance DH.Hashable Color_component_flag where
 
 color_component_flag_hash_with_salt::ET.Has_call_stack=>Int->Color_component_flag->Int
 color_component_flag_hash_with_salt=DH.hashUsing fromEnum
+
+data Hole=Hole {hole_id::Int,enable::Bool,red::FCT.CFloat,green::FCT.CFloat,blue::FCT.CFloat,alpha::FCT.CFloat,left::FCT.CFloat,down::FCT.CFloat,right::FCT.CFloat,up::FCT.CFloat,x::FCT.CFloat,y::FCT.CFloat}
+
+instance FS.Storable Hole where
+    sizeOf=hole_size_of
+    alignment=hole_alignment
+    peek=hole_peek
+    poke=hole_poke
+
+hole_size_of::ET.Has_call_stack=>Num a=>Hole->a
+hole_size_of _=56
+
+hole_alignment::ET.Has_call_stack=>Num a=>Hole->a
+hole_alignment _=8
+
+hole_peek::ET.Has_call_stack=>FP.Ptr Hole->IO Hole
+hole_peek ptr=do
+    hole_id<-FS.peekByteOff ptr 0
+    enable<-FS.peekByteOff ptr 8
+    red<-FS.peekByteOff ptr 12
+    green<-FS.peekByteOff ptr 16
+    blue<-FS.peekByteOff ptr 20
+    alpha<-FS.peekByteOff ptr 24
+    left<-FS.peekByteOff ptr 28
+    down<-FS.peekByteOff ptr 32
+    right<-FS.peekByteOff ptr 36
+    up<-FS.peekByteOff ptr 40
+    x<-FS.peekByteOff ptr 44
+    y<-FS.peekByteOff ptr 48
+    return (Hole {hole_id=hole_id,enable=enable,red=red,green=green,blue=blue,alpha=alpha,left=left,down=down,right=right,up=up,x=x,y=y})
+
+hole_poke::ET.Has_call_stack=>FP.Ptr Hole->Hole->IO ()
+hole_poke ptr hole=case hole of
+    Hole {hole_id,enable,red,green,blue,alpha,left,down,right,up,x,y}->do
+        FS.pokeByteOff ptr 0 hole_id
+        FS.pokeByteOff ptr 8 enable
+        FS.pokeByteOff ptr 12 red
+        FS.pokeByteOff ptr 16 green
+        FS.pokeByteOff ptr 20 blue
+        FS.pokeByteOff ptr 24 alpha
+        FS.pokeByteOff ptr 28 left
+        FS.pokeByteOff ptr 32 down
+        FS.pokeByteOff ptr 36 right
+        FS.pokeByteOff ptr 40 up
+        FS.pokeByteOff ptr 44 x
+        FS.pokeByteOff ptr 48 y
 
 data Typesetting=Typesetting {x::FCT.CFloat,y::FCT.CFloat,width::FCT.CFloat,lower::FCT.CFloat,upper::FCT.CFloat}
 
@@ -577,6 +625,10 @@ class Custom a where
 {-# INLINE system_cursor_hash_with_salt #-}
 {-# INLINE window_flag_hash_with_salt #-}
 {-# INLINE color_component_flag_hash_with_salt #-}
+{-# INLINE hole_size_of #-}
+{-# INLINE hole_alignment #-}
+{-# INLINE hole_peek #-}
+{-# INLINE hole_poke #-}
 {-# INLINE typesetting_size_of #-}
 {-# INLINE typesetting_alignment #-}
 {-# INLINE typesetting_peek #-}

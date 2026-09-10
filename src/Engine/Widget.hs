@@ -64,11 +64,11 @@ from_insert_widget_b::ET.Has_call_stack=>Int->Int->(Widget a->b)->DS.Seq (Insert
 from_insert_widget_b min_index max_index transform insert_widget int_map=DF.foldl' (from_insert_widget_c transform) (int_map,max_index,min_index) insert_widget
 
 from_insert_widget_c::ET.Has_call_stack=>(Widget a->b)->(DIM.IntMap b,Int,Int)->Insert (Widget a)->(DIM.IntMap b,Int,Int)
-from_insert_widget_c transform (this_int_map,this_max_index,this_min_index) insert=case insert of
+from_insert_widget_c transform (int_map,max_index,min_index) insert=case insert of
     Insert {insert_strategy,value}->let transformed_value=transform value in case insert_strategy of
-        Min_strategy->(int_map_insert_strict this_min_index transformed_value this_int_map,this_max_index,this_min_index-1)
-        Max_strategy->(int_map_insert_strict this_max_index transformed_value this_int_map,this_max_index+1,this_min_index)
-        Index_strategy {seat}->if seat<=this_min_index then (int_map_insert_strict seat transformed_value this_int_map,this_max_index,seat-1) else if this_max_index<=seat then (int_map_insert_strict seat transformed_value this_int_map,seat+1,this_min_index) else (int_map_insert_strict seat transformed_value this_int_map,this_max_index,this_min_index)
+        Min_strategy->(int_map_insert_strict min_index transformed_value int_map,max_index,min_index-1)
+        Max_strategy->(int_map_insert_strict max_index transformed_value int_map,max_index+1,min_index)
+        Index_strategy {seat}->if seat<=min_index then (int_map_insert_strict seat transformed_value int_map,max_index,seat-1) else if max_index<=seat then (int_map_insert_strict seat transformed_value int_map,seat+1,min_index) else (int_map_insert_strict seat transformed_value int_map,max_index,min_index)
 
 create_leaf::ET.Has_call_stack=>Custom a=>Int->Maybe Int->Widget_request a->Engine a->IO (Engine a)
 create_leaf leaf_id maybe_father_id widget_request engine=do
@@ -154,11 +154,11 @@ create_visual visual_request engine=case visual_request of
         (texture,width,height)<-from_image engine.device engine.picture_transfer_buffer engine.max_picture_size path
         return (engine {album=int_map_insert_strict engine.album_id (Album {width=width,height=height,texture=texture}) engine.album,album_id=engine.album_id+1},Large_atlas {arrange=arrange,clip=to_storable_vector (create_large_atlas (fromIntegral width) (fromIntegral height)) clip_request (DS.length clip_request),index=0,album_id=engine.album_id})
     Animation_request {arrange,min_delay,padding,exponent_width,exponent_height,path}->create_animation arrange min_delay padding exponent_width exponent_height path engine
-    Text_request {arrange,text_width,text_height,failure_advance,failure_left,failure_down,failure_right,failure_up,max_search_index,calculate_width,calculate_typesetting,anchor,article,load}->let charset=to_charset article in let half_height=text_height/2 in if load
+    Text_request {arrange,text_width,text_height,failure_glyph,max_search_index,calculate_width,calculate_typesetting,anchor,article,load}->let (charset,hole_count)=summarize_text article in let half_height=text_height/2 in if load
         then do
             new_engine<-from_charset charset engine
-            return (new_engine,let (new_article,number)=for_text new_engine.u new_engine.v failure_advance failure_left failure_down failure_right failure_up max_search_index new_engine.font new_engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
-        else return (engine,let (new_article,number)=for_text engine.u engine.v failure_advance failure_left failure_down failure_right failure_up max_search_index engine.font engine.font_map article calculate_width in let (new_new_article,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,failure_advance=failure_advance,failure_left=failure_left,failure_down=failure_down,failure_right=failure_right,failure_up=failure_up,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,article=new_new_article,charset=charset,locked=False})
+            return (new_engine,let (new_article,hole,hole_index,number)=for_text hole_count max_search_index new_engine.font new_engine.font_map (from_failure_glyph new_engine.u new_engine.v failure_glyph) calculate_width article in let (new_new_article,new_hole,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) hole_index hole new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,hole_index=hole_index,hole=new_hole,article=new_new_article,charset=charset,locked=False})
+        else return (engine,let (new_article,hole,hole_index,number)=for_text hole_count max_search_index engine.font engine.font_map (from_failure_glyph engine.u engine.v failure_glyph) calculate_width article in let (new_new_article,new_hole,max_y)=do_typesetting number half_height (calculate_typesetting new_article number) hole_index hole new_article in Text {arrange=arrange,half_width=text_width/2,half_height=half_height,current_y=0,min_y=0,max_y=max_y-half_height,anchor=anchor,hole_index=hole_index,hole=new_hole,article=new_new_article,charset=charset,locked=False})
     Editor_request {}->error "未完待续"
     Canvas_request {arrange,canvas_width,canvas_height,maybe_canvas_id}->do
         texture<-FMU.with (SDLI.SDL_GPUTextureCreateInfo {sdl_type=SDLI.sdl_gpu_texturetype_2d,sdl_format=SDLI.sdl_gpu_textureformat_r8g8b8a8_unorm,sdl_usage=SDLI.sdl_gpu_textureusage_sampler DB..|. SDLI.sdl_gpu_textureusage_color_target,sdl_width=canvas_width,sdl_height=canvas_height,sdl_layer_count_or_depth=1,sdl_num_levels=1,sdl_sample_count=SDLI.sdl_gpu_samplecount_1}) (sdl_return_catch_null . SDLF.sdl_create_gpu_texture engine.device)
@@ -169,6 +169,12 @@ create_visual visual_request engine=case visual_request of
     Custom_visual_request {visual_request_custom}->do
         (new_engine,visual_custom)<-custom_visual_request visual_request_custom engine
         return (new_engine,Custom_visual {visual_custom=visual_custom})
+
+from_failure_glyph::ET.Has_call_stack=>FCT.CFloat->FCT.CFloat->Maybe Pure_glyph->(FCT.CFloat,FCT.CFloat,FCT.CFloat,FCT.CFloat,FCT.CFloat,FCT.CFloat,FCT.CFloat,FCT.CFloat,FCT.CFloat)
+from_failure_glyph u v failure_glyph=case failure_glyph of
+    Nothing->EF.empty_error
+    Just pure_glyph->case pure_glyph of
+        Pure_glyph {advance,left,down,right,up}->(advance,left,down,right,up,u,v,u,v)
 
 do_image::ET.Has_call_stack=>(DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->DW.Word32->Visual a)->DT.Text->Engine a->IO (Engine a,Visual a)
 do_image action path engine=do
@@ -320,6 +326,7 @@ remove_node_node strict_exist node_id engine=let (maybe_single_node,node)=DIM.up
 {-# INLINE from_insert_widget_a #-}
 {-# INLINE from_insert_widget_b #-}
 {-# INLINE from_insert_widget_c #-}
+{-# INLINE from_failure_glyph #-}
 {-# INLINE create_atlas_a #-}
 {-# INLINE create_large_atlas #-}
 {-# INLINE create_node #-}

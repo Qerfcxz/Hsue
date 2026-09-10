@@ -18,6 +18,7 @@ import qualified Control.Monad as CM
 import qualified Data.Foldable as DF
 import qualified Data.IntMap as DIM
 import qualified Data.Sequence as DS
+import qualified Data.Vector.Storable as DVS
 import qualified Data.Word as DW
 import qualified Foreign.C.Types as FCT
 import qualified Foreign.Marshal.Alloc as FMA
@@ -158,7 +159,7 @@ write_submit_data vertex_ptr index_ptr vertex_index parameter_index submit_data=
     Submit_triangle {red,green,blue,alpha,u,v,first_x,first_y,second_x,second_y,third_x,third_y}->write_submit_triangle vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v first_x first_y second_x second_y third_x third_y
     Submit_convex_polygon {red,green,blue,alpha,u,v,x,y,point_set}->write_submit_convex_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y point_set
     Submit_regular_polygon {red,green,blue,alpha,u,v,x,y,angle,radius,number}->write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y angle radius number
-    Submit_text {red,green,blue,alpha,x,y,current_y,ratio,article}->write_submit_text vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y current_y ratio article
+    Submit_text {red,green,blue,alpha,u,v,x,y,current_y,ratio,hole_index,hole,article}->write_submit_text vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y current_y ratio hole_index hole article
     Custom_submit_data {submit_data_custom}->custom_submit_data vertex_ptr index_ptr vertex_index parameter_index submit_data_custom
 
 write_submit_rectangle::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->IO ()
@@ -199,12 +200,14 @@ write_submit_regular_polygon vertex_ptr index_ptr vertex_index parameter_index r
         FS.pokeByteOff index_ptr (offset+size_of_index) (new_vertex_index+1)
         FS.pokeByteOff index_ptr (offset+2*size_of_index) (new_vertex_index+2)
 
-write_submit_text::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DS.Seq (DS.Seq Row)->IO ()
-write_submit_text vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y current_y ratio article=CM.void (DF.foldlM (DF.foldlM (\(character_vertex_index,character_index_index) row->write_submit_row vertex_ptr index_ptr vertex_index parameter_index red green blue alpha x y current_y ratio row character_vertex_index character_index_index)) (0,0) article)
+write_submit_text::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DIM.IntMap Int->DVS.Vector Hole->DS.Seq (DS.Seq Row)->IO ()
+write_submit_text vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y current_y ratio hole_index hole article=CM.void (DF.foldlM (DF.foldlM (\(character_vertex_index,character_index_index) row->write_submit_row vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v x y current_y ratio hole_index hole row character_vertex_index character_index_index)) (0,0) article)
 
-write_submit_row::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Row->Int->Int->IO (Int,Int)
-write_submit_row vertex_ptr index_ptr vertex_index parameter_index red green blue alpha this_x this_y current_y ratio row character_vertex_index character_index_index=case row of
-    Row {row_core,x,y,width}->DF.foldlM (write_submit_character vertex_ptr index_ptr vertex_index parameter_index red green blue alpha (this_x+x-ratio*width/2) (this_y+current_y-y)) (character_vertex_index,character_index_index) row_core
+write_submit_row::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->DIM.IntMap Int->DVS.Vector Hole->Row->Int->Int->IO (Int,Int)
+write_submit_row vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v this_x this_y current_y ratio hole_index hole row character_vertex_index character_index_index=case row of
+    Row {row_core,index,x,y,width}->do
+        (new_vertex_index,new_index_index)<-monad_fold (int_map_lookup index hole_index) (int_map_lookup (index+1) hole_index-1) (character_vertex_index,character_index_index) (\this_index index_pair->write_submit_hole vertex_ptr index_ptr vertex_index parameter_index red green blue alpha u v (this_x+x-ratio*width/2) (this_y+current_y-y) (hole DVS.! this_index) index_pair)
+        DF.foldlM (write_submit_character vertex_ptr index_ptr vertex_index parameter_index red green blue alpha (this_x+x-ratio*width/2) (this_y+current_y-y)) (new_vertex_index,new_index_index) row_core
 
 write_submit_character::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->(Int,Int)->Character->IO (Int,Int)
 write_submit_character vertex_ptr index_ptr vertex_index parameter_index this_red this_green this_blue this_alpha x y (character_vertex_index,character_index_index) character=case character of
@@ -221,6 +224,23 @@ write_submit_character vertex_ptr index_ptr vertex_index parameter_index this_re
             FS.pokeByteOff index_ptr (index_offset+4*size_of_index) (new_vertex_index+2)
             FS.pokeByteOff index_ptr (index_offset+5*size_of_index) (new_vertex_index+3)
             return (character_vertex_index+4,character_index_index+6)
+
+write_submit_hole::ET.Has_call_stack=>FP.Ptr Vertex->FP.Ptr DW.Word32->DW.Word32->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->Hole->(Int,Int)->IO (Int,Int)
+write_submit_hole vertex_ptr index_ptr vertex_index parameter_index this_red this_green this_blue this_alpha u v x y hole (hole_vertex_index,hole_index_index)=case hole of
+    Hole {enable,red,green,blue,alpha,left,down,right,up}->if enable
+        then let new_red=this_red*red in let new_green=this_green*green in let new_blue=this_blue*blue in let new_alpha=this_alpha*alpha in let new_left=x+left in let new_down=y+down in let new_right=x+right in let new_up=y+up in let vertex_offset=hole_vertex_index*size_of_vertex in let index_offset=hole_index_index*size_of_index in let new_vertex_index=vertex_index+fromIntegral hole_vertex_index in do
+            poke_vertex vertex_ptr vertex_offset parameter_index 0 new_left new_down u v new_red new_green new_blue new_alpha
+            poke_vertex vertex_ptr (vertex_offset+size_of_vertex) parameter_index 0 new_right new_down u v new_red new_green new_blue new_alpha
+            poke_vertex vertex_ptr (vertex_offset+2*size_of_vertex) parameter_index 0 new_right new_up u v new_red new_green new_blue new_alpha
+            poke_vertex vertex_ptr (vertex_offset+3*size_of_vertex) parameter_index 0 new_left new_up u v new_red new_green new_blue new_alpha
+            FS.pokeByteOff index_ptr index_offset new_vertex_index
+            FS.pokeByteOff index_ptr (index_offset+size_of_index) (new_vertex_index+1)
+            FS.pokeByteOff index_ptr (index_offset+2*size_of_index) (new_vertex_index+2)
+            FS.pokeByteOff index_ptr (index_offset+3*size_of_index) new_vertex_index
+            FS.pokeByteOff index_ptr (index_offset+4*size_of_index) (new_vertex_index+2)
+            FS.pokeByteOff index_ptr (index_offset+5*size_of_index) (new_vertex_index+3)
+            return (hole_vertex_index+4,hole_index_index+6)
+        else return (hole_vertex_index,hole_index_index)
 
 poke_vertex::ET.Has_call_stack=>FP.Ptr Vertex->Int->DW.Word32->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->FCT.CFloat->IO ()
 poke_vertex ptr offset parameter_id font_size x y u v red green blue alpha=do
@@ -250,4 +270,5 @@ poke_vertex ptr offset parameter_id font_size x y u v red green blue alpha=do
 {-# INLINE write_submit_text #-}
 {-# INLINE write_submit_row #-}
 {-# INLINE write_submit_character #-}
+{-# INLINE write_submit_hole #-}
 {-# INLINE poke_vertex #-}
